@@ -1,0 +1,168 @@
+"""Rules that classify single access-log requests.
+
+A rule match means "this request looks like X", never "the attack succeeded": success is
+decided later by correlating the request with file evidence (plan §4). Request text is
+percent-decoded before matching because attackers encode payloads to dodge naive filters.
+"""
+
+import re
+from collections.abc import Iterable
+from dataclasses import dataclass
+from enum import StrEnum
+from urllib.parse import unquote_plus
+
+from webforensics.detect import RULESET_VERSION
+from webforensics.models import (
+    Confidence,
+    Finding,
+    FindingCategory,
+    LogEvent,
+    Reason,
+    Severity,
+    stable_id,
+    truncate_excerpt,
+)
+
+MATCH_SNIPPET_CHARS = 80
+DECODE_PASSES = 2  # double encoding (%2527) is a common filter bypass
+
+
+class Target(StrEnum):
+    REQUEST = "request"  # decoded path + query
+    USER_AGENT = "user_agent"
+    PATH = "path"
+    QUERY = "query"
+
+
+@dataclass(frozen=True)
+class LogRule:
+    rule_id: str
+    category: FindingCategory
+    severity: Severity
+    confidence: Confidence
+    mitre: tuple[str, ...]
+    target: Target
+    pattern: re.Pattern[str]
+
+
+def _rx(pattern: str) -> re.Pattern[str]:
+    return re.compile(pattern, re.IGNORECASE | re.DOTALL)
+
+
+_UPLOAD_DIRS = r"(?:uploads?|files|images|media|tmp|cache|attachments)"
+_EXEC_EXT = r"\.(?:php[0-9]?|phtml|phar|jsp|jspx|aspx?|cgi|pl)"
+
+LOG_RULES: tuple[LogRule, ...] = (
+    LogRule(
+        "LOG-SQLI-UNION", FindingCategory.EXPLOIT_ATTEMPT, Severity.HIGH, Confidence.HIGH,
+        ("T1190",), Target.REQUEST,
+        _rx(r"\bunion(?:\s|/\*.*?\*/|\+)+(?:all(?:\s|/\*.*?\*/)+)?select\b"),
+    ),
+    LogRule(
+        "LOG-SQLI-TAUTOLOGY", FindingCategory.EXPLOIT_ATTEMPT, Severity.HIGH, Confidence.MEDIUM,
+        ("T1190",), Target.REQUEST,
+        _rx(r"""(?:['"]\s*|\s)(?:or|and)\s+['"]?(\w+)['"]?\s*=\s*['"]?\1\b"""),
+    ),
+    LogRule(
+        "LOG-SQLI-BLIND", FindingCategory.EXPLOIT_ATTEMPT, Severity.HIGH, Confidence.HIGH,
+        ("T1190",), Target.REQUEST,
+        _rx(r"\b(?:sleep|pg_sleep|benchmark|extractvalue|updatexml)\s*\(|waitfor\s+delay\b"),
+    ),
+    LogRule(
+        "LOG-SQLI-SCHEMA", FindingCategory.EXPLOIT_ATTEMPT, Severity.HIGH, Confidence.HIGH,
+        ("T1190",), Target.REQUEST,
+        _rx(r"\binformation_schema\b|\binto\s+(?:out|dump)file\b|\bload_file\s*\("),
+    ),
+    LogRule(
+        "LOG-SQLI-QUOTE-COMMENT", FindingCategory.EXPLOIT_ATTEMPT, Severity.MEDIUM,
+        Confidence.MEDIUM, ("T1190",), Target.REQUEST,
+        _rx(r"""['"]\s*\)?\s*(?:--(?:\s|$)|#|/\*)"""),
+    ),
+    LogRule(
+        "LOG-TRAVERSAL-DOTS", FindingCategory.EXPLOIT_ATTEMPT, Severity.HIGH, Confidence.MEDIUM,
+        ("T1190",), Target.REQUEST,
+        _rx(r"(?:\.\.[/\\]){2,}"),
+    ),
+    LogRule(
+        "LOG-TRAVERSAL-SENSITIVE", FindingCategory.EXPLOIT_ATTEMPT, Severity.HIGH,
+        Confidence.HIGH, ("T1190", "T1083"), Target.REQUEST,
+        _rx(r"/etc/(?:passwd|shadow)\b|\bwin\.ini\b|\bboot\.ini\b|/proc/self/environ"),
+    ),
+    LogRule(
+        "LOG-SCANNER-UA", FindingCategory.RECON, Severity.LOW, Confidence.MEDIUM,
+        ("T1595.002",), Target.USER_AGENT,
+        _rx(r"\b(?:sqlmap|nikto|nmap|acunetix|nessus|wpscan|masscan|dirbuster|gobuster|havij)\b"),
+    ),
+    LogRule(
+        "LOG-WEBSHELL-UPLOAD-DIR", FindingCategory.WEBSHELL, Severity.HIGH, Confidence.MEDIUM,
+        ("T1505.003",), Target.PATH,
+        _rx(rf"/{_UPLOAD_DIRS}/(?:[^?]*/)?[^/?]+{_EXEC_EXT}$"),
+    ),
+    LogRule(
+        "LOG-WEBSHELL-CMD-PARAM", FindingCategory.WEBSHELL, Severity.MEDIUM, Confidence.LOW,
+        ("T1505.003", "T1059"), Target.QUERY,
+        _rx(r"(?:^|&)(?:cmd|exec|command|shell)=[^&]+"),
+    ),
+)
+
+RULES_BY_ID = {rule.rule_id: rule for rule in LOG_RULES}
+
+
+def decode_text(value: str) -> str:
+    """Percent-decode (twice), turn `+` into space, drop NULs. Matching is case-insensitive."""
+    for _ in range(DECODE_PASSES):
+        decoded = unquote_plus(value)
+        if decoded == value:
+            break
+        value = decoded
+    return value.replace("\x00", "")
+
+
+def _target_text(event: LogEvent, target: Target) -> str:
+    if target is Target.USER_AGENT:
+        return event.user_agent or ""
+    path = decode_text(event.path or "")
+    query = decode_text(event.query or "")
+    if target is Target.PATH:
+        return path
+    if target is Target.QUERY:
+        return query
+    return f"{path}?{query}" if query else path
+
+
+def _finding(event: LogEvent, rule: LogRule, matched: str) -> Finding:
+    return Finding(
+        finding_id=stable_id(rule.rule_id, event.evidence_id),
+        rule_id=rule.rule_id,
+        rule_version=RULESET_VERSION,
+        category=rule.category,
+        subject=event.evidence_id,
+        severity=rule.severity,
+        confidence=rule.confidence,
+        reasons=(
+            Reason(
+                key=f"finding.{rule.rule_id}",
+                params={
+                    "matched": truncate_excerpt(matched)[:MATCH_SNIPPET_CHARS],
+                    "status": str(event.status),
+                    "method": event.method or "",
+                },
+            ),
+        ),
+        citations=(event.citation(),),
+        mitre=rule.mitre,
+    )
+
+
+def detect_request(event: LogEvent) -> list[Finding]:
+    findings: list[Finding] = []
+    for rule in LOG_RULES:
+        match = rule.pattern.search(_target_text(event, rule.target))
+        if match:
+            findings.append(_finding(event, rule, match.group(0)))
+    return findings
+
+
+def detect_requests(events: Iterable[LogEvent]) -> list[Finding]:
+    """Findings for every event, in log order, rules in declaration order (deterministic)."""
+    return [finding for event in events for finding in detect_request(event)]
