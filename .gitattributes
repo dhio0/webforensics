@@ -1,0 +1,6 @@
+# Shell scripts run on Linux servers and in containers: CRLF would break them.
+*.sh text eol=lf
+
+# Evidence fixtures must stay byte-identical: line numbers and hashes depend on it.
+tests/fixtures/** -text
+benchmark/scenarios/** -text

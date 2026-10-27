@@ -1,0 +1,9 @@
+192.0.2.10 - - [27/Oct/2026:10:00:01 +0700] "GET / HTTP/1.1" 200 5123 "-" "Mozilla/5.0 (X11; Linux x86_64)"
+198.51.100.7 - - [27/Oct/2026:10:05:12 +0700] "GET /product.php?id=1%27%20OR%201=1--%20- HTTP/1.1" 200 8410 "-" "sqlmap/1.8"
+
+198.51.100.7 - - [27/Oct/2026:10:06:40 +0700] "POST /admin/upload.php HTTP/1.1" 200 312 "http://shop.example/admin/" "Mozilla/5.0"
+198.51.100.7 - - [27/Oct/2026:10:07:02 +0700] "GET /uploads/x.php?cmd=id HTTP/1.1" 200 54 "-" "curl/8.5.0"
+this line is not an access log line
+203.0.113.9 - - [27/Oct/2026:10:08:00 +0700] "\x16\x03\x01\x02\x00\x01\x00\x01\xFC\x03\x03" 400 157 "-" "-"
+192.0.2.10 - - [27/Oct/2026:10:09:00 +0700] "GET /search.php?q=\x22hello\x22 HTTP/1.1" 200 100 "-" "Mozilla/5.0" "10.0.0.5"
+192.0.2.10 - - [31/Foo/2026:10:09:00 +0700] "GET / HTTP/1.1" 200 100 "-" "Mozilla/5.0"
