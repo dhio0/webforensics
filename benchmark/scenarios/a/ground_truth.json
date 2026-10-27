@@ -1,0 +1,67 @@
+{
+  "scenario_id": "a",
+  "description": "Local benign browsing followed by a GET-based SQL injection probe, an unrestricted upload of inert marker text, and a request that serves the marker from its PHP-like path. The upload is the root cause of the created file; the marker is not executable code.",
+  "attacker_ips": ["172.20.0.1"],
+  "steps": [
+    {
+      "id": "browse_home",
+      "category": "benign_request",
+      "mitre": [],
+      "log_file": "access.log",
+      "line_no": 1,
+      "is_root_cause": false
+    },
+    {
+      "id": "browse_product",
+      "category": "benign_request",
+      "mitre": [],
+      "log_file": "access.log",
+      "line_no": 2,
+      "is_root_cause": false
+    },
+    {
+      "id": "view_upload_form",
+      "category": "benign_request",
+      "mitre": [],
+      "log_file": "access.log",
+      "line_no": 3,
+      "is_root_cause": false
+    },
+    {
+      "id": "get_sqli_probe",
+      "category": "exploit_attempt",
+      "mitre": ["T1190"],
+      "log_file": "access.log",
+      "line_no": 4,
+      "is_root_cause": false
+    },
+    {
+      "id": "upload_inert_marker",
+      "category": "unrestricted_upload",
+      "mitre": ["T1190"],
+      "log_file": "access.log",
+      "line_no": 5,
+      "is_root_cause": true
+    },
+    {
+      "id": "request_marker_path",
+      "category": "marker_invocation",
+      "mitre": [],
+      "log_file": "access.log",
+      "line_no": 6,
+      "is_root_cause": false
+    }
+  ],
+  "files": [
+    {
+      "path": "uploads/lab-marker.php",
+      "sha256": "52d31ac74301cc8fd601913c9cc75e1bc0b2f2ffd26fe71b9864200eda78865d",
+      "change": "created"
+    }
+  ],
+  "root_cause_step": "upload_inert_marker",
+  "vulnerable_code": {
+    "file": "lab/app/admin/upload.php",
+    "line": 5
+  }
+}

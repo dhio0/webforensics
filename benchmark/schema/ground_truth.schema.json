@@ -1,0 +1,73 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://webforensics.example/schema/ground-truth-v1.json",
+  "title": "Web Forensics Scenario Ground Truth",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "scenario_id",
+    "description",
+    "attacker_ips",
+    "steps",
+    "files",
+    "root_cause_step"
+  ],
+  "properties": {
+    "scenario_id": {"type": "string", "minLength": 1},
+    "description": {"type": "string", "minLength": 1},
+    "attacker_ips": {
+      "type": "array",
+      "items": {"type": "string", "format": "ipv4"},
+      "uniqueItems": true
+    },
+    "steps": {
+      "type": "array",
+      "minItems": 1,
+      "items": {"$ref": "#/$defs/step"}
+    },
+    "files": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/file"}
+    },
+    "root_cause_step": {"type": "string", "minLength": 1},
+    "vulnerable_code": {"$ref": "#/$defs/vulnerableCode"}
+  },
+  "$defs": {
+    "step": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "category", "mitre", "log_file", "line_no", "is_root_cause"],
+      "properties": {
+        "id": {"type": "string", "minLength": 1},
+        "category": {"type": "string", "minLength": 1},
+        "mitre": {
+          "type": "array",
+          "items": {"type": "string", "pattern": "^T[0-9]{4}(\\.[0-9]{3})?$"},
+          "uniqueItems": true
+        },
+        "log_file": {"type": "string", "minLength": 1},
+        "line_no": {"type": "integer", "minimum": 1},
+        "is_root_cause": {"type": "boolean"}
+      }
+    },
+    "file": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "sha256", "change"],
+      "properties": {
+        "path": {"type": "string", "minLength": 1},
+        "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "change": {"enum": ["created", "modified"]}
+      }
+    },
+    "vulnerableCode": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["file", "line"],
+      "properties": {
+        "file": {"type": "string", "minLength": 1},
+        "line": {"type": "integer", "minimum": 1}
+      }
+    }
+  }
+}

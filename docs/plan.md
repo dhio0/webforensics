@@ -1,12 +1,13 @@
 # Plan: web incident forensics tool
 
-Status: **Approved.** M0 + M1 implemented, awaiting review (not committed yet).
+Status: **Approved.** M0 + M1 committed; M2 nearly done.
 
 | Milestone | State |
 |---|---|
 | M0 scaffold | done: pyproject, Typer CLI, ruff, pytest, GitHub Actions |
-| M1 models + FileAdapter + parsers + collect.sh | done: 52 tests passing on Windows; collect.sh tests run on Linux CI only |
-| M2–M7 | not started |
+| M1 models + FileAdapter + parsers + collect.sh | done: collect.sh verified on Linux CI |
+| M2 | in progress: log rules, file rules, lab-lite stack, scenario A evidence and benchmark schema/validation are done. Remaining: space out replay steps in time (all scenario A requests currently fall in the same second) and add scenario F (SQLi as root cause). |
+| M3–M7 | not started |
 Source of truth: `CLAUDE.md`. Design decisions are logged in `docs/decisions.md` (referenced here as D1, D2, ...).
 
 ---
@@ -222,9 +223,9 @@ Every milestone ends with `ruff check`, `pytest` green, updated docs, and one co
 | **M0** | Scaffold: pyproject (hatchling), Typer CLI skeleton, ruff, pytest, GitHub Actions CI, README stub | `webforensics --help` works; `pytest` and `ruff check` pass in CI on an empty test. |
 | **M1** | Models + FileAdapter + log parsers + `collect.sh` manifest format | Unit tests: nginx and Apache combined fixtures parse with correct line numbers and UTC times; malformed lines are counted, not crashed on; a manifest loads into `FileEvidence` with sha256 and timestamps; a `TimelineEvent` without a citation **fails validation**. |
 | **M2** | Detection rules (log + file) + **lab-lite** (nginx + PHP + MySQL, scenario A generated) | Labeled fixture tests: each rule has ≥2 positive and ≥2 negative cases. Lab-lite `docker compose up` + `attacks/scenario_a.py` produces logs and a manifest under `benchmark/scenarios/a/`. |
-| **M3** | Correlation engine + timeline + gaps + confidence | On scenario A: the timeline contains the GT root-cause request, the creation request, and the webshell use, in order. A property test confirms every event has ≥1 citation. A gap fixture (deleted log hour) produces an `EvidenceGap` and lowers confidence. |
+| **M3** | Correlation engine + timeline + gaps + confidence | On scenario F: the timeline traces back from the uploaded file to the SQLi root-cause request, in order. On scenario A: the unauthenticated upload is the root cause and the earlier SQLi probe is **not** blamed. A property test confirms every event has ≥1 citation. A gap fixture (deleted log hour) produces an `EvidenceGap` and lowers confidence. |
 | **M4** | Indonesian report (MD + HTML) + `analyze` command end to end | Golden-file tests for both formats. **Determinism test:** two runs give byte-identical output. HTML escapes attacker-controlled strings (a test with a `<script>` UA). |
-| **M5** | Full lab + benchmark + `eval` command | ≥4 scenarios: A GET-SQLi→upload→shell, B POST-SQLi variant, C direct unrestricted upload, D benign-noise/no-compromise (tests false accusations), E timestomped shell. Each has a `ground_truth.json` validated against the schema. `webforensics eval benchmark/` prints step recall, precision, root-cause correctness, and runtime, and that table is pasted into the README. |
+| **M5** | Full lab + benchmark + `eval` command | Scenarios: **A** GET-SQLi probe as a distractor + unauthenticated upload as root cause (replaces the old "direct upload" scenario C). **F** SQLi login bypass → authenticated upload (SQLi is the root cause). **B** POST-SQLi variant of F. **D** benign multi-client noise with no compromise (tests false accusations; benign traffic must come from IPs other than the attacker's). **E** timestomped upload. Each has a `ground_truth.json` validated against the schema. `webforensics eval benchmark/` prints step recall, precision, root-cause correctness, and runtime, and that table is pasted into the README. |
 | **M6** | **WazuhAdapter (pull, core):** install the latest stable Wazuh single-node in the lab; read web-log alerts from `wazuh-alerts-*` and syscheck/FIM events → `LogEvent` / `FileEvidence` | `docs/wazuh-notes.md` records the exact installed version and the official doc pages each detail was verified against. Done when the lab scenario analyzed via WazuhAdapter gives the same root cause as via FileAdapter (integration test, marked `@lab`). Unit tests run on recorded indexer JSON fixtures, so no live Wazuh is needed in CI. |
 | M6+ | *Stretch:* Wazuh trigger (integration/active-response invokes the tool on a webroot-FIM or web-attack alert) + write-back (findings → event → custom decoder/rule) | Only if M7 is done and time remains. Done when a FIM alert in the lab triggers an analysis, and a write-back finding appears as a decoded Wazuh alert. |
 | **M7** | PHP SQLi code localization | On the lab app plus ≥10 small PHP fixtures (positive and negative, incl. prepared statements and sanitized ints): reports the vulnerable line plus a prepared-statement fix. The eval table gains "line localization accuracy". |

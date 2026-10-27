@@ -12,3 +12,6 @@ htmlcov/
 # Local evidence and analysis output; never commit real incident data.
 cases/
 out/
+
+# Runtime lab logs; the curated copy lives in benchmark/scenarios/*/evidence/.
+lab/logs/*.log

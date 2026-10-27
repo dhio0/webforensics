@@ -118,6 +118,26 @@ Static file evidence is untrusted, so content is read only through `content_ref`
 Status: accepted (M2).
 High entropy, encoding calls, and changes to `.htaccess` or index files have benign explanations. These signals are useful for triage but are not enough by themselves to claim malicious behavior, so their severity/confidence remain low and entrypoint changes require new/modified baseline status.
 
+## D31 — The lab publishes one loopback port and uses an internal Docker network
+Status: accepted (M2).
+The app is published only on `127.0.0.1`; PHP and MySQL stay on an `internal: true` network, while nginx also joins a host-access bridge because Docker Desktop does not publish ports from an internal-only network. MySQL has no published port.
+
+## D32 — The uploaded Scenario A artifact is inert plain text with a PHP-like path
+Status: accepted (M2).
+The marker has a `.php` filename to exercise the extension heuristic, but its bytes contain no PHP tags or behavior. Serving it through PHP-FPM returns the marker text without executing evidence or shipping a functional shell.
+
+## D33 — Scenario A ground truth cites immutable evidence paths and line numbers
+Status: accepted (M2).
+Each scenario keeps its access log and collector manifest beside its ground truth. CI validates cited log line numbers and file hashes against those artifacts, so later scenarios can reuse the same layout without Docker.
+
 ## D30 — File execution checks are regex heuristics, not taint analysis
 Status: accepted (M2).
 Request input stored in a variable and used by a dangerous call in a later statement is not detected; taint tracking is out of scope until M7. PDO-style `->exec(` calls are excluded to avoid treating database execution as command execution.
+
+## D34 — Scenario A tests "don't blame the distractor"; scenario F tests backtracking
+Status: accepted (M2).
+In scenario A the upload needs no login, so the upload request itself is the root cause and the earlier SQLi probe is a distractor, which mirrors the constant bot SQLi noise on real sites. Scenario F (SQLi login bypass → upload) is needed so the backtracking step of the correlation algorithm is actually tested.
+
+## D35 — Replay steps are spaced by fixed delays
+Status: accepted (M2).
+If every request lands in the same second, any time-window correlation "matches" trivially and ordering bugs stay hidden. Fixed delays keep the replay deterministic while giving the evidence a realistic, testable timeline.
