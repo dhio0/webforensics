@@ -1,7 +1,7 @@
 {
   "scenario_id": "a",
-  "description": "Local benign browsing followed by a GET-based SQL injection probe, an unrestricted upload of inert marker text, and a request that serves the marker from its PHP-like path. The upload is the root cause of the created file; the marker is not executable code.",
-  "attacker_ips": ["172.20.0.1"],
+  "description": "GET-SQLi probe is a distractor; the unauthenticated upload is the root cause.",
+  "attacker_ips": ["172.19.0.1"],
   "steps": [
     {
       "id": "browse_home",

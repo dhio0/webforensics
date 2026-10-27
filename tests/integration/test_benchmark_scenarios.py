@@ -58,6 +58,18 @@ def test_all_scenario_ground_truth_matches_schema_and_evidence():
                 f"missing line {step['line_no']} in {step['log_file']} for {ground_truth_path}"
             )
 
+        timestamps = []
+        for step in steps:
+            log_lines = (evidence_dir / step["log_file"]).read_text(
+                encoding="utf-8", errors="replace"
+            ).splitlines()
+            timestamp = re.search(r"\[([^]]+)\]", log_lines[step["line_no"] - 1])
+            assert timestamp, f"missing combined-log timestamp for {step['id']}"
+            timestamps.append(timestamp.group(1))
+        assert len(timestamps) == len(set(timestamps)), (
+            f"scenario steps share a timestamp in {ground_truth_path}"
+        )
+
         for file_item in ground_truth["files"]:
             assert file_hashes.get(file_item["path"]) == file_item["sha256"], (
                 f"manifest hash mismatch for {file_item['path']} in {ground_truth_path}"

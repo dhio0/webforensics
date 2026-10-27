@@ -1,13 +1,13 @@
 """Replay the fixed localhost-only Scenario A request sequence."""
 
 import argparse
-import subprocess
+import time
 import urllib.error
 import urllib.parse
 import urllib.request
-from pathlib import Path
 
-ROOT = Path(__file__).resolve().parents[2]
+from common import STEP_DELAY_SECONDS, start_fresh_lab
+
 USER_AGENT = "webforensics-lab/1.0 scenario-a"
 MARKER_NAME = "lab-marker.php"
 MARKER_CONTENT = b"LAB-FORENSICS-MARKER-v1\n"
@@ -28,47 +28,55 @@ def _request(url: str, *, data: bytes | None = None, content_type: str | None = 
         raise RuntimeError(f"localhost lab request failed for {url}: {exc}") from exc
 
 
-def _reset_access_log() -> None:
-    subprocess.run(
-        [
-            "docker", "compose", "-f", str(ROOT / "lab" / "docker-compose.yml"),
-            "exec", "-T", "nginx", "sh", "-c",
-            "truncate -s 0 /var/log/nginx/access.log && nginx -s reopen",
-        ],
-        check=True,
-        cwd=ROOT,
-    )
-
-
 def run(port: int) -> None:
     base_url = f"http://127.0.0.1:{port}"
-    _reset_access_log()
+    start_fresh_lab()
 
-    _request(f"{base_url}/")
-    _request(f"{base_url}/product.php?id=1")
-    _request(f"{base_url}/admin/upload.php")
+    def browse_home() -> None:
+        _request(f"{base_url}/")
 
-    sqli = urllib.parse.urlencode({"id": "1 OR 1=1"})
-    _request(f"{base_url}/product.php?{sqli}")
+    def browse_product() -> None:
+        _request(f"{base_url}/product.php?id=1")
 
-    boundary = "----webforensics-lab-scenario-a"
-    body = (
-        f"--{boundary}\r\n"
-        f'Content-Disposition: form-data; name="file"; filename="{MARKER_NAME}"\r\n'
-        "Content-Type: application/octet-stream\r\n\r\n"
-    ).encode() + MARKER_CONTENT + f"\r\n--{boundary}--\r\n".encode()
-    upload_response = _request(
-        f"{base_url}/admin/upload.php",
-        data=body,
-        content_type=f"multipart/form-data; boundary={boundary}",
+    def view_upload_form() -> None:
+        _request(f"{base_url}/admin/upload.php")
+
+    def distractor_sqli() -> None:
+        sqli = urllib.parse.urlencode({"id": "1 OR 1=1"})
+        _request(f"{base_url}/product.php?{sqli}")
+
+    def upload_marker() -> None:
+        boundary = "----webforensics-lab-scenario-a"
+        body = (
+            f"--{boundary}\r\n"
+            f'Content-Disposition: form-data; name="file"; filename="{MARKER_NAME}"\r\n'
+            "Content-Type: application/octet-stream\r\n\r\n"
+        ).encode() + MARKER_CONTENT + f"\r\n--{boundary}--\r\n".encode()
+        response = _request(
+            f"{base_url}/admin/upload.php",
+            data=body,
+            content_type=f"multipart/form-data; boundary={boundary}",
+        )
+        if b"/uploads/lab-marker.php" not in response:
+            raise RuntimeError("upload response did not confirm the marker path")
+
+    def request_marker() -> None:
+        if _request(f"{base_url}/uploads/{MARKER_NAME}") != MARKER_CONTENT:
+            raise RuntimeError("marker request did not return the expected inert text")
+
+    steps = (
+        browse_home,
+        browse_product,
+        view_upload_form,
+        distractor_sqli,
+        upload_marker,
+        request_marker,
     )
-    if b"/uploads/lab-marker.php" not in upload_response:
-        raise RuntimeError("upload response did not confirm the marker path")
-
-    marker_response = _request(f"{base_url}/uploads/{MARKER_NAME}")
-    if marker_response != MARKER_CONTENT:
-        raise RuntimeError("marker request did not return the expected inert text")
-    print("Scenario A replay complete: 6 localhost requests, marker served as plain text.")
+    for index, step in enumerate(steps):
+        step()
+        if index < len(steps) - 1:
+            time.sleep(STEP_DELAY_SECONDS)
+    print("Scenario A replay complete: 6 spaced localhost requests; SQLi was a distractor.")
 
 
 def main() -> None:

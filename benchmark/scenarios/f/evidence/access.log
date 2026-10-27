@@ -1,0 +1,7 @@
+172.19.0.1 - - [27/Oct/2026:14:16:45 +0000] "GET / HTTP/1.1" 200 298 "-" "webforensics-lab/1.0 scenario-f"
+172.19.0.1 - - [27/Oct/2026:14:16:47 +0000] "GET /product.php?id=1 HTTP/1.1" 200 390 "-" "webforensics-lab/1.0 scenario-f"
+172.19.0.1 - - [27/Oct/2026:14:16:49 +0000] "GET /admin/login.php HTTP/1.1" 200 394 "-" "webforensics-lab/1.0 scenario-f"
+172.19.0.1 - - [27/Oct/2026:14:16:51 +0000] "GET /admin/login.php?username=admin&password=wrong-lab-password HTTP/1.1" 401 355 "-" "webforensics-lab/1.0 scenario-f"
+172.19.0.1 - - [27/Oct/2026:14:16:53 +0000] "GET /admin/login.php?username=admin%27+OR+%271%27%3D%271+--+&password= HTTP/1.1" 200 359 "-" "webforensics-lab/1.0 scenario-f"
+172.19.0.1 - - [27/Oct/2026:14:16:55 +0000] "POST /admin/auth_upload.php HTTP/1.1" 200 51 "-" "webforensics-lab/1.0 scenario-f"
+172.19.0.1 - - [27/Oct/2026:14:16:57 +0000] "GET /uploads/scenario-f-marker.php HTTP/1.1" 200 37 "-" "webforensics-lab/1.0 scenario-f"

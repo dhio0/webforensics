@@ -1,0 +1,75 @@
+{
+  "scenario_id": "f",
+  "description": "Benign browsing and a failed normal login precede a GET-based SQLi login bypass, an authenticated upload of inert marker text, and a request that serves the marker. The SQLi login request is the root cause.",
+  "attacker_ips": ["172.19.0.1"],
+  "steps": [
+    {
+      "id": "browse_home",
+      "category": "benign_request",
+      "mitre": [],
+      "log_file": "access.log",
+      "line_no": 1,
+      "is_root_cause": false
+    },
+    {
+      "id": "browse_product",
+      "category": "benign_request",
+      "mitre": [],
+      "log_file": "access.log",
+      "line_no": 2,
+      "is_root_cause": false
+    },
+    {
+      "id": "view_login_form",
+      "category": "benign_request",
+      "mitre": [],
+      "log_file": "access.log",
+      "line_no": 3,
+      "is_root_cause": false
+    },
+    {
+      "id": "failed_normal_login",
+      "category": "authentication_failure",
+      "mitre": [],
+      "log_file": "access.log",
+      "line_no": 4,
+      "is_root_cause": false
+    },
+    {
+      "id": "sqli_login_bypass",
+      "category": "successful_login_bypass",
+      "mitre": ["T1190"],
+      "log_file": "access.log",
+      "line_no": 5,
+      "is_root_cause": true
+    },
+    {
+      "id": "authenticated_marker_upload",
+      "category": "authenticated_upload",
+      "mitre": [],
+      "log_file": "access.log",
+      "line_no": 6,
+      "is_root_cause": false
+    },
+    {
+      "id": "request_marker_path",
+      "category": "marker_invocation",
+      "mitre": [],
+      "log_file": "access.log",
+      "line_no": 7,
+      "is_root_cause": false
+    }
+  ],
+  "files": [
+    {
+      "path": "uploads/scenario-f-marker.php",
+      "sha256": "c2f45202f02ab18a6ad3965db67be368436a3a245819798ad1601464405f838c",
+      "change": "created"
+    }
+  ],
+  "root_cause_step": "sqli_login_bypass",
+  "vulnerable_code": {
+    "file": "lab/app/admin/login.php",
+    "line": 8
+  }
+}

@@ -141,3 +141,11 @@ In scenario A the upload needs no login, so the upload request itself is the roo
 ## D35 — Replay steps are spaced by fixed delays
 Status: accepted (M2).
 If every request lands in the same second, any time-window correlation "matches" trivially and ordering bugs stay hidden. Fixed delays keep the replay deterministic while giving the evidence a realistic, testable timeline.
+
+## D36 — Every scenario replay starts with empty lab volumes
+Status: accepted (M2).
+The replay shuts down this Compose project with volume removal before startup, resetting both the MySQL seed state and collected webroot. This prevents a marker or session state from one scenario appearing as evidence in another.
+
+## D37 — Scenario F uses a GET login so the SQLi request is visible in access evidence
+Status: accepted (M2).
+The lab has no HTTPS or production credentials; GET keeps the intentionally vulnerable authentication bypass visible in the combined log so its ground-truth root-cause request has a precise cited line.

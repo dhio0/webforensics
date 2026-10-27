@@ -1,12 +1,12 @@
 # Plan: web incident forensics tool
 
-Status: **Approved.** M0 + M1 committed; M2 nearly done.
+Status: **Approved.** M0 + M1 committed; M2 complete.
 
 | Milestone | State |
 |---|---|
 | M0 scaffold | done: pyproject, Typer CLI, ruff, pytest, GitHub Actions |
 | M1 models + FileAdapter + parsers + collect.sh | done: collect.sh verified on Linux CI |
-| M2 | in progress: log rules, file rules, lab-lite stack, scenario A evidence and benchmark schema/validation are done. Remaining: space out replay steps in time (all scenario A requests currently fall in the same second) and add scenario F (SQLi as root cause). |
+| M2 | done: log rules, file rules, isolated lab-lite stack, spaced Scenario A and F replays, collected evidence, benchmark schema/validation |
 | M3–M7 | not started |
 Source of truth: `CLAUDE.md`. Design decisions are logged in `docs/decisions.md` (referenced here as D1, D2, ...).
 
