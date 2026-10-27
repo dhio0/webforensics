@@ -266,7 +266,7 @@ Small items deliberately deferred. Each lists the milestone where it belongs.
 - Ground-truth step categories are free text (`unrestricted_upload`, `successful_login_bypass`, ...). Map them to `FindingCategory` before building `webforensics eval`.
 - All lab traffic comes from one IP (the Docker host gateway), so attacker vs. visitor attribution is untested. Scenario D needs benign traffic from other IPs (e.g., a second client container).
 - Scenario F's login uses GET so the SQLi shows in logs. Scenario B is the POST variant.
-- Never commit regenerated evidence without regenerating `ground_truth.json`. Every replay changes timestamps and hashes, and the integration test will fail.
+- Don't commit regenerated evidence casually. A replay keeps the same structure (same line numbers, same marker hash), so the current ground-truth test still passes. But timestamps and manifest rows change, which will break M3/M5 tests and report golden files that pin exact values. Regenerate on purpose, then update those expectations in the same commit.
 
 **Rules (any time)**
 - Rules are Python, not YAML as D8 originally said. Revisit only if signatures grow large.
