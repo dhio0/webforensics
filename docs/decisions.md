@@ -109,3 +109,15 @@ On Windows, git autocrlf would add CRLF that breaks `collect.sh` on Linux and ch
 ## D22 — Wazuh pull is core; trigger and write-back are stretch goals
 Status: accepted.
 Reading alerts and FIM events already proves the integration and feeds the same correlation engine. Trigger and write-back add operational polish but cost time the 5–6 week schedule doesn't safely have.
+
+## D28 — File rules read only a bounded content prefix and emit fixed-order findings
+Status: accepted (M2).
+Static file evidence is untrusted, so content is read only through `content_ref`, as bytes decoded with replacement, and capped at 2 MiB; it is never imported or executed. Rules run in a fixed order for reproducible output, and missing/unreadable content simply disables content-based rules.
+
+## D29 — Obfuscation and changed entrypoint findings stay low confidence
+Status: accepted (M2).
+High entropy, encoding calls, and changes to `.htaccess` or index files have benign explanations. These signals are useful for triage but are not enough by themselves to claim malicious behavior, so their severity/confidence remain low and entrypoint changes require new/modified baseline status.
+
+## D30 — File execution checks are regex heuristics, not taint analysis
+Status: accepted (M2).
+Request input stored in a variable and used by a dangerous call in a later statement is not detected; taint tracking is out of scope until M7. PDO-style `->exec(` calls are excluded to avoid treating database execution as command execution.

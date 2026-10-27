@@ -11,7 +11,7 @@ from dataclasses import dataclass
 from enum import StrEnum
 from urllib.parse import unquote_plus
 
-from webforensics.detect import RULESET_VERSION
+from webforensics.detect import RULESET_VERSION, UPLOAD_WRITABLE_DIRS
 from webforensics.models import (
     Confidence,
     Finding,
@@ -49,7 +49,7 @@ def _rx(pattern: str) -> re.Pattern[str]:
     return re.compile(pattern, re.IGNORECASE | re.DOTALL)
 
 
-_UPLOAD_DIRS = r"(?:uploads?|files|images|media|tmp|cache|attachments)"
+_UPLOAD_DIRS = rf"(?:{'|'.join(re.escape(name) for name in UPLOAD_WRITABLE_DIRS)})"
 _EXEC_EXT = r"\.(?:php[0-9]?|phtml|phar|jsp|jspx|aspx?|cgi|pl)"
 
 LOG_RULES: tuple[LogRule, ...] = (
