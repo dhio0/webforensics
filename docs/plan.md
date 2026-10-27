@@ -252,5 +252,37 @@ Rough schedule: W1 = M0–M1, W2 = M2 (incl. lab-lite), W3 = M3–M4, W4 = M5, W
 
 ---
 
+## 7. Open follow-ups (carried over from M0–M2 reviews)
+
+Small items deliberately deferred. Each lists the milestone where it belongs.
+
+**For M3 (correlation)**
+- Baseline comparison (new/modified/unchanged) is not implemented yet. Rule `FILE-PERSISTENCE-ENTRYPOINT-CHANGE` only fires once it is.
+- Webroot content extracted from `webroot.tar` is not re-hashed against the manifest yet. Do it before static analysis trusts `content_ref`.
+- Error-log parser is deferred until correlation needs it.
+
+**For M5 (benchmark + eval)**
+- `tests/integration/test_benchmark_scenarios.py` checks all scenarios in one loop. Parametrize per scenario so each shows up as its own test.
+- Ground-truth step categories are free text (`unrestricted_upload`, `successful_login_bypass`, ...). Map them to `FindingCategory` before building `webforensics eval`.
+- All lab traffic comes from one IP (the Docker host gateway), so attacker vs. visitor attribution is untested. Scenario D needs benign traffic from other IPs (e.g., a second client container).
+- Scenario F's login uses GET so the SQLi shows in logs. Scenario B is the POST variant.
+- Never commit regenerated evidence without regenerating `ground_truth.json`. Every replay changes timestamps and hashes, and the integration test will fail.
+
+**Rules (any time)**
+- Rules are Python, not YAML as D8 originally said. Revisit only if signatures grow large.
+- Known rule limitations: see D29 and D30 (`base64_decode` noise, no taint tracking through variables).
+
+**Before making the repo public**
+- Choose a license (MIT or Apache-2.0).
+- Verify the comparison with related tools (risk 11).
+- Review every sample and lab artifact for anything that looks functional (D16).
+- Note in `lab/README.md` that nginx's host-access bridge gives the nginx container outbound network access.
+
+**Working setup**
+- Lab, vulnerable-app and attack-replay work is done by Codex on a feature branch. Claude writes the prompt, then verifies (tests, ruff, `inspect`, ground-truth consistency) and merges.
+- Codex's sandbox cannot use `.venv` (built from Windows Store Python 3.11). Always re-run `.venv\Scripts\python -m pytest` locally, and install any dependency Codex adds to `pyproject.toml`.
+
+---
+
 ## Next step
-Waiting for final approval of this plan (v2). After that: M0 scaffold + M1 with tests.
+**M3: correlation engine.** Baseline comparison → suspicious-file selection (file rules + baseline + mtime/ctime anomaly) → creation/invocation requests → backtrack per actor to the root cause → gaps + confidence → timeline. Test against `benchmark/scenarios/a` (the SQLi probe must not be blamed) and `benchmark/scenarios/f` (backtrack to the SQLi login).
