@@ -141,3 +141,50 @@ def test_two_files_from_one_bypass_share_one_root():
     assert sum(e.is_root_cause for e in result.timeline) == 1
     assert line_of(result, root_event(result)) == 1
     assert result.root_cause.alternative_event_ids == ()
+
+
+ADMIN = "198.51.100.50"
+
+
+def _upload_then_comment(*extra):
+    logs = numbered(
+        (10, "/admin/auth_upload.php", {"method": "POST", "ip": ADMIN}),
+        (12, "/comment.php", {"method": "POST", "ip": VISITOR}),
+    )
+    cache = file_ev("cache/page-1.php", btime=12, ctime=12, mtime=12)
+    return correlate(logs, files(cache, *extra))
+
+
+def test_upload_explained_by_its_own_file_does_not_claim_a_nearby_cache_file():
+    # D69: both requests are within clock skew of the cache file's birth, but the photo
+    # was born at the upload's own second, so the upload wrote the photo.
+    photo = file_ev("uploads/photo.png", btime=10, ctime=10, mtime=10)
+    result = _upload_then_comment(photo)
+    assert result.root_cause is None and result.iocs.ips == ()
+    assert result.unexplained_changes == ("cache/page-1.php",)
+
+
+def test_without_the_uploads_own_file_the_upload_still_ranks_first():
+    # Ranking only: if the photo is missing from the evidence, nothing explains the
+    # upload, so it keeps winning (and is reported, with the comment as context).
+    result = _upload_then_comment()
+    assert line_of(result, root_event(result)) == 1
+
+
+def test_one_request_writing_two_files_in_the_same_second_is_not_demoted():
+    logs = numbered((10, "/admin/upload.php", {"method": "POST"}), (11, "/uploads/x.php"),
+                    (11, "/comment.php", {"method": "POST", "ip": VISITOR}))
+    shell = file_ev(SHELL, btime=10, ctime=10, mtime=10)
+    thumb = file_ev("uploads/thumb.png", btime=10, ctime=10, mtime=10)
+    result = correlate(logs, files(shell, thumb))
+    assert line_of(result, root_event(result)) == 1
+
+
+def test_an_incident_actors_extra_bypass_is_not_reported_as_unrelated():
+    # D71: the "unrelated bypass" finding is for clients outside the incident only.
+    from webforensics.correlate.engine import _Index, _unlinked_bypasses
+
+    logs = numbered((0, "/admin/login.php?u=a%27+OR+%271%27%3D%271+--+", {"size": 347}))
+    index = _Index(logs, CorrelationConfig())
+    assert len(_unlinked_bypasses(index, set(), set())) == 1
+    assert _unlinked_bypasses(index, set(), {ATTACKER}) == []

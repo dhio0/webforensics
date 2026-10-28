@@ -9,7 +9,7 @@ from typing import Annotated
 
 import typer
 
-from webforensics import __version__
+from webforensics import __version__, evaluate
 from webforensics.adapters.base import FileEvidenceSource
 from webforensics.adapters.file_adapter import (
     DirectoryFileSource,
@@ -270,3 +270,39 @@ def analyze(
             path.write_text(rendered[ext], encoding="utf-8", newline="\n")
             written.append(path)
     typer.echo("\n".join(report_lines(report, written)))
+
+
+@app.command("eval")
+def eval_command(
+    benchmark: Annotated[
+        Path, typer.Argument(help="Benchmark folder with scenarios/<id>/ground_truth.json.")
+    ] = Path("benchmark"),
+    scenario: Annotated[
+        list[str] | None, typer.Option(help="Only these scenario ids (repeatable).")
+    ] = None,
+    json_out: Annotated[
+        Path | None, typer.Option("--json", help="Also write the scores as JSON here.")
+    ] = None,
+    markdown_out: Annotated[
+        Path | None, typer.Option("--markdown", help="Also write the table as Markdown here.")
+    ] = None,
+    no_runtime: Annotated[
+        bool, typer.Option(help="Leave out runtime, so the table is deterministic.")
+    ] = False,
+) -> None:
+    """Score the analyzer against the benchmark ground truth."""
+    try:
+        folders = evaluate.scenario_folders(benchmark, tuple(scenario or ()))
+        scores = [evaluate.evaluate_scenario(folder) for folder in folders]
+    except (FileNotFoundError, ManifestError, ValueError, KeyError) as exc:
+        typer.echo(_ascii(f"error: {exc}"), err=True)
+        raise typer.Exit(code=2) from exc
+    table = evaluate.markdown_table(scores, runtime=not no_runtime)
+    typer.echo(_ascii(table))
+    for line in evaluate.details(scores):
+        typer.echo(_ascii(line))
+    if markdown_out is not None:
+        markdown_out.write_text(table, encoding="utf-8", newline="\n")
+    if json_out is not None:
+        json_out.write_text(json.dumps(evaluate.to_json(scores), indent=2) + "\n",
+                            encoding="utf-8", newline="\n")

@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; img-src 'none'; form-action 'none'">
+<meta name="referrer" content="no-referrer">
+<title>Laporan Insiden Website</title>
+<style>:root{--bg:#fff;--fg:#1d2330;--muted:#5b6475;--line:#d9dde5;--head:#f3f5f8;
+--root:#fff4d6;--high:#1f7a3d;--medium:#9a6700;--low:#b42318;--code:#f6f8fa}
+@media (prefers-color-scheme:dark){:root{--bg:#14171c;--fg:#e4e7ec;--muted:#98a2b3;
+--line:#2e3440;--head:#1d2129;--root:#3a3115;--high:#6cc58a;--medium:#e3b341;--low:#f97066;
+--code:#1d2129}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);
+font:15px/1.55 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+main{max-width:1180px;margin:0 auto;padding:24px 16px 64px}
+h1{font-size:1.7rem;margin:0 0 4px}h2{font-size:1.25rem;margin:36px 0 12px;
+padding-bottom:6px;border-bottom:2px solid var(--line)}h3{font-size:1rem;margin:20px 0 8px}
+.sub{color:var(--muted);margin:0 0 20px}
+nav{border:1px solid var(--line);border-radius:8px;padding:10px 16px;background:var(--head)}
+nav ol{margin:0;padding-left:18px;columns:2}nav a{color:inherit}
+.tw{overflow-x:auto}table{border-collapse:collapse;width:100%;font-size:.88rem}
+th,td{border:1px solid var(--line);padding:6px 8px;text-align:left;vertical-align:top;
+overflow-wrap:anywhere}th{background:var(--head)}tr.root td{background:var(--root)}
+td.root{font-weight:600}
+.c-high,.c-medium,.c-low{font-weight:600;white-space:nowrap}
+.c-high{color:var(--high)}.c-medium{color:var(--medium)}.c-low{color:var(--low)}
+dl{display:grid;grid-template-columns:max-content 1fr;gap:4px 16px;margin:0}
+dt{font-weight:600;color:var(--muted)}dd{margin:0;overflow-wrap:anywhere}
+pre{background:var(--code);border:1px solid var(--line);border-radius:6px;padding:10px;
+overflow-x:auto;font-size:.85rem}
+@media (max-width:640px){nav ol{columns:1}dl{grid-template-columns:1fr}}
+@media print{nav{display:none}body{font-size:12px}h2{break-after:avoid}}</style>
+</head>
+<body><main>
+<h1>Laporan Insiden Website</h1>
+<p class="sub">WF-2BBC40C4D0 · 2026-10-28 09:00:00 WIB</p>
+<nav><ol><li><a href="#ringkasan">1. Ringkasan</a></li><li><a href="#kasus">2. Informasi Kasus</a></li><li><a href="#kronologi">3. Kronologi Serangan</a></li><li><a href="#akar-masalah">4. Akar Masalah</a></li><li><a href="#file-terdampak">5. File Terdampak</a></li><li><a href="#tinjau">6. Perubahan yang Perlu Ditinjau</a></li><li><a href="#ioc">7. Indikator Kompromi (IOC)</a></li><li><a href="#celah-bukti">8. Celah Bukti</a></li><li><a href="#latar">9. Aktivitas Serangan Lain (Tidak Terkait Insiden)</a></li><li><a href="#tindakan">10. Tindakan yang Disarankan</a></li><li><a href="#keterbatasan">11. Keterbatasan</a></li><li><a href="#bukti">Lampiran A. Rujukan Bukti</a></li><li><a href="#reproduksi">Lampiran B. Reproduksibilitas</a></li></ol></nav>
+<section id="ringkasan">
+<h2>1. Ringkasan</h2>
+<ul><li>Ditemukan 1 file mencurigakan yang terkait dengan 1 alamat IP. Aktivitas pertama aktor pada 2026-10-28 10:50:26 WIB, terakhir pada 2026-10-28 10:50:28 WIB.</li><li>Titik masuk yang paling mungkin: unrestricted file upload (upload tanpa validasi) lewat POST /admin/upload.php pada 2026-10-28 10:50:26 WIB (keyakinan sedang).</li></ul>
+<h3>Alur serangan</h3>
+<ul><li>#1 2026-10-28 10:50:26 WIB: Upload yang menulis uploads/scenario-e-marker.php tanpa login sebelumnya: POST /admin/upload.php → 200.</li><li>#2 2026-10-28 10:50:26 WIB: File uploads/scenario-e-marker.php dibuat (SHA-256 3a33ab856f7e…).</li><li>#3 2026-10-28 10:50:28 WIB: File uploads/scenario-e-marker.php diakses: GET /uploads/scenario-e-marker.php → 200.</li><li>#4 2026-10-28 10:50:30 WIB: Timestamp uploads/scenario-e-marker.php kemungkinan dipalsukan (timestomping).</li></ul>
+</section>
+<section id="kasus">
+<h2>2. Informasi Kasus</h2>
+<dl><dt>ID kasus</dt><dd>WF-2BBC40C4D0</dd><dt>Analis</dt><dd>-</dd><dt>Host target</dt><dd>32b11f0f40dc</dd><dt>Laporan dibuat</dt><dd>2026-10-28 09:00:00 WIB</dd><dt>Zona waktu laporan</dt><dd>WIB (UTC+07:00)</dd></dl>
+<h3>Cakupan bukti</h3>
+<dl><dt>Periode access log</dt><dd>2026-10-28 10:50:20 WIB s.d. 2026-10-28 10:50:34 WIB</dd><dt>Access log</dt><dd>7 baris terbaca</dd><dt>Error log</dt><dd>2 entri</dd><dt>Webroot</dt><dd>11 file</dd><dt>Bukti dikumpulkan</dt><dd>2026-10-28 10:50:35 WIB</dd><dt>Baseline</dt><dd>10 file</dd></dl>
+</section>
+<section id="kronologi">
+<h2>3. Kronologi Serangan</h2>
+<div class="tw"><table><thead><tr><th>#</th><th>Waktu</th><th>Dasar waktu</th><th>Fase (ATT&amp;CK)</th><th>Aktor</th><th>Kejadian</th><th>Keyakinan</th><th>Bukti</th></tr></thead><tbody><tr class="root"><td>#1</td><td>2026-10-28 10:50:26 WIB</td><td>log</td><td>Initial Access (akses awal) · T1190</td><td>192.0.2.31</td><td class="root">AKAR MASALAH: Upload yang menulis uploads/scenario-e-marker.php tanpa login sebelumnya: POST /admin/upload.php → 200.</td><td class="c-medium">tinggi (sebagai titik masuk: sedang)</td><td>access.log:4, uploads/scenario-e-marker.php @3a33ab856f7e, error.log:2</td></tr><tr><td>#2</td><td>2026-10-28 10:50:26 WIB</td><td>btime</td><td>Persistence (bertahan) · T1505.003</td><td>-</td><td>File uploads/scenario-e-marker.php dibuat (SHA-256 3a33ab856f7e…).</td><td class="c-high">tinggi</td><td>uploads/scenario-e-marker.php @3a33ab856f7e</td></tr><tr><td>#3</td><td>2026-10-28 10:50:28 WIB</td><td>log</td><td>Persistence (bertahan) · T1505.003</td><td>192.0.2.31</td><td>File uploads/scenario-e-marker.php diakses: GET /uploads/scenario-e-marker.php → 200.</td><td class="c-high">tinggi</td><td>access.log:5</td></tr><tr><td>#4</td><td>2026-10-28 10:50:30 WIB</td><td>ctime</td><td>Defense Evasion (menghindari deteksi) · T1070.006</td><td>-</td><td>Timestamp uploads/scenario-e-marker.php kemungkinan dipalsukan (timestomping).</td><td class="c-medium">sedang</td><td>uploads/scenario-e-marker.php @3a33ab856f7e</td></tr></tbody></table></div>
+<h3>Catatan keyakinan</h3>
+<ul><li>#1: Hanya satu request penulis yang cocok dengan waktu file dibuat. Aktor yang sama kemudian mengakses file ini. Isi POST tidak tercatat di access log, jadi nama file yang diupload tidak terbukti dari log. Didukung error log baris 2 (diasumsikan UTC+0000).</li><li>#2: Waktu dari btime (waktu file lahir), yang tidak bisa diubah dengan touch.</li></ul>
+</section>
+<section id="akar-masalah">
+<h2>4. Akar Masalah</h2>
+<dl><dt>Kejadian</dt><dd>#1 Upload yang menulis uploads/scenario-e-marker.php tanpa login sebelumnya: POST /admin/upload.php → 200.</dd><dt>Jenis kelemahan</dt><dd>unrestricted file upload (upload tanpa validasi)</dd><dt>Keyakinan</dt><dd>sedang</dd><dt>Bukti</dt><dd>access.log:4, uploads/scenario-e-marker.php @3a33ab856f7e, error.log:2</dd></dl>
+<h3>Baris log asli</h3>
+<pre>172.30.0.3 - - [28/Oct/2026:03:50:26 +0000] &quot;POST /admin/upload.php HTTP/1.0&quot; 200 40 &quot;-&quot; &quot;webforensics-lab/1.0 scenario-e&quot; &quot;192.0.2.31&quot;</pre>
+<h3>Alasan</h3>
+<ul><li>Hanya satu request penulis yang cocok dengan waktu file dibuat.</li><li>Aktor yang sama kemudian mengakses file ini.</li><li>Isi POST tidak tercatat di access log, jadi nama file yang diupload tidak terbukti dari log.</li><li>Didukung error log baris 2 (diasumsikan UTC+0000).</li><li>Tidak ada login yang terlihat sebelum request penulis, jadi request itu sendiri dianggap titik masuk.</li><li>Tidak terlihat login bukan berarti tidak ada login: sesi bisa dibuat sebelum periode log.</li></ul>
+</section>
+<section id="file-terdampak">
+<h2>5. File Terdampak</h2>
+<h3>uploads/scenario-e-marker.php</h3>
+<dl><dt>SHA-256</dt><dd>3a33ab856f7e7f89d67a73cb05ae9b4b96d0253b5b225e3d0b911636e7170a25</dd><dt>Ukuran</dt><dd>26 byte</dd><dt>Status baseline</dt><dd>baru</dd><dt>Timestamp</dt><dd>btime 2026-10-28 10:50:26 WIB; ctime 2026-10-28 10:50:30 WIB; mtime 2024-01-15 10:00:00 WIB</dd><dt>Sumber timestamp</dt><dd>manifest collect.sh</dd><dt>URL</dt><dd>/uploads/scenario-e-marker.php</dd></dl>
+<p>Temuan</p>
+<ul><li>File skrip di folder yang bisa ditulis: uploads/scenario-e-marker.php (FILE-WEBSHELL-WRITABLE-EXEC, keyakinan sedang)</li><li>mtime (2024-01-15 10:00:00 WIB) lebih awal dari btime (2026-10-28 10:50:26 WIB). (FILE-ANTIFORENSICS-TIMESTOMP, keyakinan sedang)</li></ul>
+</section>
+<section id="tinjau">
+<h2>6. Perubahan yang Perlu Ditinjau</h2>
+<p>Tidak ada.</p>
+</section>
+<section id="ioc">
+<h2>7. Indikator Kompromi (IOC)</h2>
+<h3>Alamat IP</h3>
+<pre>192.0.2.31</pre>
+<h3>User agent</h3>
+<pre>webforensics-lab/1.0 scenario-e</pre>
+<h3>Hash SHA-256</h3>
+<pre>3a33ab856f7e7f89d67a73cb05ae9b4b96d0253b5b225e3d0b911636e7170a25</pre>
+<h3>Path file</h3>
+<pre>uploads/scenario-e-marker.php</pre>
+<h3>URL</h3>
+<pre>/uploads/scenario-e-marker.php</pre>
+</section>
+<section id="celah-bukti">
+<h2>8. Celah Bukti</h2>
+<p>Tidak ada celah bukti yang terdeteksi.</p>
+</section>
+<section id="latar">
+<h2>9. Aktivitas Serangan Lain (Tidak Terkait Insiden)</h2>
+<p>Tidak ada.</p>
+</section>
+<section id="tindakan">
+<h2>10. Tindakan yang Disarankan</h2>
+<h3>Penahanan (containment)</h3>
+<ul><li>Amankan bukti dulu: salin log dan webroot beserta hash-nya sebelum mengubah apa pun di server.</li><li>Batasi akses ke situs (mode maintenance atau firewall) sampai file berbahaya dihapus.</li><li>Blokir sementara IP berikut: 192.0.2.31.</li></ul>
+<h3>Pembersihan (eradication)</h3>
+<ul><li>Karantina lalu hapus file berikut setelah disalin sebagai bukti: uploads/scenario-e-marker.php.</li><li>Perbaiki endpoint /admin/upload.php: batasi ekstensi dan tipe file, simpan upload di luar webroot, dan matikan eksekusi skrip di folder upload.</li></ul>
+<h3>Pemulihan (recovery)</h3>
+<ul><li>Ganti password admin aplikasi, database, dan semua kredensial yang tersimpan di file konfigurasi webroot.</li><li>Pulihkan webroot dari sumber yang terpercaya (git atau backup sebelum insiden), bukan dengan menghapus file satu per satu saja.</li><li>Setelah pemulihan, pantau akses ke /uploads/scenario-e-marker.php dan aktivitas dari IP di daftar IOC.</li></ul>
+<h3>Pembelajaran (lessons learned)</h3>
+<ul><li>Aktifkan pemantauan integritas file (FIM) pada webroot.</li><li>Catat nama file upload di log aplikasi, karena access log tidak mencatat isi POST.</li></ul>
+</section>
+<section id="keterbatasan">
+<h2>11. Keterbatasan</h2>
+<ul><li>Laporan ini dibuat otomatis dengan aturan deterministik. Kesimpulannya perlu diverifikasi analis.</li><li>Isi request POST tidak tercatat di access log. Payload SQL injection lewat POST dan nama file upload tidak terlihat.</li><li>Penyerang dengan akses root bisa memalsukan timestamp file. Alat ini hanya mendeteksi ketidakkonsistenan, tidak bisa membuktikan keaslian.</li><li>Penyerang dengan akses root bisa menghapus baris log. Yang bisa dideteksi hanya celah waktu yang mencolok.</li><li>IP yang dipakai bersama (NAT, proxy, CDN tanpa X-Forwarded-For) bisa menggabungkan beberapa orang menjadi satu aktor.</li><li>Versi ini belum menganalisis kode sumber untuk menunjuk baris yang rentan.</li></ul>
+</section>
+<section id="bukti">
+<h2>Lampiran A. Rujukan Bukti</h2>
+<div class="tw"><table><thead><tr><th>Rujukan</th><th>Kutipan</th></tr></thead><tbody><tr><td>access.log:4</td><td>172.30.0.3 - - [28/Oct/2026:03:50:26 +0000] &quot;POST /admin/upload.php HTTP/1.0&quot; 200 40 &quot;-&quot; &quot;webforensics-lab/1.0 scenario-e&quot; &quot;192.0.2.31&quot;</td></tr><tr><td>uploads/scenario-e-marker.php @3a33ab856f7e</td><td>SHA-256 3a33ab856f7e7f89d67a73cb05ae9b4b96d0253b5b225e3d0b911636e7170a25</td></tr><tr><td>error.log:2</td><td>2026/10/28 03:50:26 [error] 24#24: *7 FastCGI sent in stderr: &quot;PHP message: lab upload stored&quot; while reading response header from upstream, client: 172.30.0.3, server: _, request: &quot;POST /admin/upload.php HTTP/1.0&quot;, upstream: &quot;fastcgi://172.19.0.3:9000&quot;, host: &quot;127.0.0.1&quot;</td></tr><tr><td>access.log:5</td><td>172.30.0.3 - - [28/Oct/2026:03:50:28 +0000] &quot;GET /uploads/scenario-e-marker.php HTTP/1.0&quot; 200 26 &quot;-&quot; &quot;webforensics-lab/1.0 scenario-e&quot; &quot;192.0.2.31&quot;</td></tr></tbody></table></div>
+</section>
+<section id="reproduksi">
+<h2>Lampiran B. Reproduksibilitas</h2>
+<dl><dt>Versi alat</dt><dd>0.1.0</dd><dt>Versi ruleset</dt><dd>0.1.0</dd><dt>Hash konfigurasi</dt><dd>a327ad9cd4b7b387c7dbfe4a49da4ceac364dddc5291bf29aeadbcf8722e1dda</dd></dl>
+<h3>File input</h3>
+<div class="tw"><table><thead><tr><th>File</th><th>SHA-256</th><th>Ukuran</th></tr></thead><tbody><tr><td>access.log</td><td>404a4d45f39241800925a5deb03cebe97d7c6f1bbd386d5b0f92aa2a34fd4e14</td><td>944 byte</td></tr><tr><td>baseline.tsv</td><td>bd64ad6fe3cb67540f28b048066dd31204602e070801080b0d41510b779c48c6</td><td>1790 byte</td></tr><tr><td>error.log</td><td>c6c3e30f63145d67b567a9043bc4654763cb28c1d8c74a8f213c53d2fec0c7ff</td><td>331 byte</td></tr><tr><td>manifest.tsv</td><td>47a66c649ffd55561be2b46a339e5a6e6d733e872d459d1adcc379a9d0d13c9f</td><td>1976 byte</td></tr></tbody></table></div>
+<p>Input, versi, dan konfigurasi yang sama menghasilkan laporan yang sama persis.</p>
+</section>
+</main></body></html>

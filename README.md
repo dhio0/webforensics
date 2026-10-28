@@ -2,7 +2,7 @@
 
 A defensive tool that reconstructs **how a website was compromised**. It correlates evidence from the webroot (suspicious or modified files, their timestamps and hashes) with web server access logs. Like a human analyst, it starts from the file and traces back to the request that created it and the exploit that made that possible. The final output is an incident report in Indonesian.
 
-> **Status: early development (milestone 4 of 7).** Evidence loading (access + error logs, webroot manifest), detection rules, the file-first correlation engine and the Indonesian report (`webforensics analyze`, Markdown + HTML + JSON) work, tested on two benchmark scenarios. The `eval` command, the full lab benchmark, the Wazuh adapter and vulnerable-line localization are not implemented yet. See [docs/plan.md](docs/plan.md).
+> **Status: early development (milestone 5 of 7).** Evidence loading (access + error logs, webroot manifest), detection rules, the file-first correlation engine, the Indonesian report (`webforensics analyze`, Markdown + HTML + JSON) and the accuracy benchmark (`webforensics eval`, five lab scenarios) work. The Wazuh adapter and vulnerable-line localization are not implemented yet. See [docs/plan.md](docs/plan.md).
 
 ## Design principles
 - **Deterministic and offline core.** Rules and heuristics only, with no LLM and no network calls in the analysis path. The same inputs always give the same output.
@@ -32,6 +32,21 @@ Useful options: `--baseline` (manifest of a known-good webroot), `--error-log` w
 
 The evidence formats are described in [docs/evidence-format.md](docs/evidence-format.md).
 
+## Accuracy on the benchmark
+`webforensics eval benchmark/` runs the analyzer on every lab scenario and compares it with the scenario's ground truth ([docs/evaluation.md](docs/evaluation.md)):
+
+| Scenario | Split | Step recall | Root cause | False IPs | False files | IP precision | File precision | Expected rules | Code line |
+|---|---|---|---|---|---|---|---|---|---|
+| A: unauthenticated upload | dev | 3/3 | correct | 0 | 0 | 1.00 | 1.00 | - | n/a (M7) |
+| B: POST SQLi login bypass, upload | dev | 5/5 | correct | 0 | 0 | 1.00 | 1.00 | - | n/a (M7) |
+| D: busy site, no compromise | dev | - | correct (none) | 0 | 0 | - | - | 1/1 | n/a (M7) |
+| E: upload + forged mtime | held-out | 3/3 | correct | 0 | 0 | 1.00 | 1.00 | 1/1 | n/a (M7) |
+| F: GET SQLi login bypass, upload | dev | 4/4 | correct | 0 | 0 | 1.00 | 1.00 | - | n/a (M7) |
+
+Step recall in B and E includes the PHP error-log line written by the upload, so error-log correlation is measured too. In B the root-cause line is right, but the report does not claim SQL injection: the payload is in the POST body, which access logs don't record. It says the login method is not visible (low confidence) and names SQLi over POST as one possibility.
+
+Read these numbers with care. The benchmark is small, synthetic, and made by the same person who wrote the rules. Scenario D failed on its first run: an admin's photo upload was blamed for a CMS cache file. That was fixed (D69), which counts as tuning on a dev scenario. E is held out and passed on its first run, before that fix. Reading D's report also showed that two bots' SQLi login bypass probably worked; the report now says so and recommends fixing the login, without accusing anyone (D71). Runtime is under 0.01 s per scenario. Large logs are measured in [docs/performance.md](docs/performance.md).
+
 ## Development
 ```bash
 pytest
@@ -43,6 +58,8 @@ ruff check .
 - [docs/decisions.md](docs/decisions.md): design decisions and their reasons
 - [docs/evidence-format.md](docs/evidence-format.md): manifest v1 and supported log formats
 - [docs/performance.md](docs/performance.md): benchmark numbers and how to reproduce them
+- [docs/evaluation.md](docs/evaluation.md): accuracy metrics, splits, and the limits of a self-made benchmark
+- [benchmark/README.md](benchmark/README.md): scenario format, and how to score another tool
 
 ## Roadmap
 Planned work is listed in [docs/plan.md](docs/plan.md) (§5). A comparison with related tools will be added only after checking those tools first-hand.

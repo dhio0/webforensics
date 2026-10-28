@@ -65,10 +65,43 @@ def test_no_compromise_says_so_without_claiming_the_server_is_clean():
     logs = numbered((0, "/"), (5, "/p.php?id=1+OR+1%3D1", {"ip": VISITOR}))
     report = _report(logs, files(file_ev("index.php", btime=0, ctime=0, mtime=0)))
     assert _keys(report.summary)[0] == "summary.no_compromise"
-    assert "rec.eradication.unknown_entry" in _keys(report.recommendations)
+    # Nothing was compromised, so there is no entry point to hunt for; the caution lives
+    # in the summary and in the review of unexplained changes.
+    assert "rec.eradication.unknown_entry" not in _keys(report.recommendations)
+    assert "rec.recovery.review_unexplained" in _keys(report.recommendations)
     assert "rec.containment.isolate" not in _keys(report.recommendations)
     md = render(report, WIB)["md"]
     assert "tidak menjamin server bersih" in md
+
+
+def test_a_successful_looking_sqli_bypass_outside_the_incident_is_reported_not_accused():
+    bypass_url = "/admin/login.php?u=a%27+OR+%271%27%3D%271+--+"
+    logs = numbered(
+        (0, "/admin/login.php", {"ip": VISITOR, "method": "POST", "status": 401, "size": 300}),
+        (5, bypass_url, {"ip": "192.0.2.21", "size": 347}),
+        (7, bypass_url, {"ip": "192.0.2.22", "size": 347}),  # retried below: it failed
+        (9, bypass_url, {"ip": "192.0.2.22", "size": 347}),
+    )
+    result = correlate(logs, files())
+    bypass = [f for f in result.findings if f.rule_id == "CORR-SQLI-LOGIN-BYPASS"]
+    # The second bot's last attempt has no retry, so it counts too; its first does not.
+    assert [f.citations[0].line_no for f in bypass] == [2, 4]
+    assert result.iocs.ips == () and result.root_cause is None
+    report = build_report(result, logs, CASE, RUN)
+    summary = next(r for r in report.summary if r.key == "summary.unlinked_bypass")
+    assert summary.params == {"count": "2", "clients": "2", "paths": "/admin/login.php"}
+    recs = {r.key: r.params for r in report.recommendations}
+    assert recs["rec.eradication.fix_sqli_login"] == {"path": "/admin/login.php"}
+    assert recs["rec.recovery.revoke_sessions"] == {"paths": "/admin/login.php"}
+    assert "rec.containment.block_ips" not in recs  # reported, not accused
+    # A log finding is not a changed file to review.
+    assert "summary.unexplained" not in [r.key for r in report.summary]
+
+
+def test_the_incidents_own_bypass_is_not_reported_twice():
+    logs, evidence = load_scenario("f")
+    result = correlate(logs, evidence)
+    assert not [f for f in result.findings if f.rule_id == "CORR-SQLI-LOGIN-BYPASS"]
 
 
 def test_background_groups_count_requests_once_and_rank_clients():
@@ -88,6 +121,17 @@ def test_background_groups_count_requests_once_and_rank_clients():
     assert background.params["count"] == "4"  # 4 requests, 5 findings
     # The per-request records are summarized, not copied, so report.json stays small.
     assert report.result.findings == () and report.result.unattributed_finding_ids == ()
+
+
+def test_background_clients_behind_a_trusted_proxy_are_the_forwarded_addresses():
+    proxy = "172.30.0.3"
+    logs = numbered(*((i, f"/p.php?id={i}+OR+1%3D1", {"ip": proxy, "xff": bot})
+                      for i, bot in enumerate(("192.0.2.21", "203.0.113.21", "192.0.2.21"))))
+    result = correlate(logs, files())
+    taut = build_report(result, logs, CASE, RUN, trusted_proxies=(proxy,)).background[0]
+    assert (taut.clients, taut.top_clients) == (2, (("192.0.2.21", 2), ("203.0.113.21", 1)))
+    # Without the proxy being trusted, the header is not believed.
+    assert build_report(result, logs, CASE, RUN).background[0].top_clients == ((proxy, 3),)
 
 
 def test_deleted_and_unexplained_files_are_listed_for_review():

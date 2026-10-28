@@ -1,6 +1,6 @@
 # Plan: web incident forensics tool
 
-Status: **Approved.** M0–M4 complete.
+Status: **Approved.** M0–M5 complete.
 
 | Milestone | State |
 |---|---|
@@ -9,7 +9,8 @@ Status: **Approved.** M0–M4 complete.
 | M2 | done: log rules, file rules, isolated lab-lite stack, spaced Scenario A and F replays, collected evidence, benchmark schema/validation |
 | M3 | done: file-first correlation engine (`correlate/`), baseline comparison, anchor + timestomp check, gaps + confidence, MITRE table, proxy-aware actors, login outcomes, weak seeds, error-log parser, indexed engine (1M lines in ~27 s); scenario A/F acceptance plus noisy variants (precision), gap fixtures, seeded property test |
 | M4 | done: Indonesian report (`report/`: builder, format-neutral document, Markdown + self-contained HTML + JSON), `analyze` command, CSIRT-phase recommendations, grouped background noise, evidence scope, attack story, raw root-cause request, versioned report.json; golden files for A/F, byte-identical reruns from any working directory, escaping and well-formed HTML tests, catalog coverage test |
-| M5–M7 | not started |
+| M5 | done: `eval` command and metrics (D68), schema for no-compromise and held-out scenarios, lab scenarios B (POST SQLi), D (busy, no compromise, baseline), E (held-out, timestomp) behind a loopback edge proxy, with PHP upload messages in nginx's error log (`fastcgi.logging`); `vulnerable_code` pinned to the source file's SHA-256 (the lab app changed between A/F and B/D/E, which matters for M7); golden reports for all five scenarios; D's first run found a writer-ranking bug (D69) and a proxy bug in the noise table (D70); its report now flags a successful-looking SQLi login bypass outside any incident (D71); all five scenarios fully correct |
+| M6–M7 | not started |
 Source of truth: `CLAUDE.md`. Design decisions are logged in `docs/decisions.md` (referenced here as D1, D2, ...).
 
 ---

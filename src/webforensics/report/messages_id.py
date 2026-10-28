@@ -120,6 +120,7 @@ MESSAGES: dict[str, str] = {
     "finding.CORR-LONELY-EXEC-WRITE": "File kode {path} ditulis di luar batch deploy.",
     "finding.CORR-RARE-POST-TARGET": "File jarang diakses tapi menerima POST: {posts} POST dari "
                                      "{clients} klien, {hits} akses total.",
+    "finding.CORR-SQLI-LOGIN-BYPASS": "Login lewat SQL injection ke {path} tampaknya berhasil.",
     # --- Summary (built by report/build.py) -----------------------------------------------
     "summary.compromise_found": "Ditemukan {files} file mencurigakan yang terkait dengan "
                                 "{actors} alamat IP. Aktivitas pertama aktor pada {first_at}, "
@@ -133,6 +134,11 @@ MESSAGES: dict[str, str] = {
     "summary.gaps_affect": "{count} celah bukti melemahkan kesimpulan. Lihat bagian Celah Bukti.",
     "summary.unexplained": "{count} perubahan file perlu ditinjau manual.",
     "summary.deleted": "{count} file dari baseline sudah tidak ada.",
+    "summary.unlinked_bypass": "{count} login lewat SQL injection ke {paths} tampaknya "
+                               "berhasil (respons seperti login yang sukses), dari {clients} "
+                               "klien yang tidak terkait insiden. Tidak ada yang dituduh, tetapi "
+                               "endpoint login ini kemungkinan besar bisa dibobol dan perlu "
+                               "diperbaiki.",
     "summary.background": "{count} request berpola serangan dari pihak lain (misalnya bot) "
                           "tidak terkait insiden ini.",
     # --- Recommendations (CSIRT phases) ----------------------------------------------------
@@ -160,6 +166,9 @@ MESSAGES: dict[str, str] = {
     "rec.recovery.restore_clean": "Pulihkan webroot dari sumber yang terpercaya (git atau "
                                   "backup sebelum insiden), bukan dengan menghapus file satu "
                                   "per satu saja.",
+    "rec.recovery.revoke_sessions": "Ganti password admin dan akhiri semua sesi login yang "
+                                    "aktif, karena pihak lain kemungkinan sempat masuk lewat "
+                                    "{paths}.",
     "rec.recovery.review_unexplained": "Tinjau {count} perubahan yang belum terjelaskan sebelum "
                                        "menyatakan server bersih.",
     "rec.recovery.monitor": "Setelah pemulihan, pantau akses ke {urls} dan aktivitas dari IP "
@@ -204,6 +213,7 @@ RULE_NAMES: dict[str, str] = {
     "FILE-ANTIFORENSICS-TIMESTOMP": "Timestomping",
     "CORR-LONELY-EXEC-WRITE": "Penulisan kode di luar deploy",
     "CORR-RARE-POST-TARGET": "POST ke file yang jarang diakses",
+    "CORR-SQLI-LOGIN-BYPASS": "Login bypass SQL injection yang tampaknya berhasil",
 }
 
 VULN_CLASSES: dict[str, str] = {

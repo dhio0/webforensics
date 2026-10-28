@@ -272,3 +272,23 @@ Status: accepted (M4).
 - **Story:** the summary lists only the incident's main steps (entry point, write, file, first use by the attacker) for non-technical readers. Recon, failed logins and alternatives stay in the full timeline.
 - **Payload:** the root-cause section shows the raw log line, because the SQLi payload sits in the query string, which the event text leaves out.
 - **Format version:** `report.json` carries `format` so the M5 evaluator and later Wazuh tooling can detect changes.
+
+## D68 — The evaluator scores by log line and counts false accusations
+Status: accepted (M5).
+A step or root cause matches by the (log file, line number) a timeline event cites, which is exact and needs no text matching. A root cause found only among the alternatives is not counted as correct, because the report did not commit to it. Precision counts reported attacker IPs and affected files that are not in the ground truth, since blaming an innocent client or file is the costly mistake. Held-out scenarios are summarized separately and are never used to tune rules. The evaluator's own tests feed it ground truth that disagrees with the analysis, so it is shown to catch each kind of error.
+
+## D69 — A request already explained by another file ranks after one that nothing explains
+Status: accepted (M5).
+Found by scenario D (dev) on its first evaluation. An admin's photo upload and a comment POST were logged 2 s apart, both within ±`clock_skew_s` of a CMS cache file's birth. Inside that window, write semantics won, so the upload was named as the cache file's writer and the admin was blamed (a false root and two false accusations). Now a candidate whose time is strictly closer to another file's birth (the photo, born in the upload's own second) ranks after candidates that nothing else explains. It changes the order only: if the photo is missing from the evidence, the upload still wins. Files born in the same second as each other (one request writing a shell and a thumbnail) do not demote each other. Held-out E had already passed before this change and was not used for it. Risk: if an attacker's shell is born a few seconds away from its own upload while another file is born right at that upload's second, a benign request could win. The upload then still shows as an alternative candidate, since upload-like requests are kept as alternatives when the winner is not upload-like.
+
+## D70 — Background noise counts clients the way the engine does
+Status: accepted (M5).
+The "other attack activity" table counted the raw connection address. Behind a trusted proxy (scenario D's edge), every bot showed up as the proxy, as one client. The report builder now resolves clients through X-Forwarded-For with the same `--trusted-proxy` rule as the engine.
+
+## D71 — A bypass that looks successful is reported even when nothing was compromised
+Status: accepted (M5).
+Found by reading scenario D's report. Two bots sent the SQLi login bypass and got the same response as the admin's real login, so they probably got in, but uploaded nothing. The engine already inferred these logins as successful, yet the report only listed them as bot noise. Now an SQLi login attempt that looks successful and is not part of the incident timeline gets the finding `CORR-SQLI-LOGIN-BYPASS` (medium confidence, inferred from the response). The report says so in the summary, recommends fixing the login query and ending active sessions, and still accuses nobody: no IOC, no root cause. The attacker's own bypass in an incident (scenario F) is already the root cause and does not get it twice. The outcome comes from the existing login rules, so an attempt followed by a retry from the same client still counts as failed.
+
+## D72 — No "find the entry point" advice when nothing was compromised
+Status: accepted (M5).
+With no compromise, the report used to recommend checking "the endpoints in the timeline" for an entry point, but the timeline is empty. That advice now only appears when files were affected. The caution stays in the summary ("does not guarantee the server is clean") and in the review of unexplained changes.

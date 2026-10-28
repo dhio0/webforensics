@@ -57,6 +57,7 @@ from webforensics.models import (
 )
 
 TIMESTOMP_RULE = "FILE-ANTIFORENSICS-TIMESTOMP"
+BYPASS_RULE = "CORR-SQLI-LOGIN-BYPASS"
 # Only these gap kinds describe missing time; the others are listed but do not downgrade.
 _TIME_GAPS = (GapKind.NO_LOG_LINES, GapKind.PARSE_ERRORS, GapKind.ROTATION_BOUNDARY)
 _LAST = "￿"  # sorts after any log file name
@@ -147,8 +148,12 @@ class _Index:
     plus the number of seeds, not their product (D53).
     """
 
-    def __init__(self, logs: LogCollection, config: CorrelationConfig) -> None:
+    def __init__(self, logs: LogCollection, config: CorrelationConfig,
+                 files: tuple[FileEvidence, ...] = ()) -> None:
         self.config = config
+        anchors = ((choose_anchor(f, config), f.path) for f in files)
+        self.births = sorted((a.ts, path) for a, path in anchors if a is not None)
+        self.birth_times = [ts for ts, _ in self.births]
         self.events = sorted(logs.events, key=lambda e: (e.ts, e.log_file, e.line_no))
         self.times = [e.ts for e in self.events]
         self.by_id = {e.evidence_id: e for e in self.events}
@@ -185,6 +190,14 @@ class _Index:
     def actor_since(self, actor: str, since: datetime) -> list[LogEvent]:
         own = self.by_actor.get(actor, [])
         return own[bisect_left(self.actor_times.get(actor, []), since):]
+
+    def born_closer(self, ts: datetime, distance: timedelta, path: str) -> bool:
+        """Another file was born strictly closer to `ts` than `distance`: a request at
+        `ts` more likely wrote that file (one upload, one file)."""
+        lo = bisect_right(self.birth_times, ts - distance)
+        hi = bisect_left(self.birth_times, ts + distance)
+        # At most one entry can be `path` itself, so this looks at one or two entries.
+        return any(self.births[i][1] != path for i in range(lo, hi))
 
     def hits(self, file: FileEvidence) -> list[LogEvent]:
         """Requests to any URL that serves this file, in log order."""
@@ -305,18 +318,23 @@ def _client_error(event: LogEvent) -> bool:
     return 400 <= event.status < 500
 
 
-def _candidate_key(event: LogEvent, index: _Index, anchor_ts: datetime, invokers: set[str]):
-    """Sorts best first: logged within ±skew of the write, write semantics, success, same
-    actor as the file's users, closeness, then log order.
+def _candidate_key(event: LogEvent, index: _Index, anchor_ts: datetime, invokers: set[str],
+                   path: str):
+    """Sorts best first: logged within ±skew of the write, not better explained by another
+    file, write semantics, success, same actor as the file's users, closeness, log order.
 
     Closeness comes first because the writing request is logged within seconds of the
     file's birth (nginx at request end, Apache at start of a short request). Without
     it, an admin's photo upload a minute earlier outranks the comment POST that really
-    produced a cache file (D54).
+    produced a cache file (D54). Within ±skew, an upload whose own file was born closer
+    to it (the admin's photo, 2 s before the cache file) ranks after a request that
+    nothing else explains (D69).
     """
-    distance = abs((event.ts - anchor_ts).total_seconds())
+    delta = abs(event.ts - anchor_ts)
+    distance = delta.total_seconds()
     tight = distance <= index.config.clock_skew_s
-    return (not tight, -rq.write_level(event, index.of(event)), not rq.is_success(event),
+    return (not tight, index.born_closer(event.ts, delta, path),
+            -rq.write_level(event, index.of(event)), not rq.is_success(event),
             index.actor(event) not in invokers, distance, event.log_file, event.line_no)
 
 
@@ -332,11 +350,11 @@ def _creation(chain: _Chain, anchor: Anchor, index: _Index) -> None:
         return
 
     def key(e: LogEvent):
-        return _candidate_key(e, index, anchor.ts, chain.invoker_ips)
+        return _candidate_key(e, index, anchor.ts, chain.invoker_ips, chain.file.path)
 
     ranked = sorted(candidates, key=key)
     best = ranked[0]
-    rivals = [e for e in ranked[1:] if key(e)[:4] == key(best)[:4]]
+    rivals = [e for e in ranked[1:] if key(e)[:5] == key(best)[:5]]
     write = _access_write(best, index)
     if write.level < rq.WriteLevel.LIKELY:
         # An upload-like request further away stays visible as an alternative.
@@ -548,6 +566,31 @@ def _apply_gaps(gaps: list[EvidenceGap], drafts: list[_Draft]) -> list[EvidenceG
             for g in gaps]
 
 
+def _unlinked_bypasses(index: _Index, in_timeline: set[str],
+                       actors: set[str]) -> list[Finding]:
+    """SQLi login attempts that look successful, from clients outside the incident (D71).
+
+    No file links them to a compromise, so nobody is accused. But a bypass that worked
+    shows the login is exploitable, which the report must say even on a "clean" result.
+    The incident's own actors are left out: their activity is the incident itself.
+    """
+    found = []
+    for event in index.events:
+        if (event.evidence_id in in_timeline or index.actor(event) in actors
+                or not rq.is_login_endpoint(event.path)
+                or not rq.has_sqli(index.of(event)) or not index.login_succeeded(event)):
+            continue
+        found.append(Finding(
+            finding_id=stable_id(BYPASS_RULE, event.evidence_id), rule_id=BYPASS_RULE,
+            rule_version=RULESET_VERSION, category=FindingCategory.EXPLOIT_SUCCESS,
+            subject=event.evidence_id, severity=Severity.HIGH, confidence=Confidence.MEDIUM,
+            reasons=(Reason(key=f"finding.{BYPASS_RULE}", params={"path": event.path or ""}),
+                     index.logins[event.evidence_id][1]),
+            citations=(event.citation(),), mitre=("T1190",),
+        ))
+    return found
+
+
 # --- Step 8: assemble ---------------------------------------------------------------
 
 
@@ -659,7 +702,7 @@ def correlate(logs: LogCollection, files: FileCollection, *,
     deleted: tuple[str, ...] = ()
     if baseline is not None:
         files, deleted = apply_baseline(files, baseline)
-    index = _Index(logs, config)
+    index = _Index(logs, config, files.files)
     gaps = _input_gaps(files, logs, index, baseline is not None)
     lonely = lonely_writes(list(files.files), config)
 
@@ -717,6 +760,7 @@ def correlate(logs: LogCollection, files: FileCollection, *,
     root_cause = _root_cause(roots, chains, drafts)
 
     timeline = tuple(d.build() for d in ordered)
+    findings += _unlinked_bypasses(index, {d.subject for d in ordered}, actors)
     used = {fid for event in timeline for fid in event.finding_ids}
     return CorrelationResult(
         timeline=timeline, root_cause=root_cause, findings=tuple(findings),

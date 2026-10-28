@@ -4,6 +4,7 @@ Regenerate after an intended change with:  UPDATE_GOLDEN=1 pytest tests/integrat
 then review the diff of tests/golden/ like any other code change.
 """
 
+import json
 import os
 from datetime import UTC, datetime
 from pathlib import Path
@@ -12,9 +13,9 @@ import pytest
 from typer.testing import CliRunner
 
 from tests.correlate_helpers import SCENARIOS
-from webforensics.analysis import EvidenceInputs, analyze
+from webforensics import evaluate
+from webforensics.analysis import analyze
 from webforensics.cli import app
-from webforensics.correlate import CorrelationConfig
 from webforensics.report import FORMATS, render
 from webforensics.report.text import parse_display_offset
 
@@ -22,17 +23,19 @@ GOLDEN = Path(__file__).parents[1] / "golden"
 WHEN = datetime(2026, 10, 28, 2, 0, tzinfo=UTC)
 WHEN_ARG = "2026-10-28T09:00:00+07:00"
 runner = CliRunner()
+# Every benchmark scenario has golden reports, analyzed with its own `analysis` options.
+ALL_SCENARIOS = sorted(p.parent.name for p in SCENARIOS.glob("*/ground_truth.json"))
 
 
 def _rendered(name: str) -> dict[str, str]:
-    evidence = SCENARIOS / name / "evidence"
-    report = analyze(EvidenceInputs(logs=(evidence / "access.log",),
-                                    manifest=evidence / "manifest.tsv", base_dir=evidence),
-                     CorrelationConfig(), WHEN)
+    folder = SCENARIOS / name
+    truth = json.loads((folder / "ground_truth.json").read_text(encoding="utf-8"))
+    inputs, config = evaluate.scenario_inputs(folder, truth)
+    report = analyze(inputs, config, WHEN)
     return render(report, parse_display_offset("+07:00"), strict=True)
 
 
-@pytest.mark.parametrize("name", ["a", "f"])
+@pytest.mark.parametrize("name", ALL_SCENARIOS)
 @pytest.mark.parametrize("ext", FORMATS)
 def test_report_matches_golden_file(name, ext):
     text = _rendered(name)[ext]

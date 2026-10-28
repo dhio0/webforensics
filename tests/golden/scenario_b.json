@@ -1,0 +1,509 @@
+{
+  "format": "webforensics-report/1",
+  "case": {
+    "case_id": "WF-EA5033B89A",
+    "title": "Laporan Insiden Website",
+    "analyst": null,
+    "target_host": "9f61b9407738"
+  },
+  "scope": {
+    "log_first": "2026-10-28T03:48:52Z",
+    "log_last": "2026-10-28T03:49:02Z",
+    "log_events": 6,
+    "log_unparsed": 0,
+    "error_events": 2,
+    "error_unparsed": 0,
+    "files": 11,
+    "files_rejected": 0,
+    "baseline_files": null,
+    "collected_at": "2026-10-28T03:49:02Z"
+  },
+  "run": {
+    "tool_version": "0.1.0",
+    "ruleset_version": "0.1.0",
+    "inputs": [
+      {
+        "path": "access.log",
+        "sha256": "d96ea214ae16b239c4fb8d58dab198e0c4423958638ef9c58ff8a5d85209e206",
+        "size": 822
+      },
+      {
+        "path": "error.log",
+        "sha256": "6c388822fb88b8a4085db85243cbc9435647aa7b39b248d59e753b722b1bdbf5",
+        "size": 336
+      },
+      {
+        "path": "manifest.tsv",
+        "sha256": "8bf9eb254df011c6ab69854b10ca02be21290ea93e01dfd7623b4c8b5330e56d",
+        "size": 1976
+      }
+    ],
+    "config_sha256": "a327ad9cd4b7b387c7dbfe4a49da4ceac364dddc5291bf29aeadbcf8722e1dda",
+    "generated_at": "2026-10-28T02:00:00Z"
+  },
+  "result": {
+    "timeline": [
+      {
+        "event_id": "8cdb032e09220e70",
+        "ts": "2026-10-28T03:48:52Z",
+        "ts_basis": "log",
+        "mitre_tactic": null,
+        "mitre_technique": null,
+        "actor": "192.0.2.10",
+        "description": {
+          "key": "timeline.login_failed",
+          "params": {
+            "method": "POST",
+            "path": "/admin/login.php",
+            "status": "401"
+          }
+        },
+        "citations": [
+          {
+            "kind": "log_line",
+            "source": "access.log",
+            "line_no": 1,
+            "sha256": null,
+            "excerpt": "172.30.0.3 - - [28/Oct/2026:03:48:52 +0000] \"POST /admin/login.php HTTP/1.0\" 401 343 \"-\" \"webforensics-lab/1.0 scenario-b\" \"192.0.2.10\""
+          }
+        ],
+        "confidence": "high",
+        "confidence_reasons": [
+          {
+            "key": "login.failed_status",
+            "params": {
+              "status": "401"
+            }
+          }
+        ],
+        "finding_ids": [],
+        "is_root_cause": false
+      },
+      {
+        "event_id": "35cfbff835127c44",
+        "ts": "2026-10-28T03:48:58Z",
+        "ts_basis": "log",
+        "mitre_tactic": "Initial Access",
+        "mitre_technique": "T1078",
+        "actor": "192.0.2.10",
+        "description": {
+          "key": "timeline.login_method_unknown",
+          "params": {
+            "method": "POST",
+            "path": "/admin/login.php",
+            "status": "200",
+            "vuln_class": ""
+          }
+        },
+        "citations": [
+          {
+            "kind": "log_line",
+            "source": "access.log",
+            "line_no": 4,
+            "sha256": null,
+            "excerpt": "172.30.0.3 - - [28/Oct/2026:03:48:58 +0000] \"POST /admin/login.php HTTP/1.0\" 200 347 \"-\" \"webforensics-lab/1.0 scenario-b\" \"192.0.2.10\""
+          }
+        ],
+        "confidence": "low",
+        "confidence_reasons": [
+          {
+            "key": "root.login_then_write_same_area",
+            "params": {}
+          },
+          {
+            "key": "login.success_unlike_failures",
+            "params": {}
+          },
+          {
+            "key": "confidence.auth_method_not_visible",
+            "params": {}
+          }
+        ],
+        "finding_ids": [],
+        "is_root_cause": true
+      },
+      {
+        "event_id": "7d4bba0373ee495f",
+        "ts": "2026-10-28T03:49:00Z",
+        "ts_basis": "log",
+        "mitre_tactic": "Persistence",
+        "mitre_technique": "T1505.003",
+        "actor": "192.0.2.10",
+        "description": {
+          "key": "timeline.file_write_request",
+          "params": {
+            "method": "POST",
+            "path": "/admin/auth_upload.php",
+            "status": "200",
+            "file": "uploads/scenario-b-marker.php"
+          }
+        },
+        "citations": [
+          {
+            "kind": "log_line",
+            "source": "access.log",
+            "line_no": 5,
+            "sha256": null,
+            "excerpt": "172.30.0.3 - - [28/Oct/2026:03:49:00 +0000] \"POST /admin/auth_upload.php HTTP/1.0\" 200 40 \"-\" \"webforensics-lab/1.0 scenario-b\" \"192.0.2.10\""
+          },
+          {
+            "kind": "file",
+            "source": "uploads/scenario-b-marker.php",
+            "line_no": null,
+            "sha256": "105ddd6ab59b87c2013943bab1e598aae952be1f7ae85aac56da08beec344bf6",
+            "excerpt": "file 26 bytes"
+          },
+          {
+            "kind": "log_line",
+            "source": "error.log",
+            "line_no": 2,
+            "sha256": null,
+            "excerpt": "2026/10/28 03:49:00 [error] 25#25: *9 FastCGI sent in stderr: \"PHP message: lab upload stored\" while reading response header from upstream, client: 172.30.0.3, server: _, request: \"POST /admin/auth_upload.php HTTP/1.0\", upstream: \"fastcgi://172.19.0.3:9000\", host: \"127.0.0.1\""
+          }
+        ],
+        "confidence": "high",
+        "confidence_reasons": [
+          {
+            "key": "creation.single_candidate",
+            "params": {}
+          },
+          {
+            "key": "creation.same_actor_invoked_file",
+            "params": {}
+          },
+          {
+            "key": "creation.post_body_not_logged",
+            "params": {}
+          },
+          {
+            "key": "error_log.corroborates",
+            "params": {
+              "lines": "2",
+              "offset": "+0000"
+            }
+          }
+        ],
+        "finding_ids": [],
+        "is_root_cause": false
+      },
+      {
+        "event_id": "dc771c27c58a00d8",
+        "ts": "2026-10-28T03:49:00Z",
+        "ts_basis": "btime",
+        "mitre_tactic": "Persistence",
+        "mitre_technique": "T1505.003",
+        "actor": null,
+        "description": {
+          "key": "timeline.file_created",
+          "params": {
+            "path": "uploads/scenario-b-marker.php",
+            "sha256": "105ddd6ab59b87c2013943bab1e598aae952be1f7ae85aac56da08beec344bf6",
+            "baseline_status": "unknown",
+            "invocations": "1"
+          }
+        },
+        "citations": [
+          {
+            "kind": "file",
+            "source": "uploads/scenario-b-marker.php",
+            "line_no": null,
+            "sha256": "105ddd6ab59b87c2013943bab1e598aae952be1f7ae85aac56da08beec344bf6",
+            "excerpt": "file 26 bytes"
+          }
+        ],
+        "confidence": "high",
+        "confidence_reasons": [
+          {
+            "key": "anchor.btime",
+            "params": {}
+          }
+        ],
+        "finding_ids": [
+          "ed3fc04ae9734f7f"
+        ],
+        "is_root_cause": false
+      },
+      {
+        "event_id": "44deedc1659efc9f",
+        "ts": "2026-10-28T03:49:02Z",
+        "ts_basis": "log",
+        "mitre_tactic": "Persistence",
+        "mitre_technique": "T1505.003",
+        "actor": "192.0.2.10",
+        "description": {
+          "key": "timeline.file_invoked",
+          "params": {
+            "method": "GET",
+            "path": "/uploads/scenario-b-marker.php",
+            "status": "200",
+            "file": "uploads/scenario-b-marker.php"
+          }
+        },
+        "citations": [
+          {
+            "kind": "log_line",
+            "source": "access.log",
+            "line_no": 6,
+            "sha256": null,
+            "excerpt": "172.30.0.3 - - [28/Oct/2026:03:49:02 +0000] \"GET /uploads/scenario-b-marker.php HTTP/1.0\" 200 26 \"-\" \"webforensics-lab/1.0 scenario-b\" \"192.0.2.10\""
+          }
+        ],
+        "confidence": "high",
+        "confidence_reasons": [],
+        "finding_ids": [
+          "1ab41dc4b981675a"
+        ],
+        "is_root_cause": false
+      }
+    ],
+    "root_cause": {
+      "event_id": "35cfbff835127c44",
+      "vuln_class": null,
+      "confidence": "low",
+      "reasons": [
+        {
+          "key": "root.login_then_write_same_area",
+          "params": {}
+        },
+        {
+          "key": "login.success_unlike_failures",
+          "params": {}
+        },
+        {
+          "key": "confidence.auth_method_not_visible",
+          "params": {}
+        }
+      ],
+      "alternative_event_ids": []
+    },
+    "findings": [
+      {
+        "finding_id": "1ab41dc4b981675a",
+        "rule_id": "LOG-WEBSHELL-UPLOAD-DIR",
+        "rule_version": "0.1.0",
+        "category": "webshell",
+        "subject": "b63db293c31bbb07",
+        "severity": "high",
+        "confidence": "medium",
+        "reasons": [
+          {
+            "key": "finding.LOG-WEBSHELL-UPLOAD-DIR",
+            "params": {
+              "matched": "/uploads/scenario-b-marker.php",
+              "status": "200",
+              "method": "GET"
+            }
+          }
+        ],
+        "citations": [
+          {
+            "kind": "log_line",
+            "source": "access.log",
+            "line_no": 6,
+            "sha256": null,
+            "excerpt": "172.30.0.3 - - [28/Oct/2026:03:49:02 +0000] \"GET /uploads/scenario-b-marker.php HTTP/1.0\" 200 26 \"-\" \"webforensics-lab/1.0 scenario-b\" \"192.0.2.10\""
+          }
+        ],
+        "mitre": [
+          "T1505.003"
+        ]
+      },
+      {
+        "finding_id": "ed3fc04ae9734f7f",
+        "rule_id": "FILE-WEBSHELL-WRITABLE-EXEC",
+        "rule_version": "0.1.0",
+        "category": "webshell",
+        "subject": "2e95bd82f649077b",
+        "severity": "high",
+        "confidence": "medium",
+        "reasons": [
+          {
+            "key": "finding.FILE-WEBSHELL-WRITABLE-EXEC",
+            "params": {
+              "path": "uploads/scenario-b-marker.php"
+            }
+          }
+        ],
+        "citations": [
+          {
+            "kind": "file",
+            "source": "uploads/scenario-b-marker.php",
+            "line_no": null,
+            "sha256": "105ddd6ab59b87c2013943bab1e598aae952be1f7ae85aac56da08beec344bf6",
+            "excerpt": "file 26 bytes"
+          }
+        ],
+        "mitre": [
+          "T1505.003"
+        ]
+      }
+    ],
+    "affected_files": [
+      {
+        "evidence_id": "2e95bd82f649077b",
+        "adapter": "file",
+        "source": "manifest.tsv:19",
+        "collected_at": "2026-10-28T03:49:02Z",
+        "path": "uploads/scenario-b-marker.php",
+        "file_type": "file",
+        "url_paths": [
+          "/uploads/scenario-b-marker.php"
+        ],
+        "sha256": "105ddd6ab59b87c2013943bab1e598aae952be1f7ae85aac56da08beec344bf6",
+        "size": 26,
+        "mode": 420,
+        "uid": 82,
+        "inode": 54890,
+        "atime": "2026-10-28T03:49:02Z",
+        "mtime": "2026-10-28T03:49:00Z",
+        "ctime": "2026-10-28T03:49:00Z",
+        "btime": "2026-10-28T03:49:00Z",
+        "timestamp_source": "manifest",
+        "baseline_status": "unknown"
+      }
+    ],
+    "deleted_paths": [],
+    "unexplained_changes": [],
+    "gaps": [
+      {
+        "gap_id": "02d50eebfaf93e8d",
+        "kind": "no_baseline",
+        "source": null,
+        "start": null,
+        "end": null,
+        "detail": {
+          "key": "gap.no_baseline",
+          "params": {}
+        },
+        "affects": []
+      }
+    ],
+    "iocs": {
+      "ips": [
+        "192.0.2.10"
+      ],
+      "user_agents": [
+        "webforensics-lab/1.0 scenario-b"
+      ],
+      "sha256s": [
+        "105ddd6ab59b87c2013943bab1e598aae952be1f7ae85aac56da08beec344bf6"
+      ],
+      "paths": [
+        "uploads/scenario-b-marker.php"
+      ],
+      "urls": [
+        "/uploads/scenario-b-marker.php"
+      ]
+    },
+    "unattributed_finding_ids": []
+  },
+  "summary": [
+    {
+      "key": "summary.compromise_found",
+      "params": {
+        "files": "1",
+        "actors": "1",
+        "first_at": "2026-10-28T03:48:52+00:00",
+        "last_at": "2026-10-28T03:49:02+00:00"
+      }
+    },
+    {
+      "key": "summary.root_cause",
+      "params": {
+        "vuln_class": "",
+        "method": "POST",
+        "path": "/admin/login.php",
+        "at": "2026-10-28T03:48:58+00:00",
+        "confidence": "low"
+      }
+    }
+  ],
+  "background": [],
+  "code_findings": [],
+  "recommendations": [
+    {
+      "key": "rec.containment.preserve",
+      "params": {}
+    },
+    {
+      "key": "rec.containment.isolate",
+      "params": {}
+    },
+    {
+      "key": "rec.containment.block_ips",
+      "params": {
+        "ips": "192.0.2.10"
+      }
+    },
+    {
+      "key": "rec.eradication.remove_files",
+      "params": {
+        "paths": "uploads/scenario-b-marker.php"
+      }
+    },
+    {
+      "key": "rec.eradication.fix_login",
+      "params": {
+        "path": "/admin/login.php"
+      }
+    },
+    {
+      "key": "rec.eradication.fix_upload",
+      "params": {
+        "path": "/admin/auth_upload.php"
+      }
+    },
+    {
+      "key": "rec.recovery.rotate_credentials",
+      "params": {}
+    },
+    {
+      "key": "rec.recovery.restore_clean",
+      "params": {}
+    },
+    {
+      "key": "rec.recovery.monitor",
+      "params": {
+        "urls": "/uploads/scenario-b-marker.php"
+      }
+    },
+    {
+      "key": "rec.lessons.baseline",
+      "params": {}
+    },
+    {
+      "key": "rec.lessons.fim",
+      "params": {}
+    },
+    {
+      "key": "rec.lessons.log_uploads",
+      "params": {}
+    }
+  ],
+  "limitations": [
+    {
+      "key": "limit.automated",
+      "params": {}
+    },
+    {
+      "key": "limit.post_body",
+      "params": {}
+    },
+    {
+      "key": "limit.timestamps",
+      "params": {}
+    },
+    {
+      "key": "limit.log_tampering",
+      "params": {}
+    },
+    {
+      "key": "limit.shared_ip",
+      "params": {}
+    },
+    {
+      "key": "limit.no_code_analysis",
+      "params": {}
+    }
+  ]
+}

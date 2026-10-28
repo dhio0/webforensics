@@ -1,6 +1,6 @@
 {
   "scenario_id": "d",
-  "description": "Busy benign browsing includes SQL injection probes from two bots, a normal administrator POST login and image upload, and a visitor comment that creates static HTML in a .php cache file. Nothing is compromised; this scenario measures false accusations.",
+  "description": "Busy benign browsing includes SQL injection probes from two bots, a normal administrator POST login and image upload, and a visitor comment that creates static HTML in a .php cache file. Nothing is compromised; this scenario measures false accusations. Both bots send scenario F's GET login bypass, whose payload the B and F replays confirm logs in, so a correct analysis reports it as a likely successful bypass without accusing anyone.",
   "attacker_ips": [],
   "steps": [
     {"id": "visitor_01_home", "category": "benign_request", "mitre": [], "log_file": "access.log", "line_no": 1, "is_root_cause": false},
@@ -39,6 +39,7 @@
   ],
   "files": [],
   "root_cause_step": null,
+  "expected_rule_ids": ["CORR-SQLI-LOGIN-BYPASS"],
   "split": "dev",
   "analysis": {
     "access_logs": ["access.log"],

@@ -1,0 +1,279 @@
+{
+  "format": "webforensics-report/1",
+  "case": {
+    "case_id": "WF-5D640831B0",
+    "title": "Laporan Insiden Website",
+    "analyst": null,
+    "target_host": "b5838e084553"
+  },
+  "scope": {
+    "log_first": "2026-10-28T03:49:31Z",
+    "log_last": "2026-10-28T03:49:52Z",
+    "log_events": 32,
+    "log_unparsed": 0,
+    "error_events": 2,
+    "error_unparsed": 0,
+    "files": 12,
+    "files_rejected": 0,
+    "baseline_files": 10,
+    "collected_at": "2026-10-28T03:49:52Z"
+  },
+  "run": {
+    "tool_version": "0.1.0",
+    "ruleset_version": "0.1.0",
+    "inputs": [
+      {
+        "path": "access.log",
+        "sha256": "65a9e7f85e7eaa41f16bdb6619a77f388982635ce273b03a73d8ead62d756b52",
+        "size": 4463
+      },
+      {
+        "path": "baseline.tsv",
+        "sha256": "6b9c25cdd13d074aba706b6c74f28a19d5d54ad09575f333e315af988d1cc6dd",
+        "size": 1790
+      },
+      {
+        "path": "error.log",
+        "sha256": "c5c1ba27c651faad6b8bbdca29eaa8361c4030a313b40a14731fc521e35fa616",
+        "size": 337
+      },
+      {
+        "path": "manifest.tsv",
+        "sha256": "b88b773f5e4bb390e32b9a1d934b3f5d06f2a28d15d7ef25aa2537b02997d9e6",
+        "size": 2124
+      }
+    ],
+    "config_sha256": "a327ad9cd4b7b387c7dbfe4a49da4ceac364dddc5291bf29aeadbcf8722e1dda",
+    "generated_at": "2026-10-28T02:00:00Z"
+  },
+  "result": {
+    "timeline": [],
+    "root_cause": null,
+    "findings": [
+      {
+        "finding_id": "c7b22a293c16318b",
+        "rule_id": "FILE-WEBSHELL-WRITABLE-EXEC",
+        "rule_version": "0.1.0",
+        "category": "webshell",
+        "subject": "9aab4e40551c03f5",
+        "severity": "high",
+        "confidence": "medium",
+        "reasons": [
+          {
+            "key": "finding.FILE-WEBSHELL-WRITABLE-EXEC",
+            "params": {
+              "path": "cache/page-1.php"
+            }
+          }
+        ],
+        "citations": [
+          {
+            "kind": "file",
+            "source": "cache/page-1.php",
+            "line_no": null,
+            "sha256": "5154536c3dd44bafbdd160b0ef09269bd9ce8e804e46a18d53d208c1e29802b6",
+            "excerpt": "file 75 bytes"
+          }
+        ],
+        "mitre": [
+          "T1505.003"
+        ]
+      }
+    ],
+    "affected_files": [],
+    "deleted_paths": [],
+    "unexplained_changes": [
+      "cache/page-1.php"
+    ],
+    "gaps": [],
+    "iocs": {
+      "ips": [],
+      "user_agents": [],
+      "sha256s": [],
+      "paths": [],
+      "urls": []
+    },
+    "unattributed_finding_ids": [
+      "c7b22a293c16318b"
+    ]
+  },
+  "summary": [
+    {
+      "key": "summary.no_compromise",
+      "params": {}
+    },
+    {
+      "key": "summary.unlinked_bypass",
+      "params": {
+        "count": "2",
+        "clients": "2",
+        "paths": "/admin/login.php"
+      }
+    },
+    {
+      "key": "summary.unexplained",
+      "params": {
+        "count": "1"
+      }
+    },
+    {
+      "key": "summary.background",
+      "params": {
+        "count": "6"
+      }
+    }
+  ],
+  "background": [
+    {
+      "rule_id": "LOG-SQLI-TAUTOLOGY",
+      "count": 4,
+      "clients": 2,
+      "top_clients": [
+        [
+          "192.0.2.21",
+          2
+        ],
+        [
+          "203.0.113.21",
+          2
+        ]
+      ],
+      "first": "2026-10-28T03:49:33Z",
+      "last": "2026-10-28T03:49:44Z",
+      "example": {
+        "kind": "log_line",
+        "source": "access.log",
+        "line_no": 21,
+        "sha256": null,
+        "excerpt": "172.30.0.3 - - [28/Oct/2026:03:49:33 +0000] \"GET /product.php?id=1+OR+1%3D1 HTTP/1.0\" 200 212 \"-\" \"webforensics-lab/1.0 scenario-d\" \"192.0.2.21\""
+      }
+    },
+    {
+      "rule_id": "CORR-SQLI-LOGIN-BYPASS",
+      "count": 2,
+      "clients": 2,
+      "top_clients": [
+        [
+          "192.0.2.21",
+          1
+        ],
+        [
+          "203.0.113.21",
+          1
+        ]
+      ],
+      "first": "2026-10-28T03:49:37Z",
+      "last": "2026-10-28T03:49:44Z",
+      "example": {
+        "kind": "log_line",
+        "source": "access.log",
+        "line_no": 23,
+        "sha256": null,
+        "excerpt": "172.30.0.3 - - [28/Oct/2026:03:49:37 +0000] \"GET /admin/login.php?username=admin%27+OR+%271%27%3D%271%27+--+&password= HTTP/1.0\" 200 347 \"-\" \"webforensics-lab/1.0 scenario-d\" \"192.0.2.21\""
+      }
+    },
+    {
+      "rule_id": "LOG-SQLI-QUOTE-COMMENT",
+      "count": 2,
+      "clients": 2,
+      "top_clients": [
+        [
+          "192.0.2.21",
+          1
+        ],
+        [
+          "203.0.113.21",
+          1
+        ]
+      ],
+      "first": "2026-10-28T03:49:37Z",
+      "last": "2026-10-28T03:49:44Z",
+      "example": {
+        "kind": "log_line",
+        "source": "access.log",
+        "line_no": 23,
+        "sha256": null,
+        "excerpt": "172.30.0.3 - - [28/Oct/2026:03:49:37 +0000] \"GET /admin/login.php?username=admin%27+OR+%271%27%3D%271%27+--+&password= HTTP/1.0\" 200 347 \"-\" \"webforensics-lab/1.0 scenario-d\" \"192.0.2.21\""
+      }
+    },
+    {
+      "rule_id": "LOG-SQLI-UNION",
+      "count": 2,
+      "clients": 2,
+      "top_clients": [
+        [
+          "192.0.2.21",
+          1
+        ],
+        [
+          "203.0.113.21",
+          1
+        ]
+      ],
+      "first": "2026-10-28T03:49:35Z",
+      "last": "2026-10-28T03:49:42Z",
+      "example": {
+        "kind": "log_line",
+        "source": "access.log",
+        "line_no": 22,
+        "sha256": null,
+        "excerpt": "172.30.0.3 - - [28/Oct/2026:03:49:35 +0000] \"GET /product.php?id=1+UNION+SELECT+1%2C2 HTTP/1.0\" 200 205 \"-\" \"webforensics-lab/1.0 scenario-d\" \"192.0.2.21\""
+      }
+    }
+  ],
+  "code_findings": [],
+  "recommendations": [
+    {
+      "key": "rec.containment.preserve",
+      "params": {}
+    },
+    {
+      "key": "rec.eradication.fix_sqli_login",
+      "params": {
+        "path": "/admin/login.php"
+      }
+    },
+    {
+      "key": "rec.recovery.revoke_sessions",
+      "params": {
+        "paths": "/admin/login.php"
+      }
+    },
+    {
+      "key": "rec.recovery.review_unexplained",
+      "params": {
+        "count": "1"
+      }
+    },
+    {
+      "key": "rec.lessons.fim",
+      "params": {}
+    }
+  ],
+  "limitations": [
+    {
+      "key": "limit.automated",
+      "params": {}
+    },
+    {
+      "key": "limit.post_body",
+      "params": {}
+    },
+    {
+      "key": "limit.timestamps",
+      "params": {}
+    },
+    {
+      "key": "limit.log_tampering",
+      "params": {}
+    },
+    {
+      "key": "limit.shared_ip",
+      "params": {}
+    },
+    {
+      "key": "limit.no_code_analysis",
+      "params": {}
+    }
+  ]
+}

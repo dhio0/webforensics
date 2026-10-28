@@ -6,9 +6,12 @@ recommendations follow from the root cause, and how unrelated attack noise is gr
 
 from collections import Counter, defaultdict
 
+from webforensics.correlate.actors import parse_networks, resolve_actor
+from webforensics.correlate.engine import BYPASS_RULE
 from webforensics.models import (
     BackgroundGroup,
     CaseInfo,
+    CitationKind,
     CorrelationResult,
     EvidenceScope,
     FileCollection,
@@ -44,8 +47,14 @@ def root_event(result: CorrelationResult) -> TimelineEvent | None:
     return next(e for e in result.timeline if e.event_id == result.root_cause.event_id)
 
 
-def background_groups(result: CorrelationResult, logs: LogCollection) -> list[BackgroundGroup]:
-    """Unattributed log findings grouped by rule, most frequent first."""
+def background_groups(result: CorrelationResult, logs: LogCollection,
+                      trusted_proxies: tuple[str, ...] = ()) -> list[BackgroundGroup]:
+    """Unattributed log findings grouped by rule, most frequent first.
+
+    Clients are resolved like the engine does (X-Forwarded-For behind a trusted proxy),
+    so a CDN address does not hide how many bots there were.
+    """
+    proxies = parse_networks(trusted_proxies)
     unattributed = set(result.unattributed_finding_ids)
     events = {e.evidence_id: e for e in logs.events}
     by_rule: dict[str, list[Finding]] = defaultdict(list)
@@ -55,7 +64,7 @@ def background_groups(result: CorrelationResult, logs: LogCollection) -> list[Ba
     groups = []
     for rule_id, found in by_rule.items():
         hits = [events[f.subject] for f in found]
-        clients = Counter(e.client_ip for e in hits)
+        clients = Counter(resolve_actor(e, proxies) for e in hits)
         first = min(hits, key=lambda e: (e.ts, e.log_file, e.line_no))
         groups.append(BackgroundGroup(
             rule_id=rule_id, count=len(hits), clients=len(clients),
@@ -71,8 +80,15 @@ def other_flagged_files(result: CorrelationResult) -> list[str]:
     unattributed = set(result.unattributed_finding_ids)
     known = {f.path for f in result.affected_files} | set(result.unexplained_changes)
     flagged = {f.citations[0].source for f in result.findings
-               if f.finding_id in unattributed and f.rule_id.startswith(("FILE-", "CORR-"))}
+               if f.finding_id in unattributed and f.citations[0].kind is not CitationKind.LOG_LINE
+               and f.rule_id.startswith(("FILE-", "CORR-"))}
     return sorted(flagged - known)
+
+
+def unlinked_bypass_paths(result: CorrelationResult) -> list[str]:
+    """Login endpoints where an SQLi bypass looks successful outside the incident (D71)."""
+    return sorted({f.reasons[0].params["path"] for f in result.findings
+                   if f.rule_id == BYPASS_RULE})
 
 
 def _actor_span(result: CorrelationResult) -> tuple[str, str] | None:
@@ -92,8 +108,8 @@ def background_requests(result: CorrelationResult, logs: LogCollection) -> int:
                 if f.finding_id in unattributed and f.subject in events})
 
 
-def build_summary(result: CorrelationResult, background_count: int,
-                  review: int) -> list[Reason]:
+def build_summary(result: CorrelationResult, background_count: int, review: int,
+                  background: tuple[BackgroundGroup, ...] = ()) -> list[Reason]:
     lines: list[Reason] = []
     span = _actor_span(result)
     if result.affected_files and span:
@@ -112,6 +128,10 @@ def build_summary(result: CorrelationResult, background_count: int,
                             count=len(result.root_cause.alternative_event_ids)))
     elif result.affected_files:
         lines.append(_r("summary.root_cause_unknown"))
+    bypass = next((g for g in background if g.rule_id == BYPASS_RULE), None)
+    if bypass is not None:
+        lines.append(_r("summary.unlinked_bypass", count=bypass.count, clients=bypass.clients,
+                        paths=", ".join(unlinked_bypass_paths(result))))
     weakening = [g for g in result.gaps if g.affects]
     if weakening:
         lines.append(_r("summary.gaps_affect", count=len(weakening)))
@@ -142,8 +162,10 @@ def _eradication(result: CorrelationResult) -> list[Reason]:
         fix(_FIX_FOR_VULN[vuln], root.description.params.get("path", ""))
     elif root is not None and root.description.key == "timeline.login_method_unknown":
         fix("rec.eradication.fix_login", root.description.params.get("path", ""))
-    else:
+    elif result.affected_files:
         recs.append(_r("rec.eradication.unknown_entry"))
+    for path in unlinked_bypass_paths(result):
+        fix("rec.eradication.fix_sqli_login", path)
     # The endpoint that accepted the script is a weakness too, even behind a login.
     for event in result.timeline:
         if event.description.key in _WRITE_KINDS and event.description.params.get(
@@ -162,6 +184,9 @@ def build_recommendations(result: CorrelationResult, review: int) -> list[Reason
     recs += _eradication(result)
     if compromised:
         recs += [_r("rec.recovery.rotate_credentials"), _r("rec.recovery.restore_clean")]
+    bypassed = unlinked_bypass_paths(result)
+    if bypassed:
+        recs.append(_r("rec.recovery.revoke_sessions", paths=", ".join(bypassed)))
     if review or result.deleted_paths:
         recs.append(_r("rec.recovery.review_unexplained",
                        count=review + len(result.deleted_paths)))
@@ -207,13 +232,15 @@ def evidence_scope(logs: LogCollection, files: FileCollection,
 
 
 def build_report(result: CorrelationResult, logs: LogCollection, case: CaseInfo,
-                 run: RunInfo, scope: EvidenceScope | None = None) -> Report:
-    background = background_groups(result, logs)
+                 run: RunInfo, scope: EvidenceScope | None = None,
+                 trusted_proxies: tuple[str, ...] = ()) -> Report:
+    background = background_groups(result, logs, trusted_proxies)
     review = len(result.unexplained_changes) + len(other_flagged_files(result))
     return Report(
         case=case, run=run, result=without_noise(result, logs),
         scope=scope or EvidenceScope(),
-        summary=tuple(build_summary(result, background_requests(result, logs), review)),
+        summary=tuple(build_summary(result, background_requests(result, logs), review,
+                                    tuple(background))),
         background=tuple(background),
         recommendations=tuple(build_recommendations(result, review)),
         limitations=tuple(_r(key) for key in (*LIMITATIONS, "limit.no_code_analysis")),
