@@ -24,6 +24,21 @@ def _manifest_hashes(path: Path) -> dict[str, str]:
     return hashes
 
 
+def _access_logs(ground_truth: dict) -> list[str]:
+    return ground_truth.get("analysis", {}).get("access_logs", ["access.log"])
+
+
+def _analysis_paths(ground_truth: dict) -> list[str]:
+    analysis = ground_truth.get("analysis", {})
+    paths = [*_access_logs(ground_truth), *analysis.get("error_logs", []),
+             analysis.get("manifest", "manifest.tsv")]
+    return paths + ([analysis["baseline"]] if "baseline" in analysis else [])
+
+
+def _expected(step: dict) -> bool:
+    return step.get("expected_in_timeline", step["category"] != "benign_request")
+
+
 def test_all_scenario_ground_truth_matches_schema_and_evidence():
     schema = json.loads(SCHEMA_PATH.read_text(encoding="utf-8"))
     validator = Draft202012Validator(schema, format_checker=FormatChecker())
@@ -41,7 +56,12 @@ def test_all_scenario_ground_truth_matches_schema_and_evidence():
         step_ids = [step["id"] for step in steps]
         assert len(step_ids) == len(set(step_ids)), f"duplicate step id in {ground_truth_path}"
         root_steps = [step["id"] for step in steps if step["is_root_cause"]]
-        assert root_steps == [ground_truth["root_cause_step"]]
+        root = ground_truth["root_cause_step"]
+        assert root_steps == ([root] if root is not None else [])
+        if root is None:  # nothing compromised: nothing may be listed as changed by an attack
+            assert ground_truth["files"] == [] and ground_truth["attacker_ips"] == []
+        for rel in _analysis_paths(ground_truth):
+            assert (evidence_dir / rel).is_file(), f"missing {rel} for {ground_truth_path}"
 
         manifest = evidence_dir / "manifest.tsv"
         assert manifest.is_file(), f"missing manifest for {ground_truth_path}"
@@ -58,8 +78,12 @@ def test_all_scenario_ground_truth_matches_schema_and_evidence():
                 f"missing line {step['line_no']} in {step['log_file']} for {ground_truth_path}"
             )
 
+        # Attack steps in the access log must not share a second, so their order is
+        # unambiguous. Benign background steps (busy multi-client traffic) may.
         timestamps = []
         for step in steps:
+            if step["log_file"] not in _access_logs(ground_truth) or not _expected(step):
+                continue
             log_lines = (evidence_dir / step["log_file"]).read_text(
                 encoding="utf-8", errors="replace"
             ).splitlines()

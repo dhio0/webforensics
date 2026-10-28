@@ -13,60 +13,201 @@
     "root_cause_step"
   ],
   "properties": {
-    "scenario_id": {"type": "string", "minLength": 1},
-    "description": {"type": "string", "minLength": 1},
+    "scenario_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "description": {
+      "type": "string",
+      "minLength": 1
+    },
     "attacker_ips": {
       "type": "array",
-      "items": {"type": "string", "format": "ipv4"},
+      "items": {
+        "type": "string",
+        "format": "ipv4"
+      },
       "uniqueItems": true
     },
     "steps": {
       "type": "array",
       "minItems": 1,
-      "items": {"$ref": "#/$defs/step"}
+      "items": {
+        "$ref": "#/$defs/step"
+      }
     },
     "files": {
       "type": "array",
-      "items": {"$ref": "#/$defs/file"}
+      "items": {
+        "$ref": "#/$defs/file"
+      }
     },
-    "root_cause_step": {"type": "string", "minLength": 1},
-    "vulnerable_code": {"$ref": "#/$defs/vulnerableCode"}
+    "root_cause_step": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "minLength": 1,
+      "description": "Step id of the root cause, or null when nothing was compromised (e.g. scenario D)."
+    },
+    "vulnerable_code": {
+      "$ref": "#/$defs/vulnerableCode"
+    },
+    "split": {
+      "enum": [
+        "dev",
+        "held_out"
+      ],
+      "default": "dev",
+      "description": "held_out scenarios are never used to tune rules; eval reports them separately."
+    },
+    "expected_rule_ids": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "pattern": "^[A-Z]+(-[A-Z0-9]+)+$"
+      },
+      "description": "Rule ids a correct analysis must report (e.g. the timestomp rule)."
+    },
+    "analysis": {
+      "$ref": "#/$defs/analysis"
+    }
   },
   "$defs": {
     "step": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["id", "category", "mitre", "log_file", "line_no", "is_root_cause"],
+      "required": [
+        "id",
+        "category",
+        "mitre",
+        "log_file",
+        "line_no",
+        "is_root_cause"
+      ],
       "properties": {
-        "id": {"type": "string", "minLength": 1},
-        "category": {"type": "string", "minLength": 1},
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "category": {
+          "type": "string",
+          "minLength": 1
+        },
         "mitre": {
           "type": "array",
-          "items": {"type": "string", "pattern": "^T[0-9]{4}(\\.[0-9]{3})?$"},
+          "items": {
+            "type": "string",
+            "pattern": "^T[0-9]{4}(\\.[0-9]{3})?$"
+          },
           "uniqueItems": true
         },
-        "log_file": {"type": "string", "minLength": 1},
-        "line_no": {"type": "integer", "minimum": 1},
-        "is_root_cause": {"type": "boolean"}
+        "log_file": {
+          "type": "string",
+          "minLength": 1
+        },
+        "line_no": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "is_root_cause": {
+          "type": "boolean"
+        },
+        "expected_in_timeline": {
+          "type": "boolean",
+          "description": "Whether a correct timeline cites this line. Default: true unless the category is benign_request."
+        }
       }
     },
     "file": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["path", "sha256", "change"],
+      "required": [
+        "path",
+        "sha256",
+        "change"
+      ],
       "properties": {
-        "path": {"type": "string", "minLength": 1},
-        "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
-        "change": {"enum": ["created", "modified"]}
+        "path": {
+          "type": "string",
+          "minLength": 1
+        },
+        "sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "change": {
+          "enum": [
+            "created",
+            "modified"
+          ]
+        }
       }
     },
     "vulnerableCode": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["file", "line"],
+      "required": [
+        "file",
+        "line"
+      ],
       "properties": {
-        "file": {"type": "string", "minLength": 1},
-        "line": {"type": "integer", "minimum": 1}
+        "file": {
+          "type": "string",
+          "minLength": 1
+        },
+        "line": {
+          "type": "integer",
+          "minimum": 1
+        }
+      }
+    },
+    "analysis": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "How to analyze the evidence folder. Paths are relative to evidence/.",
+      "properties": {
+        "access_logs": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "error_logs": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "error_log_format": {
+          "enum": [
+            "nginx",
+            "apache"
+          ]
+        },
+        "error_log_utc_offset": {
+          "type": "string",
+          "pattern": "^[+-][0-9]{2}:?[0-9]{2}$"
+        },
+        "manifest": {
+          "type": "string",
+          "minLength": 1
+        },
+        "baseline": {
+          "type": "string",
+          "minLength": 1
+        },
+        "trusted_proxies": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
       }
     }
   }
