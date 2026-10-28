@@ -2,9 +2,14 @@
 session_start();
 require __DIR__ . '/../db.php';
 $message = '';
-if (isset($_GET['username'], $_GET['password'])) {
-    $username = $_GET['username'];
-    $password = $_GET['password'];
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $credentials = $_POST;
+} else {
+    $credentials = $_GET;
+}
+if (isset($credentials['username'], $credentials['password'])) {
+    $username = $credentials['username'];
+    $password = $credentials['password'];
     $query = "SELECT id, username FROM users WHERE username = '$username' AND password = '$password'";
     $user = $pdo->query($query)->fetch(PDO::FETCH_ASSOC);
     if ($user) {

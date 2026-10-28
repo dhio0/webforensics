@@ -1,0 +1,27 @@
+{
+  "scenario_id": "b",
+  "description": "A failed POST login and two benign visits precede a POST-body SQL injection login bypass, authenticated upload of inert marker text, and marker request. The POST login line is the root cause.",
+  "attacker_ips": ["192.0.2.10"],
+  "steps": [
+    {"id": "failed_normal_login", "category": "authentication_failure", "mitre": [], "log_file": "access.log", "line_no": 1, "is_root_cause": false},
+    {"id": "benign_client_one", "category": "benign_request", "mitre": [], "log_file": "access.log", "line_no": 2, "is_root_cause": false},
+    {"id": "benign_client_two", "category": "benign_request", "mitre": [], "log_file": "access.log", "line_no": 3, "is_root_cause": false},
+    {"id": "post_sqli_login_bypass", "category": "successful_login_bypass", "mitre": ["T1190"], "log_file": "access.log", "line_no": 4, "is_root_cause": true},
+    {"id": "authenticated_marker_upload", "category": "authenticated_upload", "mitre": [], "log_file": "access.log", "line_no": 5, "is_root_cause": false},
+    {"id": "request_marker_path", "category": "marker_invocation", "mitre": [], "log_file": "access.log", "line_no": 6, "is_root_cause": false}
+  ],
+  "files": [
+    {"path": "uploads/scenario-b-marker.php", "sha256": "105ddd6ab59b87c2013943bab1e598aae952be1f7ae85aac56da08beec344bf6", "change": "created"}
+  ],
+  "root_cause_step": "post_sqli_login_bypass",
+  "vulnerable_code": {"file": "lab/app/admin/login.php", "line": 13},
+  "split": "dev",
+  "analysis": {
+    "access_logs": ["access.log"],
+    "error_logs": ["error.log"],
+    "error_log_format": "nginx",
+    "error_log_utc_offset": "+0000",
+    "manifest": "manifest.tsv",
+    "trusted_proxies": ["172.30.0.3"]
+  }
+}

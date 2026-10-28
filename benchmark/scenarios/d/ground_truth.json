@@ -1,0 +1,41 @@
+{
+  "scenario_id": "d",
+  "description": "Busy benign browsing includes SQL injection probes from two bots, a normal administrator image upload, and a visitor comment that creates static HTML in a .php cache file. Nothing is compromised; this scenario measures false accusations.",
+  "attacker_ips": [],
+  "steps": [
+    {"id": "visitor_01", "category": "benign_request", "mitre": [], "log_file": "access.log", "line_no": 1, "is_root_cause": false},
+    {"id": "visitor_02", "category": "benign_request", "mitre": [], "log_file": "access.log", "line_no": 2, "is_root_cause": false},
+    {"id": "visitor_03", "category": "benign_request", "mitre": [], "log_file": "access.log", "line_no": 3, "is_root_cause": false},
+    {"id": "visitor_04", "category": "benign_request", "mitre": [], "log_file": "access.log", "line_no": 4, "is_root_cause": false},
+    {"id": "visitor_05", "category": "benign_request", "mitre": [], "log_file": "access.log", "line_no": 5, "is_root_cause": false},
+    {"id": "visitor_06", "category": "benign_request", "mitre": [], "log_file": "access.log", "line_no": 6, "is_root_cause": false},
+    {"id": "visitor_07", "category": "benign_request", "mitre": [], "log_file": "access.log", "line_no": 7, "is_root_cause": false},
+    {"id": "visitor_08", "category": "benign_request", "mitre": [], "log_file": "access.log", "line_no": 8, "is_root_cause": false},
+    {"id": "visitor_09", "category": "benign_request", "mitre": [], "log_file": "access.log", "line_no": 9, "is_root_cause": false},
+    {"id": "visitor_10", "category": "benign_request", "mitre": [], "log_file": "access.log", "line_no": 10, "is_root_cause": false},
+    {"id": "bot_one_sqli_or", "category": "exploit_attempt", "mitre": ["T1190"], "log_file": "access.log", "line_no": 11, "is_root_cause": false, "expected_in_timeline": false},
+    {"id": "bot_one_sqli_union", "category": "exploit_attempt", "mitre": ["T1190"], "log_file": "access.log", "line_no": 12, "is_root_cause": false, "expected_in_timeline": false},
+    {"id": "bot_one_get_login_bypass", "category": "exploit_attempt", "mitre": ["T1190"], "log_file": "access.log", "line_no": 13, "is_root_cause": false, "expected_in_timeline": false},
+    {"id": "bot_two_sqli_or", "category": "exploit_attempt", "mitre": ["T1190"], "log_file": "access.log", "line_no": 14, "is_root_cause": false, "expected_in_timeline": false},
+    {"id": "bot_two_sqli_union", "category": "exploit_attempt", "mitre": ["T1190"], "log_file": "access.log", "line_no": 15, "is_root_cause": false, "expected_in_timeline": false},
+    {"id": "bot_two_get_login_bypass", "category": "exploit_attempt", "mitre": ["T1190"], "log_file": "access.log", "line_no": 16, "is_root_cause": false, "expected_in_timeline": false},
+    {"id": "normal_admin_login", "category": "benign_request", "mitre": [], "log_file": "access.log", "line_no": 17, "is_root_cause": false},
+    {"id": "admin_valid_image_upload", "category": "benign_upload", "mitre": [], "log_file": "access.log", "line_no": 18, "is_root_cause": false, "expected_in_timeline": false},
+    {"id": "visitor_comment_cache_write", "category": "benign_cache_write", "mitre": [], "log_file": "access.log", "line_no": 19, "is_root_cause": false, "expected_in_timeline": false},
+    {"id": "crawler_home", "category": "benign_request", "mitre": [], "log_file": "access.log", "line_no": 20, "is_root_cause": false},
+    {"id": "crawler_product_one", "category": "benign_request", "mitre": [], "log_file": "access.log", "line_no": 21, "is_root_cause": false},
+    {"id": "crawler_product_two", "category": "benign_request", "mitre": [], "log_file": "access.log", "line_no": 22, "is_root_cause": false}
+  ],
+  "files": [],
+  "root_cause_step": null,
+  "split": "dev",
+  "analysis": {
+    "access_logs": ["access.log"],
+    "error_logs": ["error.log"],
+    "error_log_format": "nginx",
+    "error_log_utc_offset": "+0000",
+    "manifest": "manifest.tsv",
+    "baseline": "baseline.tsv",
+    "trusted_proxies": ["172.30.0.3"]
+  }
+}

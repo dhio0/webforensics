@@ -3,6 +3,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['file'])) {
     $name = basename($_FILES['file']['name']);
     $destination = __DIR__ . '/../uploads/' . $name;
     if (move_uploaded_file($_FILES['file']['tmp_name'], $destination)) {
+        error_log('lab upload stored');
         echo 'Uploaded: ' . htmlspecialchars('/uploads/' . $name, ENT_QUOTES, 'UTF-8');
         exit;
     }
