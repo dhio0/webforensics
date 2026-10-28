@@ -292,3 +292,32 @@ Found by reading scenario D's report. Two bots sent the SQLi login bypass and go
 ## D72 — No "find the entry point" advice when nothing was compromised
 Status: accepted (M5).
 With no compromise, the report used to recommend checking "the endpoints in the timeline" for an entry point, but the timeline is empty. That advice now only appears when files were affected. The caution stays in the summary ("does not guarantee the server is clean") and in the review of unexplained changes.
+
+## D73 — Wazuh 4.14.x only, read through explicit `-4.x-` index names
+Status: accepted (M6).
+The lab installs the latest 4.14 patch on install day (D21). Wazuh 5.0 replaces the alert and archive indices (`wazuh-events-v5-*`, `wazuh-findings-v5-*`), and the indexer's `GET /` reports the OpenSearch version, not the Wazuh one. So the adapter queries `wazuh-alerts-4.x-*` and `wazuh-archives-4.x-*` explicitly, the names the official 4.x index template covers. On 5.x the indices don't exist and the adapter stops with a clear error instead of returning an empty result. Details and sources: `docs/wazuh-notes.md` §1.
+
+## D74 — Web events come from `wazuh-archives-*`; alerts-only is a degraded mode
+Status: accepted (M6).
+In the 4.14.9 web rules, ordinary 2xx/3xx requests are level 0 and alerts start at level 3, so the upload POST, webshell POSTs and POST-body SQLi never reach `wazuh-alerts-*`. Those are exactly the requests file-first correlation needs. Archives hold every event but are off by default (`logall_json` + Filebeat `archives`). The lab enables them. Without them the adapter still runs on alerts, but adds one `wazuh.alerts_only` evidence gap, turns the log-silence detector off (it would fire almost everywhere), and lowers confidence. Notes §3.1.
+
+## D75 — Re-parse `full_log` with our own parser; Wazuh rule verdicts are not scored
+Status: accepted (M6).
+Wazuh's access-log decoders extract only source IP, method, URL and status: no request time, user agent or X-Forwarded-For, and `srcip` names the proxy behind our edge. Every archive and alert event carries the raw line in `full_log`, so the adapter feeds it to the same parser as the FileAdapter. The request time comes from the log line, not from Wazuh's `timestamp` (manager processing time). Wazuh's `rule.id` is shown to the analyst in the citation but does not affect findings, so both adapters judge evidence the same way. Notes §3.2–3.3.
+
+## D76 — FIM time is a first-class timestamp in the core
+Status: accepted (M6).
+Wazuh FIM gives no ctime or btime, only mtime and the alert's manager-side `timestamp`. Pretending that time is a btime or ctime would overclaim.
+- `FileEvidence` gets `fim_first_seen`, `fim_last_seen` and `fim_mode`.
+- `choose_anchor` gets a FIM branch. With realtime or whodata FIM, the first `added` time is the anchor, capped at medium confidence: it is an upper bound and compares the manager clock with the web server clock. With scheduled FIM (default every 12 h), the mtime is the anchor, capped at low, and the FIM time only bounds the window.
+- `lonely_writes` accepts realtime FIM anchors.
+- `syscheck.mtime_after` is formatted in the manager's local time with its offset cut off (a 20-byte `strftime` buffer in `to_json.c`), and the indexer reads it as UTC. So the adapter reads `_source`, never the indexer's `fields`, and applies the offset of the same alert's `timestamp`.
+Notes §4.
+
+## D77 — File content only from a hash-matched `--webroot`
+Status: accepted (M6).
+FIM provides hashes and metadata, not bytes, so the content rules (D28) and M7's code localization have nothing to read. A FIM `added` event still makes a new code file a strong seed, so root-cause tracing works without content. Content can be supplied with an optional `--webroot` snapshot. A file's content is used only if its SHA-256 equals the FIM `sha256_after`; otherwise it is ignored and the mismatch is reported. Without a snapshot, the report says content analysis was not performed.
+
+## D78 — Pull to a recording, analyze offline; deleted files keep their last hash
+Status: accepted (M6).
+`pull` is the only step that touches the network. It writes the raw hits (`_index`, `_id`, `_source`, unaltered) plus a header (Wazuh version, indices, time window, agent, query, pull time, archives present) to a JSONL recording. `analyze` reads the recording offline. Rerunning on the same recording gives byte-identical output, CI and the benchmark need no Wazuh, and the recording's SHA-256 in the report makes it an evidence copy. Paging uses PIT + `search_after` sorted by `timestamp` then `_id`, as the OpenSearch 2.19 docs recommend. The agent builds `deleted` events from its stored entry, so they carry the last `sha256_after`; a deleted file becomes `FileEvidence` with a `deleted` flag, or a finding citing the alert if no hash is present. Credentials come from the environment or a file, TLS is verified against the lab CA, and the lab uses a read-only indexer user.
