@@ -1,6 +1,6 @@
 # Plan: web incident forensics tool
 
-Status: **Approved.** M0–M3 complete.
+Status: **Approved.** M0–M4 complete.
 
 | Milestone | State |
 |---|---|
@@ -8,7 +8,8 @@ Status: **Approved.** M0–M3 complete.
 | M1 models + FileAdapter + parsers + collect.sh | done: collect.sh verified on Linux CI |
 | M2 | done: log rules, file rules, isolated lab-lite stack, spaced Scenario A and F replays, collected evidence, benchmark schema/validation |
 | M3 | done: file-first correlation engine (`correlate/`), baseline comparison, anchor + timestomp check, gaps + confidence, MITRE table, proxy-aware actors, login outcomes, weak seeds, error-log parser, indexed engine (1M lines in ~27 s); scenario A/F acceptance plus noisy variants (precision), gap fixtures, seeded property test |
-| M4–M7 | not started |
+| M4 | done: Indonesian report (`report/`: builder, format-neutral document, Markdown + self-contained HTML + JSON), `analyze` command, CSIRT-phase recommendations, grouped background noise, evidence scope, attack story, raw root-cause request, versioned report.json; golden files for A/F, byte-identical reruns from any working directory, escaping and well-formed HTML tests, catalog coverage test |
+| M5–M7 | not started |
 Source of truth: `CLAUDE.md`. Design decisions are logged in `docs/decisions.md` (referenced here as D1, D2, ...).
 
 ---
@@ -57,10 +58,13 @@ web-forensics/
 │   │   └── confidence.py       # deterministic confidence rules
 │   ├── attack/mitre.py         # static technique table
 │   ├── codeloc/php_sqli.py     # M7
+│   ├── analysis.py             # load evidence -> correlate -> build report (used by the CLI)
 │   ├── report/
-│   │   ├── render.py
-│   │   ├── messages_id.py      # Indonesian strings catalog
-│   │   └── templates/{report.md.j2, report.html.j2}
+│   │   ├── build.py            # language-neutral Report: summary, recommendations, noise groups
+│   │   ├── document.py         # format-neutral sections/tables of plain text
+│   │   ├── markdown.py, html.py  # serializers, one escape function each (D58)
+│   │   ├── text.py             # keys -> Indonesian text, report time zone
+│   │   └── messages_id.py      # Indonesian strings catalog
 │   └── llm/                    # optional, off by default (late / roadmap)
 ├── tests/
 │   ├── unit/
@@ -257,10 +261,15 @@ Rough schedule: W1 = M0–M1, W2 = M2 (incl. lab-lite), W3 = M3–M4, W4 = M5, W
 
 Small items deliberately deferred. Each lists the milestone where it belongs.
 
-**For M4 (report + `analyze`)**
-- `correlate()` has no CLI yet. `analyze` should take `--baseline` (manifest) and the `CorrelationConfig` thresholds.
-- Indonesian strings are needed for every `timeline.*`, `creation.*`, `root.*`, `confidence.*`, `anchor.*`, `file.*`, `timestomp.*` and `gap.*` key the engine emits.
-- `CorrelationResult.unattributed_finding_ids` (attack requests from actors not linked to the incident, e.g. bot noise) needs its own report section.
+**For M4 (report + `analyze`): done**
+- `analyze` takes `--baseline`, error logs, trusted proxies and the creation-window and clock-skew thresholds.
+- Every key the engine can emit has Indonesian text. `tests/unit/test_messages.py` scans the source and renders real results in strict mode.
+- Unattributed findings are grouped per rule in their own section (D62).
+
+**Still open after M4**
+- The report has no vulnerable-code section until M7 (`limit.no_code_analysis` says so).
+- Recommendations are rules over the result, not tailored advice. They are worded as checks to do, and the report says an analyst must verify it.
+- The silence, lonely-write and rare-POST thresholds are not on the CLI yet. Defaults are in `correlate/config.py`.
 
 **Correlation limits found in M3: fixed in M3 (D47–D51)**
 - Actor = client IP only → XFF from trusted proxies (right-most untrusted hop); a user-agent switch between entry point and write lowers confidence.

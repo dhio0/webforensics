@@ -229,3 +229,46 @@ A seed is set aside (`unexplained_changes`) when it is flagged only by its path,
 ## D57 — Bot payloads don't teach the engine what a failed login looks like
 Status: accepted (M3).
 Bots replay the same SQLi login payload whether or not it works. Their "retries" were becoming failure fingerprints, and when the bypass response had the same size, the attacker's real bypass was then classed as a failed login (scenario F with noise picked the upload as root cause). Attempts that carry an attack pattern are now excluded from the fingerprints.
+
+## D58 — Report renderers are plain Python with one escape function per format, not Jinja2
+Status: accepted (M4).
+Jinja2 would be a new dependency for two small templates. Instead, `markdown.py` and `html.py` serialize a fixed set of blocks, and every string passes through `_md` or `_e` (html.escape). Class names and anchors never come from evidence. The HTML has no script and no external resources, and carries a CSP (`default-src 'none'`), so even a missed escape could not run code or call out. Markdown escapes inline markup everywhere, and block markers where text starts a line. IOC code fences grow longer than any backtick run inside them. Tests feed `<script>`, `<img onerror>`, pipes and fake links through user agents, paths and file names.
+
+## D59 — One format-neutral document feeds both renderers
+Status: accepted (M4).
+`document.py` decides what the report says (sections, tables, lists of plain text). The renderers only decide how it looks. So Markdown and HTML cannot drift apart in content, and the content logic is tested once.
+
+## D60 — Report times are shown in one fixed offset, WIB by default
+Status: accepted (M4).
+Indonesian readers think in WIB, WITA or WIT. Indonesia has no daylight saving time, so a fixed offset (`--display-offset`) is exact. The zone is printed in the case section and after every time. The JSON keeps UTC.
+
+## D61 — Byte-identical reports: the report time is an input
+Status: accepted (M4).
+Everything else in the report is derived from the inputs. `generated_at` comes from `--generated-at`, else `SOURCE_DATE_EPOCH`, else the current time. The default case id is derived from the input hashes. Golden files for scenarios A and F are compared byte for byte, and two CLI runs must match them.
+
+## D62 — Unrelated attack noise is grouped per rule
+Status: accepted (M4).
+A public site gets thousands of bot payloads. Listing them all would bury the incident, but hiding them would hide that the site is a target. The report groups unattributed findings per rule: count, distinct clients, top 5 clients, time range, and one example citation. The summary counts distinct requests, since one line can match several rules.
+
+## D63 — The root-cause row shows both confidences when they differ
+Status: accepted (M4).
+In scenario A the upload request certainly wrote the file (high). That it was the way in is only medium, because not seeing a login is absence of evidence. The timeline cell reads "tinggi (sebagai titik masuk: sedang)" so the two claims are not confused.
+
+## D64 — Recommendations are deterministic rules over the result
+Status: accepted (M4).
+They follow the CSIRT phases (containment, eradication, recovery, lessons learned). The fix named depends on the root cause's weakness: upload validation, prepared statements for a SQLi login, or the FILE privilege for SQLi writes. An endpoint that accepted a script behind a login also gets an upload fix. With no root cause, the report says the entry point is unknown and lists what to check, instead of guessing.
+
+## D65 — The report keeps noise as groups, not as one record per request
+Status: accepted (M4).
+`report.json` first copied every unattributed finding with its log excerpt: 23 MB for a 200k-line log where 1 in 8 lines is a bot payload. The report now drops unattributed log findings after grouping them (D62), which brought that run to 16 KB. Findings on files are kept, because they feed the review section and are few. The full per-request list is still available from the correlation API.
+
+## D66 — Names in the report are relative to the evidence folder, not the working directory
+Status: accepted (M4).
+Input names were relative to the current directory. So the same evidence gave a different report (and case id) depending on where `analyze` ran, and evidence outside that directory showed absolute paths such as `C:/Users/<analyst>/...`. Names are now relative to the deepest folder that holds all inputs (`case01/logs/access.log` and `case01/manifest.tsv` give `logs/access.log` and `manifest.tsv`). A test runs the CLI from two directories and checks that the bytes match and contain no local path.
+
+## D67 — The report states its scope, tells the story, and shows the payload
+Status: accepted (M4).
+- **Scope:** the case section lists the log period, lines read and unreadable, error-log entries, files in the manifest, collection time, and whether a baseline was used. A CSIRT report must say what was examined, not only what was concluded.
+- **Story:** the summary lists only the incident's main steps (entry point, write, file, first use by the attacker) for non-technical readers. Recon, failed logins and alternatives stay in the full timeline.
+- **Payload:** the root-cause section shows the raw log line, because the SQLi payload sits in the query string, which the event text leaves out.
+- **Format version:** `report.json` carries `format` so the M5 evaluator and later Wazuh tooling can detect changes.

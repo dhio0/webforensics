@@ -7,3 +7,6 @@ benchmark/scenarios/** -text
 
 # Lab files are mounted into Linux containers.
 lab/** text eol=lf
+
+# Golden reports are compared byte for byte.
+tests/golden/** -text

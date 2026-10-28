@@ -450,20 +450,50 @@ class CorrelationResult(_Frozen):
         return self
 
 
-class Report(_Frozen):
-    case: CaseInfo
-    run: RunInfo
-    summary: tuple[Reason, ...] = ()
-    timeline: tuple[TimelineEvent, ...] = ()
-    root_cause: RootCause | None = None
-    affected_files: tuple[FileEvidence, ...] = ()
-    iocs: Iocs = Iocs()
-    gaps: tuple[EvidenceGap, ...] = ()
-    code_findings: tuple[CodeLocation, ...] = ()
-    recommendations: tuple[Reason, ...] = ()
-    limitations: tuple[Reason, ...] = ()
+class BackgroundGroup(_Frozen):
+    """Attack-pattern requests of one rule that are not linked to the incident (e.g. bots).
 
-    @model_validator(mode="after")
-    def _timeline_sorted(self) -> "Report":
-        _check_sorted(self.timeline)
-        return self
+    Aggregated so a log full of bot traffic gives a short table, not a million rows.
+    """
+
+    rule_id: str
+    count: int = Field(ge=1)
+    clients: int = Field(ge=1)
+    top_clients: tuple[tuple[str, int], ...] = ()
+    first: UtcDatetime
+    last: UtcDatetime
+    example: Citation
+
+
+class EvidenceScope(_Frozen):
+    """What was analyzed: a conclusion is only as wide as the evidence behind it."""
+
+    log_first: UtcDatetime | None = None
+    log_last: UtcDatetime | None = None
+    log_events: int = 0
+    log_unparsed: int = 0
+    error_events: int = 0
+    error_unparsed: int = 0
+    files: int = 0
+    files_rejected: int = 0
+    baseline_files: int | None = None  # None: no baseline given
+    collected_at: UtcDatetime | None = None  # from the manifest header
+
+
+REPORT_FORMAT = "webforensics-report/1"
+
+
+class Report(_Frozen):
+    """Everything the renderers need, still language-neutral (keys + params, D12)."""
+
+    # Bumped when report.json changes incompatibly, for tools that read it (eval, Wazuh).
+    format: str = REPORT_FORMAT
+    case: CaseInfo
+    scope: EvidenceScope = EvidenceScope()
+    run: RunInfo
+    result: CorrelationResult
+    summary: tuple[Reason, ...] = ()
+    background: tuple[BackgroundGroup, ...] = ()
+    code_findings: tuple[CodeLocation, ...] = ()
+    recommendations: tuple[Reason, ...] = ()  # keys start with rec.<phase>.
+    limitations: tuple[Reason, ...] = ()
