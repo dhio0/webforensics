@@ -52,3 +52,15 @@ Known limitations of the collector:
 - Line numbers count every physical line, including blank ones, so a citation `access.log:42` matches what `sed -n 42p` shows.
 - Invalid UTF-8 bytes are kept as `\xHH`, like nginx's own escaping.
 - POST bodies are **not** in access logs. This is a fundamental limitation (see plan §4).
+
+## Error logs (optional, supporting evidence)
+`ErrorLogFileSource` reads nginx and Apache 2.4 error logs (optionally `.gz`).
+
+```
+nginx:  2026/10/27 17:00:10 [error] 31#31: *7 <message>, client: 203.0.113.7, server: _, request: "POST /admin/upload.php HTTP/1.1", ...
+Apache: [Tue Oct 27 10:00:10.123456 2026] [php:warn] [pid 12] [client 203.0.113.7:51234] <message>
+```
+
+- Error-log timestamps have **no UTC offset**. Pass the server's offset (e.g. `+0700`, from the manifest's `#utc_offset`). The offset used is stored on each event and shown with every error-log citation.
+- nginx entries include the request line, so they are matched to access-log lines by IP + method + path + time. Apache entries are matched by IP + time only.
+- Lines that don't start an entry (PHP stack traces, wrapped messages) are counted as `not_entry_start` failures in `error_failures`. They are expected and do not create evidence gaps.

@@ -15,6 +15,7 @@ from collections.abc import Iterator
 from datetime import UTC, datetime, timedelta, timezone
 from enum import StrEnum
 from pathlib import Path
+from sys import intern
 from typing import BinaryIO
 
 from webforensics.models import LogEvent, ParseFailure, TsSemantics, stable_id
@@ -45,7 +46,7 @@ _REQUEST_RE = re.compile(
 _TIME_RE = re.compile(
     r"^(\d{2})/([A-Z][a-z]{2})/(\d{4}):(\d{2}):(\d{2}):(\d{2}) ([+-])(\d{2})(\d{2})$"
 )
-_MONTHS = {
+MONTHS = {
     name: number
     for number, name in enumerate(
         ("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"),
@@ -59,14 +60,14 @@ _SIMPLE_ESCAPES = {'"': '"', "\\": "\\", "n": "\n", "r": "\r", "t": "\t"}
 def parse_clf_time(value: str) -> datetime:
     """Parse `27/Oct/2026:10:00:01 +0700` into a UTC datetime, independent of locale."""
     match = _TIME_RE.match(value)
-    if match is None or match.group(2) not in _MONTHS:
+    if match is None or match.group(2) not in MONTHS:
         raise ValueError(f"bad timestamp: {value!r}")
     day, month, year, hour, minute, second, sign, off_h, off_m = match.groups()
     offset = timedelta(hours=int(off_h), minutes=int(off_m))
     if sign == "-":
         offset = -offset
     local = datetime(
-        int(year), _MONTHS[month], int(day), int(hour), int(minute), int(second),
+        int(year), MONTHS[month], int(day), int(hour), int(minute), int(second),
         tzinfo=timezone(offset),
     )
     return local.astimezone(UTC)
@@ -93,6 +94,11 @@ def _dash_to_none(value: str | None) -> str | None:
     return None if value in (None, "-") else value
 
 
+def _shared(value: str | None) -> str | None:
+    """Intern values that repeat across lines (IPs, agents, paths) to save memory."""
+    return intern(value) if value is not None else None
+
+
 def parse_access_line(
     raw: str,
     source: str,
@@ -113,6 +119,7 @@ def parse_access_line(
     if request := _REQUEST_RE.match(request_raw):
         method, target, protocol = request["method"].upper(), request["target"], request["protocol"]
     path, _, query = target.partition("?") if target else (None, "", "")
+    method, protocol, path = _shared(method), _shared(protocol), _shared(path)
 
     referer = match["referer"]
     user_agent = match["user_agent"]
@@ -126,22 +133,22 @@ def parse_access_line(
         raw=raw,
         ts=ts,
         ts_semantics=_TS_SEMANTICS[fmt],
-        client_ip=match["client_ip"],
-        remote_user=_dash_to_none(match["remote_user"]),
-        request_raw=request_raw,
+        client_ip=intern(match["client_ip"]),
+        remote_user=_shared(_dash_to_none(match["remote_user"])),
+        request_raw=intern(request_raw),
         method=method,
         path=path,
         query=query or None,
         protocol=protocol,
         status=int(match["status"]),
         bytes_sent=0 if match["bytes"] == "-" else int(match["bytes"]),
-        referer=_dash_to_none(unescape_log_field(referer)),
-        user_agent=_dash_to_none(unescape_log_field(user_agent)),
-        xff=_dash_to_none(unescape_log_field(xff)) if xff is not None else None,
+        referer=_shared(_dash_to_none(unescape_log_field(referer))),
+        user_agent=_shared(_dash_to_none(unescape_log_field(user_agent))),
+        xff=_shared(_dash_to_none(unescape_log_field(xff))) if xff is not None else None,
     )
 
 
-def _open_log(path: Path) -> BinaryIO:
+def open_log(path: Path) -> BinaryIO:
     if path.suffix == ".gz":
         return gzip.open(path, "rb")  # type: ignore[return-value]
     return path.open("rb")
@@ -158,7 +165,7 @@ def iter_access_log(
     For .gz files, line numbers refer to the decompressed content.
     Invalid UTF-8 bytes are kept as \\xHH, matching nginx's own escaping.
     """
-    with _open_log(path) as handle:
+    with open_log(path) as handle:
         for line_no, raw_bytes in enumerate(handle, start=1):
             line = raw_bytes.rstrip(b"\r\n")
             if not line.strip():

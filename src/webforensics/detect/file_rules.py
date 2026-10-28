@@ -38,6 +38,14 @@ _ENCODED_CALL = re.compile(r"\b(?:base64_decode|gzinflate|str_rot13)\s*\(", re.I
 _PERSISTENCE_NAMES = {".htaccess", "index.php", "index.html", "index.htm", "index.phtml"}
 
 
+def has_executable_extension(path: str) -> bool:
+    return Path(path.rsplit("/", 1)[-1]).suffix.casefold() in _EXECUTABLE_EXTENSIONS
+
+
+def is_entrypoint_name(path: str) -> bool:
+    return path.rsplit("/", 1)[-1].casefold() in _PERSISTENCE_NAMES
+
+
 def _read_content(file: FileEvidence) -> str | None:
     if file.content_ref is None:
         return None

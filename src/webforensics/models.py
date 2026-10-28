@@ -5,7 +5,8 @@ and normalized to UTC (D6). The rationale for each field is in docs/plan.md §3.
 """
 
 import hashlib
-from datetime import UTC, datetime
+from dataclasses import dataclass
+from datetime import UTC, datetime, timedelta
 from enum import StrEnum
 from typing import Annotated
 
@@ -200,13 +201,24 @@ class FileEvidence(Evidence):
         )
 
 
-class LogEvent(Evidence):
-    """One parsed access-log line. `raw` is kept verbatim for citations."""
+@dataclass(frozen=True, slots=True, kw_only=True)
+class LogEvent:
+    """One parsed access-log line. `raw` is kept verbatim for citations.
 
+    A slotted dataclass, not a pydantic model: there is one per log line, and a pydantic
+    instance costs ~1.3 KB of overhead versus ~80 B here (D52). Only our own parsers
+    build these, so the checks in `__post_init__` are enough. Change one with
+    `dataclasses.replace`.
+    """
+
+    evidence_id: str
+    adapter: str
+    source: str
+    collected_at: datetime | None = None
     log_file: str
-    line_no: int = Field(ge=1)
+    line_no: int
     raw: str
-    ts: UtcDatetime
+    ts: datetime
     ts_semantics: TsSemantics
     client_ip: str
     remote_user: str | None = None
@@ -216,12 +228,20 @@ class LogEvent(Evidence):
     query: str | None = None
     protocol: str | None = None
     status: int
-    bytes_sent: int = Field(ge=0)
+    bytes_sent: int
     referer: str | None = None
     user_agent: str | None = None
     xff: str | None = None
     vhost: str | None = None
     tags: tuple[str, ...] = ()
+
+    def __post_init__(self) -> None:
+        if not self.evidence_id or self.line_no < 1 or self.bytes_sent < 0:
+            raise ValueError("log event needs an id, line_no >= 1 and bytes_sent >= 0")
+        if self.ts.tzinfo is None:
+            raise ValueError("log event timestamp must be timezone-aware")
+        if self.ts.utcoffset() != timedelta(0):
+            object.__setattr__(self, "ts", self.ts.astimezone(UTC))
 
     def citation(self) -> Citation:
         return Citation(
@@ -267,10 +287,46 @@ class EvidenceGap(_Frozen):
         return self
 
 
+class ErrorLogEvent(Evidence):
+    """One parsed web-server error-log entry (nginx or Apache).
+
+    Error logs carry no status code and their timestamps have no UTC offset, so the
+    offset used is recorded in `assumed_utc_offset` and they only support conclusions.
+    """
+
+    log_file: str
+    line_no: int = Field(ge=1)
+    raw: str
+    ts: UtcDatetime
+    assumed_utc_offset: str
+    level: str
+    client_ip: str | None = None
+    method: str | None = None
+    path: str | None = None
+    message: str = ""
+
+    def citation(self) -> Citation:
+        return Citation(
+            kind=CitationKind.LOG_LINE, source=self.log_file, line_no=self.line_no,
+            excerpt=self.raw,
+        )
+
+
 class LogCollection(_Frozen):
     events: tuple[LogEvent, ...] = ()
     failures: tuple[ParseFailure, ...] = ()
     sources: tuple[SourceFile, ...] = ()
+    # Kept apart from access-log data: error logs have multi-line entries (stack traces),
+    # so their unparsed lines are normal and must not count as missing access-log time.
+    errors: tuple[ErrorLogEvent, ...] = ()
+    error_failures: tuple[ParseFailure, ...] = ()
+
+    def merged(self, other: "LogCollection") -> "LogCollection":
+        return LogCollection(
+            events=self.events + other.events, failures=self.failures + other.failures,
+            sources=self.sources + other.sources, errors=self.errors + other.errors,
+            error_failures=self.error_failures + other.error_failures,
+        )
 
 
 class ManifestHeader(_Frozen):
@@ -361,6 +417,39 @@ class Iocs(_Frozen):
     urls: tuple[str, ...] = ()
 
 
+def _check_sorted(timeline: tuple[TimelineEvent, ...]) -> None:
+    times = [event.ts for event in timeline]
+    if times != sorted(times):
+        raise ValueError("timeline must be sorted by time")
+
+
+class CorrelationResult(_Frozen):
+    """Output of the correlation engine; the report (M4) is rendered from this."""
+
+    timeline: tuple[TimelineEvent, ...] = ()
+    root_cause: RootCause | None = None
+    findings: tuple[Finding, ...] = ()
+    affected_files: tuple[FileEvidence, ...] = ()
+    deleted_paths: tuple[str, ...] = ()  # in the baseline but missing now
+    # Executable files written apart from any deploy batch, with no HTTP link: review by hand.
+    unexplained_changes: tuple[str, ...] = ()
+    gaps: tuple[EvidenceGap, ...] = ()
+    iocs: Iocs = Iocs()
+    unattributed_finding_ids: tuple[str, ...] = ()  # findings not linked to the incident
+
+    @model_validator(mode="after")
+    def _consistent(self) -> "CorrelationResult":
+        _check_sorted(self.timeline)
+        ids = {event.event_id for event in self.timeline}
+        if len(ids) != len(self.timeline):
+            raise ValueError("duplicate timeline event id")
+        if self.root_cause is not None:
+            wanted = (self.root_cause.event_id, *self.root_cause.alternative_event_ids)
+            if any(event_id not in ids for event_id in wanted):
+                raise ValueError("root cause must point at timeline events")
+        return self
+
+
 class Report(_Frozen):
     case: CaseInfo
     run: RunInfo
@@ -376,7 +465,5 @@ class Report(_Frozen):
 
     @model_validator(mode="after")
     def _timeline_sorted(self) -> "Report":
-        times = [event.ts for event in self.timeline]
-        if times != sorted(times):
-            raise ValueError("timeline must be sorted by time")
+        _check_sorted(self.timeline)
         return self

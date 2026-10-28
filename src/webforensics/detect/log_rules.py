@@ -9,6 +9,7 @@ import re
 from collections.abc import Iterable
 from dataclasses import dataclass
 from enum import StrEnum
+from functools import lru_cache
 from urllib.parse import unquote_plus
 
 from webforensics.detect import RULESET_VERSION, UPLOAD_WRITABLE_DIRS
@@ -108,26 +109,35 @@ LOG_RULES: tuple[LogRule, ...] = (
 RULES_BY_ID = {rule.rule_id: rule for rule in LOG_RULES}
 
 
+@lru_cache(maxsize=65536)
 def decode_text(value: str) -> str:
     """Percent-decode (twice), turn `+` into space, drop NULs. Matching is case-insensitive."""
-    for _ in range(DECODE_PASSES):
-        decoded = unquote_plus(value)
-        if decoded == value:
-            break
-        value = decoded
-    return value.replace("\x00", "")
+    if "%" in value or "+" in value:
+        for _ in range(DECODE_PASSES):
+            decoded = unquote_plus(value)
+            if decoded == value:
+                break
+            value = decoded
+    return value.replace("\x00", "") if "\x00" in value else value
 
 
-def _target_text(event: LogEvent, target: Target) -> str:
-    if target is Target.USER_AGENT:
-        return event.user_agent or ""
-    path = decode_text(event.path or "")
-    query = decode_text(event.query or "")
-    if target is Target.PATH:
-        return path
-    if target is Target.QUERY:
-        return query
-    return f"{path}?{query}" if query else path
+@lru_cache(maxsize=65536)
+def _matches(path: str, query: str, user_agent: str) -> tuple[tuple[LogRule, str], ...]:
+    """(rule, matched text) for one request shape. Cached: real logs repeat the same
+    request many times, and the result depends only on these three strings."""
+    decoded_path, decoded_query = decode_text(path), decode_text(query)
+    texts = {
+        Target.USER_AGENT: user_agent,
+        Target.PATH: decoded_path,
+        Target.QUERY: decoded_query,
+        Target.REQUEST: f"{decoded_path}?{decoded_query}" if decoded_query else decoded_path,
+    }
+    found = []
+    for rule in LOG_RULES:
+        match = rule.pattern.search(texts[rule.target])
+        if match:
+            found.append((rule, match.group(0)))
+    return tuple(found)
 
 
 def _finding(event: LogEvent, rule: LogRule, matched: str) -> Finding:
@@ -155,12 +165,8 @@ def _finding(event: LogEvent, rule: LogRule, matched: str) -> Finding:
 
 
 def detect_request(event: LogEvent) -> list[Finding]:
-    findings: list[Finding] = []
-    for rule in LOG_RULES:
-        match = rule.pattern.search(_target_text(event, rule.target))
-        if match:
-            findings.append(_finding(event, rule, match.group(0)))
-    return findings
+    shape = _matches(event.path or "", event.query or "", event.user_agent or "")
+    return [_finding(event, rule, matched) for rule, matched in shape]
 
 
 def detect_requests(events: Iterable[LogEvent]) -> list[Finding]:

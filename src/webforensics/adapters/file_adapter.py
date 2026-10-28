@@ -1,6 +1,7 @@
 """FileAdapter: evidence from plain files on disk.
 
 - LogFileSource: access logs (optionally .gz rotated).
+- ErrorLogFileSource: nginx/Apache error logs, used as supporting evidence.
 - ManifestFileSource: webroot evidence from a collect.sh manifest (preferred, D9).
 - DirectoryFileSource: fallback that stats a folder directly; timestamps are less
   trustworthy, and the result says so as evidence gaps.
@@ -14,6 +15,7 @@ from pathlib import Path
 
 from webforensics.hashing import sha256_bytes, sha256_file
 from webforensics.models import (
+    ErrorLogEvent,
     EvidenceGap,
     FileCollection,
     FileEvidence,
@@ -28,6 +30,7 @@ from webforensics.models import (
     stable_id,
 )
 from webforensics.parsers.access_log import AccessLogFormat, iter_access_log
+from webforensics.parsers.error_log import ErrorLogFormat, iter_error_log
 from webforensics.parsers.manifest import ManifestEntry, parse_manifest
 
 ADAPTER = "file"
@@ -99,6 +102,35 @@ class LogFileSource:
         return LogCollection(events=tuple(events), failures=tuple(failures), sources=tuple(sources))
 
 
+class ErrorLogFileSource(LogFileSource):
+    """Error logs. `utc_offset` is the server's offset; error logs do not record it."""
+
+    def __init__(
+        self,
+        paths: Sequence[Path],
+        fmt: ErrorLogFormat = ErrorLogFormat.NGINX,
+        utc_offset: str = "+0000",
+        base_dir: Path | None = None,
+        glob: str = "*error*",
+    ) -> None:
+        super().__init__(paths, base_dir=base_dir, glob=glob)
+        self._error_fmt = fmt
+        self._offset = utc_offset
+
+    def load_logs(self) -> LogCollection:
+        errors: list[ErrorLogEvent] = []
+        failures: list[ParseFailure] = []
+        sources: list[SourceFile] = []
+        for path in self._expand():
+            source = _source_file(path, self._base_dir)
+            sources.append(source)
+            for item in iter_error_log(path, source.path, self._error_fmt, self._offset, ADAPTER):
+                (errors if isinstance(item, ErrorLogEvent) else failures).append(item)
+        return LogCollection(
+            errors=tuple(errors), error_failures=tuple(failures), sources=tuple(sources)
+        )
+
+
 def _content_ref(webroot_dir: Path | None, rel_path: str) -> str | None:
     """Local path to a regular file's content, only if it stays inside the webroot (D15)."""
     if webroot_dir is None:
@@ -112,6 +144,19 @@ def _content_ref(webroot_dir: Path | None, rel_path: str) -> str | None:
     except ValueError:
         return None
     return str(candidate)
+
+
+def _content_mismatch(file: FileEvidence, source: str, line_no: int) -> ParseFailure | None:
+    """Extracted content must hash to the manifest value, or static analysis can't trust it."""
+    if file.content_ref is None:
+        return None
+    actual = sha256_file(Path(file.content_ref))
+    if actual == file.sha256:
+        return None
+    return ParseFailure(
+        source=source, line_no=line_no, reason="content_hash_mismatch",
+        excerpt=f"{file.path} manifest={file.sha256[:12]} extracted={actual[:12]}",
+    )
 
 
 class ManifestFileSource:
@@ -157,9 +202,16 @@ class ManifestFileSource:
         source = _source_file(self._manifest_path, self._base_dir)
         with self._manifest_path.open(encoding="utf-8", errors="replace") as handle:
             header, entries, failures = parse_manifest(handle, source.path)
-        files = tuple(self._to_evidence(e, source.path, header.collected_at) for e in entries)
+        files: list[FileEvidence] = []
+        for entry in entries:
+            evidence = self._to_evidence(entry, source.path, header.collected_at)
+            mismatch = _content_mismatch(evidence, source.path, entry.line_no)
+            if mismatch is not None:
+                failures.append(mismatch)
+                evidence = evidence.model_copy(update={"content_ref": None})
+            files.append(evidence)
         return FileCollection(
-            files=files, failures=tuple(failures), header=header, sources=(source,)
+            files=tuple(files), failures=tuple(failures), header=header, sources=(source,)
         )
 
 

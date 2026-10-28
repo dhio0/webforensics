@@ -3,6 +3,7 @@ import sys
 
 import pytest
 
+from tests.conftest import MANIFEST_HEADER, manifest_row
 from webforensics.adapters.file_adapter import (
     DirectoryFileSource,
     LogFileSource,
@@ -43,11 +44,27 @@ def test_manifest_source(fixtures_dir, tmp_path):
     assert shell.url_paths == ("/uploads/x.php",)
     assert shell.source == "manifests/shop.manifest.tsv:14"
     assert shell.collected_at == files.header.collected_at
-    assert shell.content_ref is not None
+    # The extracted bytes do not hash to the manifest value, so they are not trusted.
+    assert shell.content_ref is None
+    mismatch = [f for f in files.failures if f.reason == "content_hash_mismatch"]
+    assert len(mismatch) == 1 and mismatch[0].line_no == 14
     assert by_path["index.php"].content_ref is None  # not extracted
     assert by_path["index.php"].url_paths == ("/index.php", "/")
-    assert len(files.failures) == 2
+    assert len(files.failures) == 3
     assert files.sources[0].path == "manifests/shop.manifest.tsv"
+
+
+def test_manifest_source_keeps_content_that_matches_hash(tmp_path):
+    content = b"inert sample"
+    (tmp_path / "web").mkdir()
+    (tmp_path / "web" / "a.txt").write_bytes(content)
+    manifest = tmp_path / "m.tsv"
+    manifest.write_text(
+        MANIFEST_HEADER + manifest_row("a.txt", size=len(content), sha256=sha256_bytes(content))
+        + "\n", encoding="utf-8")
+    files = ManifestFileSource(manifest, webroot_dir=tmp_path / "web").load_files()
+    assert files.files[0].content_ref is not None
+    assert files.failures == ()
 
 
 def test_url_paths_with_prefix():

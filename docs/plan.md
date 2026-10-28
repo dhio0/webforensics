@@ -1,13 +1,14 @@
 # Plan: web incident forensics tool
 
-Status: **Approved.** M0 + M1 committed; M2 complete.
+Status: **Approved.** M0–M3 complete.
 
 | Milestone | State |
 |---|---|
 | M0 scaffold | done: pyproject, Typer CLI, ruff, pytest, GitHub Actions |
 | M1 models + FileAdapter + parsers + collect.sh | done: collect.sh verified on Linux CI |
 | M2 | done: log rules, file rules, isolated lab-lite stack, spaced Scenario A and F replays, collected evidence, benchmark schema/validation |
-| M3–M7 | not started |
+| M3 | done: file-first correlation engine (`correlate/`), baseline comparison, anchor + timestomp check, gaps + confidence, MITRE table, proxy-aware actors, login outcomes, weak seeds, error-log parser, indexed engine (1M lines in ~27 s); scenario A/F acceptance plus noisy variants (precision), gap fixtures, seeded property test |
+| M4–M7 | not started |
 Source of truth: `CLAUDE.md`. Design decisions are logged in `docs/decisions.md` (referenced here as D1, D2, ...).
 
 ---
@@ -256,10 +257,28 @@ Rough schedule: W1 = M0–M1, W2 = M2 (incl. lab-lite), W3 = M3–M4, W4 = M5, W
 
 Small items deliberately deferred. Each lists the milestone where it belongs.
 
-**For M3 (correlation)**
-- Baseline comparison (new/modified/unchanged) is not implemented yet. Rule `FILE-PERSISTENCE-ENTRYPOINT-CHANGE` only fires once it is.
-- Webroot content extracted from `webroot.tar` is not re-hashed against the manifest yet. Do it before static analysis trusts `content_ref`.
-- Error-log parser is deferred until correlation needs it.
+**For M4 (report + `analyze`)**
+- `correlate()` has no CLI yet. `analyze` should take `--baseline` (manifest) and the `CorrelationConfig` thresholds.
+- Indonesian strings are needed for every `timeline.*`, `creation.*`, `root.*`, `confidence.*`, `anchor.*`, `file.*`, `timestomp.*` and `gap.*` key the engine emits.
+- `CorrelationResult.unattributed_finding_ids` (attack requests from actors not linked to the incident, e.g. bot noise) needs its own report section.
+
+**Correlation limits found in M3: fixed in M3 (D47–D51)**
+- Actor = client IP only → XFF from trusted proxies (right-most untrusted hop); a user-agent switch between entry point and write lowers confidence.
+- Login 200-on-failure → outcome from 401/403/429, retry-before-using-the-area, and same (status, size) as a known failure.
+- "POST to a rarely-hit file" → `CORR-RARE-POST-TARGET`.
+- Night-time false gaps → silence threshold from the local request rate (±25 intervals).
+- `.php` outside upload dirs with no content/baseline → "lonely write" weak seeds; unlinked ones go to `unexplained_changes`.
+- Error-log parser → nginx + Apache, used to corroborate and as a low-confidence fallback creator.
+
+**Limits that remain (inherent to the evidence, documented for the report)**
+- POST bodies are not logged: POST-SQLi payloads and upload file names stay invisible. The engine can only say "a login of unknown method" (LOW).
+- Shared IPs without XFF (NAT, untrusted CDN) still merge people. The UA check only flags it.
+- Login outcomes are inferred. A failure page whose size changes on every attempt (e.g. it echoes the username), followed by no retry, still reads as a success.
+- Error-log time has no UTC offset. A wrong `--error-log-utc-offset` silently breaks matching, so every error-log citation carries the offset that was assumed.
+- A deleted log hour inside a quiet period is indistinguishable from no traffic.
+- CMS-generated `.php` files are now set aside for review (D56), but this was only checked against synthetic noise. Scenario D in the lab still has to confirm it.
+- Memory: about 1.1 GB peak for 1M lines when 1 in 8 is a bot payload (`docs/performance.md`). Streaming would fix it; deferred.
+- Error logs and XFF are only covered by synthetic tests. The lab doesn't produce them yet (add in M5).
 
 **For M5 (benchmark + eval)**
 - `tests/integration/test_benchmark_scenarios.py` checks all scenarios in one loop. Parametrize per scenario so each shows up as its own test.
@@ -285,4 +304,4 @@ Small items deliberately deferred. Each lists the milestone where it belongs.
 ---
 
 ## Next step
-**M3: correlation engine.** Baseline comparison → suspicious-file selection (file rules + baseline + mtime/ctime anomaly) → creation/invocation requests → backtrack per actor to the root cause → gaps + confidence → timeline. Test against `benchmark/scenarios/a` (the SQLi probe must not be blamed) and `benchmark/scenarios/f` (backtrack to the SQLi login).
+**M4: Indonesian report (MD + HTML) + `analyze` command.** Render `CorrelationResult` through a string catalog (`report/messages_id.py`) and Jinja templates; golden-file tests, a byte-identical determinism test, and an HTML-escaping test with a `<script>` user agent.

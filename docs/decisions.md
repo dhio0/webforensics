@@ -149,3 +149,83 @@ The replay shuts down this Compose project with volume removal before startup, r
 ## D37 — Scenario F uses a GET login so the SQLi request is visible in access evidence
 Status: accepted (M2).
 The lab has no HTTPS or production credentials; GET keeps the intentionally vulnerable authentication bypass visible in the combined log so its ground-truth root-cause request has a precise cited line.
+
+## D38 — Entry point = SQLi on a login endpoint, same client, same URL area
+Status: accepted (M3).
+Combined logs have no cookies, so "this upload needed that login" is inferred: the same client IP, earlier in time (within `lookback_s`), and the creating request lives under the login endpoint's URL directory (`/admin/login.php` covers `/admin/*`). The earliest successful SQLi-flagged login wins. Because the session link is inferred, this root cause is capped at medium.
+
+## D39 — "No login seen" is absence of evidence, so that root cause is capped at medium
+Status: accepted (M3).
+When the creating request has no preceding login, it is named the root cause (e.g. unrestricted upload). The event itself can be high confidence, but the root-cause claim stays at most medium: the session may predate the logs. A login with no visible payload (POST body) becomes a LOW `login_method_unknown` entry point instead (valid credentials or an invisible injection; scenario B).
+
+## D40 — Only write-capable requests can be a file's creator; otherwise say "not found"
+Status: accepted (M3).
+Candidates in `[anchor − 120 s, anchor + 5 s]` must be POST/PUT/PATCH or SQL `INTO OUTFILE`. They are ranked by write semantics, 2xx/3xx, same client as the file's later users, then closeness, then log position. Candidates tied on the first three are kept as LOW alternatives and cap the winner at medium. If there are none, the file event says `creation.no_http_request_found` (SSH/FTP/CI drop, or missing logs) rather than picking a nearby GET.
+
+## D41 — Anchor on btime, then ctime, then mtime; check timestomping only on suspected files
+Status: accepted (M3).
+`touch` can set mtime but not ctime/btime. If mtime looks forged (older than btime, or older than ctime by > 60 s) and btime exists, the anchor is btime, since the later ctime is probably the `touch` itself. mtime-only anchors cap confidence at medium, and timestamps from a plain copy cap it at low. The forgery check runs only on seed files, because `tar`/`cp -p` deploys also keep old mtimes.
+
+## D42 — A gap lowers an event at most once, and only if it overlaps what the event depends on
+Status: accepted (M3).
+Each event has a dependency window: the creation window for file and creation events, `[root, anchor + skew]` for an entry point, the request time for context rows. Only time gaps (log silence, parse-error runs, no log coverage) count. Downgrading once avoids a pile of small gaps turning everything into LOW. Every gap lists the event ids it affects.
+
+## D43 — Files identical to the baseline are never treated as suspicious
+Status: accepted (M3).
+A file whose path and SHA-256 match the known-good baseline was not written by the attacker, even if a rule flags its content (e.g. a vulnerable but original app file). That keeps the vulnerable app code out of the "affected files" list; M7 analyzes it separately.
+
+## D44 — The timeline only covers implicated actors
+Status: accepted (M3).
+Actors are the clients behind the root cause and creation requests, plus anyone who used a file flagged as a webshell. Their first request, failed logins and attack-flagged requests become context rows. Attack requests from everyone else (bot noise) are not dropped but returned as `unattributed_finding_ids`, so they cannot be mistaken for the incident.
+
+## D45 — Extracted webroot content is re-hashed against the manifest
+Status: accepted (M3).
+If the extracted bytes don't hash to the manifest's SHA-256, `content_ref` is cleared and a `content_hash_mismatch` failure is recorded. Static analysis then never reasons about a different file version than the one the report cites.
+
+## D46 — The property test is seeded random generation, not a new dependency
+Status: accepted (M3).
+Sixty seeded random evidence sets check the invariants (no crash, every row cited, sorted, root cause in the timeline, gaps reference real events, identical output on rerun). It is reproducible and keeps the dependency list short; `hypothesis` can replace it later if shrinking is needed.
+
+## D47 — Behind a trusted proxy, the actor is the right-most untrusted X-Forwarded-For hop
+Status: accepted (M3).
+XFF is only read when `client_ip` is in `trusted_proxies` (IPs or CIDRs, empty by default). The left part of XFF is written by the client and can be forged, so the actor is the first non-proxy hop counting from the right. If the user agent differs between the entry point and the write request, the entry point is lowered one step (`actor.user_agent_changed`): it can be a tool switch or two people behind one IP.
+
+## D48 — A login attempt's outcome is inferred from status, retries and failure fingerprints
+Status: accepted (M3).
+Failed: 401/403/429; or the same actor retries the same login before loading any non-login, non-static page in that area; or the (path, status, size) equals a failure seen on that endpoint. Otherwise a 2xx/3xx is a success. Only successful logins can be an entry point, so a run of failed "200" logins is not blamed.
+
+## D49 — Weak seeds: lonely code writes need an HTTP link to join the incident
+Status: accepted (M3).
+Without a baseline or file content, a code file whose trusted write time (btime/ctime, not mtime) sits in a batch of ≤ 2 files (batches = writes ≤ 5 s apart) is a "lonely write". It is traced like a seed, but kept only if a write request or a rarely-hit POST pattern links it to HTTP; the file event is capped at medium. The rest go to `unexplained_changes` for manual review, so an admin's SSH edit is not reported as an attack.
+
+## D50 — Silence gaps use the local request rate
+Status: accepted (M3).
+The threshold for each interval is max(600 s, 30 × the median of the 25 intervals on each side). A quiet night stays quiet, a missing hour in busy traffic is reported. The trade-off is that a deleted hour in a quiet period is not detected.
+
+## D51 — Error logs corroborate; they decide only when the access log is silent
+Status: accepted (M3).
+Error-log entries matching an access-log event (same connecting IP, method and path, ± skew) are added as extra citations. If no access-log request could have written a file, an error-log write request in the window becomes the creator at LOW confidence. Error-log unparsed lines (stack traces) are kept apart and never count as missing access-log time. The UTC offset is given by the caller and recorded on every error event.
+
+## D52 — `LogEvent` is a slotted dataclass, not a pydantic model
+Status: accepted (M3).
+There is one per log line. A pydantic instance carries a `__dict__` and a fields-set, about 1.3 KB of overhead, versus about 80 B for a frozen slotted dataclass. Only our parsers create these, so `__post_init__` checks the few invariants that matter (id present, line ≥ 1, size ≥ 0, timezone-aware time normalized to UTC). Pydantic models (`LogCollection`, the result) still hold them and serialize them. Change one with `dataclasses.replace`.
+
+## D53 — Correlation reads from indexes built once
+Status: accepted (M3).
+Requests by URL, by actor and by time window are indexed up front, and each step looks up only what it needs. Before, every suspicious file re-scanned the whole log, so a CMS with 50 cache files was 50× slower. `tests/unit/test_performance.py` guards this; numbers are in `docs/performance.md`.
+
+## D54 — The writing request is ranked by closeness to the file's birth first
+Status: accepted (M3).
+Candidates logged within ±`clock_skew_s` of the anchor come first, then write semantics, success, same actor, distance. Requests answered with 4xx are not candidates (the app refused them). Found with the noisy benchmark: an admin's photo upload 60 s before a CMS cache file was written outranked the comment POST that produced it, and the admin got blamed. If the winner is not upload-like, upload-like requests further away are kept as alternatives.
+
+## D55 — Fetching a webshell URL does not make a client an attacker; using it does
+Status: accepted (M3).
+Clients who only GET the file (crawlers, curious visitors) stay in the timeline as `file_invoked` but are not implicated actors or IOCs. A POST, or a request flagged by a behaviour rule (e.g. `?cmd=`), is. URL-only rules such as `LOG-WEBSHELL-UPLOAD-DIR` don't count, because they fire for anyone who requests that URL.
+
+## D56 — Code files the app probably generated go to review, not into the incident
+Status: accepted (M3).
+A seed is set aside (`unexplained_changes`) when it is flagged only by its path, is never requested by URL, was not written by an upload-like request, has no timestomp signal, and its write time is covered by the logs. This is the CMS cache case (`cache/page-1.php` written during a comment POST). Shells with content evidence, or that were used or uploaded, are never set aside. Neither are files whose write time the logs don't cover.
+
+## D57 — Bot payloads don't teach the engine what a failed login looks like
+Status: accepted (M3).
+Bots replay the same SQLi login payload whether or not it works. Their "retries" were becoming failure fingerprints, and when the bypass response had the same size, the attacker's real bypass was then classed as a failed login (scenario F with noise picked the upload as root cause). Attempts that carry an attack pattern are now excluded from the fingerprints.
