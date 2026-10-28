@@ -85,6 +85,17 @@ error-log offset as `+0000`. PHP's `fastcgi.logging = 1` setting sends
 `error_log()` messages over FastCGI, so nginx records them in `error.log` with
 the `FastCGI sent in stderr` prefix and the associated client and request.
 
+## Re-recording a scenario
+
+Scenarios B, D and E may be re-recorded when their replay or lab behavior
+changes. Do not re-record A or F: golden reports and noisy-variant tests depend
+on their exact evidence bytes, and a re-run would add the forwarded-address
+field and an nginx error log. After any re-run, rewrite that scenario's
+`ground_truth.json` from the replay and collected evidence, never from analyzer
+output. Maintainers should then regenerate golden reports with
+`UPDATE_GOLDEN=1 pytest tests/integration`, review the diff, and run
+`webforensics eval benchmark/` to update the README results table.
+
 Inspect evidence without running it:
 
 ```powershell

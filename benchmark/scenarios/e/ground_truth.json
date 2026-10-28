@@ -1,6 +1,6 @@
 {
   "scenario_id": "e",
-  "description": "After three benign requests, an unauthenticated upload creates an inert marker and the marker is requested. The replay then simulates timestomping outside HTTP with docker compose exec php touch -d '2024-01-15 03:00:00'; this action cannot occur through the web application. The marker mtime is 1705287600, older than ctime 1793158463 and btime 1793158459 (Unix seconds).",
+  "description": "After three benign requests, an unauthenticated upload creates an inert marker and the marker is requested. The replay then simulates timestomping outside HTTP with docker compose exec php touch -d '2024-01-15 03:00:00'; this action cannot occur through the web application. The marker mtime is 1705287600, older than ctime 1793159430 and btime 1793159426 (Unix seconds).",
   "attacker_ips": ["192.0.2.31"],
   "steps": [
     {"id": "benign_home", "category": "benign_request", "mitre": [], "log_file": "access.log", "line_no": 1, "is_root_cause": false},
