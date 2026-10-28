@@ -62,6 +62,7 @@
   "root_cause_step": "upload_inert_marker",
   "vulnerable_code": {
     "file": "lab/app/admin/upload.php",
-    "line": 5
+    "line": 5,
+    "sha256": "efca480d475f253e0c148409493cc679d696cbd7801bc87097086d072360edb7"
   }
 }

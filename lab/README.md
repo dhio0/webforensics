@@ -81,11 +81,9 @@ Use `--baseline-only` only after starting a fresh lab and before sending
 traffic; the D/E replay scripts do this automatically. Normal collection saves
 `manifest.tsv`, `access.log`, and `error.log` when present. D and E also save
 `baseline.tsv`. Nginx and PHP containers run in UTC; ground truth records the
-error-log offset as `+0000`. The captured `error.log` is nginx's error log. With
-the current PHP-FPM image, PHP `error_log()` messages go to the PHP container
-log and do not appear in nginx's FastCGI stderr stream; inspect them with
-`docker compose -f lab/docker-compose.yml logs php`. The collector does not
-rewrite PHP output as nginx evidence.
+error-log offset as `+0000`. PHP's `fastcgi.logging = 1` setting sends
+`error_log()` messages over FastCGI, so nginx records them in `error.log` with
+the `FastCGI sent in stderr` prefix and the associated client and request.
 
 Inspect evidence without running it:
 

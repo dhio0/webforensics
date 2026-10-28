@@ -1,1 +1,2 @@
-2026/10/28 02:11:34 [notice] 37#37: signal process started
+2026/10/28 03:32:29 [notice] 37#37: signal process started
+2026/10/28 03:32:37 [error] 25#25: *9 FastCGI sent in stderr: "PHP message: lab upload stored" while reading response header from upstream, client: 172.30.0.3, server: _, request: "POST /admin/auth_upload.php HTTP/1.0", upstream: "fastcgi://172.19.0.3:9000", host: "127.0.0.1"

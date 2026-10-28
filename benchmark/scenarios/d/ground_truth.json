@@ -21,6 +21,7 @@
     {"id": "bot_two_get_login_bypass", "category": "exploit_attempt", "mitre": ["T1190"], "log_file": "access.log", "line_no": 16, "is_root_cause": false, "expected_in_timeline": false},
     {"id": "normal_admin_login", "category": "benign_request", "mitre": [], "log_file": "access.log", "line_no": 17, "is_root_cause": false},
     {"id": "admin_valid_image_upload", "category": "benign_upload", "mitre": [], "log_file": "access.log", "line_no": 18, "is_root_cause": false, "expected_in_timeline": false},
+    {"id": "upload_error_log_message", "category": "error_log_upload_message", "mitre": [], "log_file": "error.log", "line_no": 2, "is_root_cause": false, "expected_in_timeline": false},
     {"id": "visitor_comment_cache_write", "category": "benign_cache_write", "mitre": [], "log_file": "access.log", "line_no": 19, "is_root_cause": false, "expected_in_timeline": false},
     {"id": "crawler_home", "category": "benign_request", "mitre": [], "log_file": "access.log", "line_no": 20, "is_root_cause": false},
     {"id": "crawler_product_one", "category": "benign_request", "mitre": [], "log_file": "access.log", "line_no": 21, "is_root_cause": false},

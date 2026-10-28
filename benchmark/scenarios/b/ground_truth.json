@@ -8,13 +8,14 @@
     {"id": "benign_client_two", "category": "benign_request", "mitre": [], "log_file": "access.log", "line_no": 3, "is_root_cause": false},
     {"id": "post_sqli_login_bypass", "category": "successful_login_bypass", "mitre": ["T1190"], "log_file": "access.log", "line_no": 4, "is_root_cause": true},
     {"id": "authenticated_marker_upload", "category": "authenticated_upload", "mitre": [], "log_file": "access.log", "line_no": 5, "is_root_cause": false},
+    {"id": "upload_error_log_message", "category": "error_log_upload_message", "mitre": [], "log_file": "error.log", "line_no": 2, "is_root_cause": false},
     {"id": "request_marker_path", "category": "marker_invocation", "mitre": [], "log_file": "access.log", "line_no": 6, "is_root_cause": false}
   ],
   "files": [
     {"path": "uploads/scenario-b-marker.php", "sha256": "105ddd6ab59b87c2013943bab1e598aae952be1f7ae85aac56da08beec344bf6", "change": "created"}
   ],
   "root_cause_step": "post_sqli_login_bypass",
-  "vulnerable_code": {"file": "lab/app/admin/login.php", "line": 13},
+  "vulnerable_code": {"file": "lab/app/admin/login.php", "line": 13, "sha256": "fa2a9d556bc98ba3751bc6f7eee860d187cd579c6658a6b962c0f32cbac77d45"},
   "split": "dev",
   "analysis": {
     "access_logs": ["access.log"],

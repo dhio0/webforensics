@@ -150,7 +150,8 @@
       "additionalProperties": false,
       "required": [
         "file",
-        "line"
+        "line",
+        "sha256"
       ],
       "properties": {
         "file": {
@@ -160,6 +161,11 @@
         "line": {
           "type": "integer",
           "minimum": 1
+        },
+        "sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$",
+          "description": "SHA-256 of the file as it was when the evidence was collected; the line refers to that version"
         }
       }
     },

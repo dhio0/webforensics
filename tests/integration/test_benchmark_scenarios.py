@@ -1,5 +1,6 @@
 """Validate committed benchmark ground truth without requiring Docker."""
 
+import hashlib
 import json
 import re
 from pathlib import Path
@@ -66,6 +67,20 @@ def test_all_scenario_ground_truth_matches_schema_and_evidence():
         manifest = evidence_dir / "manifest.tsv"
         assert manifest.is_file(), f"missing manifest for {ground_truth_path}"
         file_hashes = _manifest_hashes(manifest)
+
+        vulnerable_code = ground_truth.get("vulnerable_code")
+        if vulnerable_code:
+            source_path = Path(vulnerable_code["file"])
+            webroot_path = source_path.relative_to(Path("lab/app")).as_posix()
+            assert file_hashes.get(webroot_path) == vulnerable_code["sha256"], (
+                f"vulnerable code hash mismatch for {source_path} in {ground_truth_path}"
+            )
+            source_bytes = (ROOT / source_path).read_bytes()
+            if hashlib.sha256(source_bytes).hexdigest() == vulnerable_code["sha256"]:
+                source_line_count = len(source_bytes.splitlines())
+                assert vulnerable_code["line"] <= source_line_count, (
+                    f"vulnerable code line is outside {source_path} in {ground_truth_path}"
+                )
 
         for step in steps:
             log_file = Path(step["log_file"])

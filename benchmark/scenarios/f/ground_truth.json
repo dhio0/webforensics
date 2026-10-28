@@ -70,6 +70,7 @@
   "root_cause_step": "sqli_login_bypass",
   "vulnerable_code": {
     "file": "lab/app/admin/login.php",
-    "line": 8
+    "line": 8,
+    "sha256": "38357f12143ab78110c81951af0381438385f3528d011bbfbba5e735adac5648"
   }
 }
