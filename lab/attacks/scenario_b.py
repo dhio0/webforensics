@@ -7,6 +7,7 @@ import urllib.request
 
 from common import (
     STEP_DELAY_SECONDS,
+    finish_scenario,
     lab_request,
     multipart_file,
     start_fresh_lab,
@@ -85,6 +86,7 @@ def run() -> None:
         != MARKER
     ):
         raise RuntimeError("marker request did not return expected inert text")
+    finish_scenario()
     print("Scenario B replay complete: six fixed requests through the loopback edge.")
 
 

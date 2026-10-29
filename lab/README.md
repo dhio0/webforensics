@@ -117,6 +117,69 @@ docker compose -f lab/docker-compose.yml down -v
 `-v` removes the lab's MySQL and shared webroot volumes. Collected evidence in
 `benchmark/scenarios/` remains in the repository.
 
+## Wazuh mode
+
+Wazuh evidence collection is optional. The regular replays retain their existing
+behavior unless `WF_LAB_WAZUH=1` is set. Wazuh mode uses the stable version
+recorded in `lab/wazuh/VERSION` (currently `v4.14.9`) and a separate Docker
+network named `wazuh-lab`. It publishes only the indexer at `127.0.0.1:9200`
+(plus the dashboard at `127.0.0.1:4443` when started with `--dashboard`);
+manager ports stay inside Docker. The lab
+agent joins only `wazuh-lab`, reads the webroot and nginx logs through read-only
+mounts, and does not join the application network.
+
+Prepare and start the manager stack once. The dashboard is disabled by default
+to keep memory use down; add `--dashboard` only when it is needed. The generated manager config turns off modules the lab does not use:
+vulnerability detection (its CVE feed alone takes about 13 GB of disk),
+syscollector, SCA, rootcheck and the manager's own syscheck. The agent's FIM
+and log collection are unaffected. Wazuh containers do not auto-restart with
+Docker Desktop; start them with `setup.py up` when needed. The indexer
+heap remains at the upstream default. `setup.py` checks `vm.max_map_count`
+inside the Docker VM (at least 262144), checks out the pinned `wazuh-docker` tag
+under ignored `.upstream/`, generates certificates there, and creates random
+lab-only credentials in the ignored `lab/wazuh/.env`. The committed
+`.env.example` lists the supported keys. Runtime user hashes and derived
+configuration stay under ignored `.runtime/`.
+
+```powershell
+.venv\Scripts\python lab/wazuh/setup.py up
+$env:WF_LAB_WAZUH = "1"
+.venv\Scripts\python lab/attacks/scenario_a.py
+.venv\Scripts\python lab/attacks/scenario_a.py  # Repeat once to verify re-enrollment.
+.venv\Scripts\python lab/collect_scenario.py --scenario a
+.venv\Scripts\python lab/wazuh/smoke_check.py  # Run last; it deletes the inert marker.
+```
+
+Run any other fixed replay the same way while `WF_LAB_WAZUH` is set. Before
+each replay, the manager is checked, the lab is reset with `down -v`, the nginx
+logs are truncated, and only then is the profiled agent started. The replay
+waits for the agent's first FIM scan and for logcollector to open both log
+files. After the final request, it waits for that access-log line to appear in
+`wazuh-archives-4.x-*`, then compares a SHA-256 listing of the webroot taken
+before and after the replay and waits until every added, modified or deleted
+path has a `syscheck` alert from this replay in `wazuh-alerts-4.x-*`. The agent uses a fixed name; the manager's documented
+`<auth><force>` replacement settings allow re-enrollment after each lab volume
+reset. Each re-enrollment gets a new agent ID (001, 002, ...), and alerts from
+earlier replays stay indexed, so queries filter by agent name and time window.
+
+The smoke check is intended for Scenario A and uses the read-only
+`webforensics_reader` account with the generated root CA. It prints the open
+checks in `docs/wazuh-notes.md` §10 and additional checks for archive line
+content, event timing, read-only writes, PIT pagination, and container RAM. Its
+marker deletion is a lab-only operation after the replay, not part of Scenario
+A's ground truth. Capture `docker stats --no-stream` with the Wazuh stack idle,
+during Scenario A with the lab containers running, and after the run. Keep the
+indexer heap at the upstream default and report its `OPENSEARCH_JAVA_OPTS`.
+
+Stop both stacks and remove their volumes after use:
+
+```powershell
+docker compose -f lab/docker-compose.yml down -v
+.venv\Scripts\python lab/wazuh/setup.py down
+```
+
+Without `WF_LAB_WAZUH=1`, run the existing replay commands above as before.
+
 ## Safety notes
 
 - Keep all Docker port publishing loopback-only (`127.0.0.1`).

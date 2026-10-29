@@ -7,7 +7,7 @@ import urllib.error
 import urllib.parse
 import urllib.request
 
-from common import STEP_DELAY_SECONDS, start_fresh_lab
+from common import STEP_DELAY_SECONDS, finish_scenario, start_fresh_lab
 
 USER_AGENT = "webforensics-lab/1.0 scenario-f"
 MARKER_NAME = "scenario-f-marker.php"
@@ -76,10 +76,14 @@ def run(port: int) -> None:
     def upload_marker() -> None:
         boundary = "----webforensics-lab-scenario-f"
         body = (
-            f"--{boundary}\r\n"
-            f'Content-Disposition: form-data; name="file"; filename="{MARKER_NAME}"\r\n'
-            "Content-Type: application/octet-stream\r\n\r\n"
-        ).encode() + MARKER_CONTENT + f"\r\n--{boundary}--\r\n".encode()
+            (
+                f"--{boundary}\r\n"
+                f'Content-Disposition: form-data; name="file"; filename="{MARKER_NAME}"\r\n'
+                "Content-Type: application/octet-stream\r\n\r\n"
+            ).encode()
+            + MARKER_CONTENT
+            + f"\r\n--{boundary}--\r\n".encode()
+        )
         response = _request(
             opener,
             f"{base_url}/admin/auth_upload.php",
@@ -107,6 +111,7 @@ def run(port: int) -> None:
         step()
         if index < len(steps) - 1:
             time.sleep(STEP_DELAY_SECONDS)
+    finish_scenario()
     print(
         "Scenario F replay complete: 7 spaced localhost requests; "
         "SQLi enabled authenticated upload."

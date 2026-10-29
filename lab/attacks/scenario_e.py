@@ -8,6 +8,7 @@ from common import (
     ROOT,
     STEP_DELAY_SECONDS,
     collect_baseline,
+    finish_scenario,
     lab_request,
     multipart_file,
     start_fresh_lab,
@@ -85,6 +86,7 @@ def run() -> None:
     lab_request(opener, "/", "203.0.113.32", user_agent=UA)
     time.sleep(STEP_DELAY_SECONDS)
     lab_request(opener, "/product.php?id=2", "198.51.100.33", user_agent=UA)
+    finish_scenario()
     print("Scenario E replay complete; timestomp was simulated outside HTTP.")
 
 

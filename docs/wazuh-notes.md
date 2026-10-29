@@ -121,7 +121,7 @@ Sources: [doc] https://documentation.wazuh.com/4.14/user-manual/capabilities/fil
 
 **Deleted files keep their last hash [src].** The agent builds a delete event with `fim_json_event(entry, …)` from the stored DB entry (`process_delete_event`, `src/syscheckd/src/create_db.c`). So `deleted` alerts carry the file's last known `*_after` attributes, including `sha256_after`. A deleted webshell can therefore still be represented with a hash. Expected; confirm in the lab.
 
-### 4.3 The `mtime_after` time zone bug (resolved from source)
+### 4.3 The `mtime_after` time zone bug (resolved from source, confirmed in the lab)
 
 [src] `src/analysisd/format/to_json.c`:
 
@@ -140,7 +140,11 @@ strftime(mtime, 20, "%FT%T%z", &tm_result);
 - Read `_source.syscheck.mtime_after`, never the indexer's `fields` value.
 - Interpret it in the manager's time zone. Take that offset from the `timestamp` of the same alert, which carries a correct `%z` from the same process and the same TZ.
   - Edge case: a DST switch between the mtime and the alert. We accept it and record it as a limitation.
-- The lab runs with `TZ=UTC`, so the lab results don't depend on this logic. Unit tests cover a non-UTC fixture.
+- The lab normally runs in UTC, so the lab results don't depend on this logic. Unit tests cover a non-UTC fixture.
+
+[lab] Confirmed on 2026-10-29 with the manager set to Asia/Jakarta (UTC+7): the FIM alert had `timestamp` `2026-10-29T10:40:56.338+0700` and `mtime_after` `2026-10-29T10:40:56` (local time, no offset). The indexer stored `mtime_after` as `10:40:56.000Z`, 7 h later than the real `03:40:56Z`, while `timestamp` was stored correctly as `03:40:56.338Z`.
+
+How a manager's time zone is actually set: Wazuh daemons run chrooted in `/var/ossec` and read `/var/ossec/etc/localtime` (a copy made at install). Setting the container's `TZ` env, or `/etc/localtime`, did not change the alert times. For the adapter this changes nothing: it takes the offset from `timestamp`, whatever sets it.
 
 ### 4.4 What FIM time proves
 
@@ -233,12 +237,27 @@ M6 row: "read web events from `wazuh-archives-*` (alerts-only as degraded mode) 
 
 The FIM anchor (D76) and recording (D78) are not cuttable. Without them, the done test can't pass deterministically.
 
-## 10. Open [lab] checks (first thing after install)
+## 10. [lab] checks (run 2026-10-28/29, Wazuh 4.14.9, branch `m6-wazuh-lab`)
 
-1. Realtime FIM in the agent container sees writes by the PHP container (§2).
-2. `deleted` alerts carry `sha256_after` in practice (§4.2).
-3. The FIM delay between write and alert `timestamp` in the lab. This sizes the realtime anchor window.
-4. RAM headroom with the full lab plus Wazuh (VM now has 9.7 GiB).
-5. Read-only indexer user: create a role with exactly these permissions and confirm that PIT works with it. PIT needs its own permission.
+Lab: manager + indexer from `wazuh-docker` v4.14.9 (dashboard off), agent container `wf-lab-agent` with the webroot and nginx logs mounted read-only, `TZ=UTC` everywhere. Scenario A was replayed three times in Wazuh mode; `lab/wazuh/smoke_check.py` ran last.
+
+1. **Realtime FIM across containers: yes.** The agent logged `(6016): Directory set for real time monitoring: '/var/www/html'.` and `(6012): Real-time file integrity monitoring started.`. The PHP upload produced a rule 554 alert with `syscheck.mode=realtime` and `sha256_after` equal to the live file's SHA-256.
+2. **`deleted` alerts carry `sha256_after`: yes.** The marker's `deleted` alert kept the last hash (same value as the `added` alert), as the source predicted (§4.2).
+3. **FIM delay: under about 1.4 s.** The alert `timestamp` was 0.371 s after the upload request's log second (`22:49:07` vs `22:49:07.371`). The access log has 1 s resolution, so the delay is somewhere in 0.37–1.37 s. A realtime anchor window of a few seconds is enough.
+4. **RAM: about 2.4 GiB total for Wazuh plus the lab** (indexer about 1.5 GiB with the default `-Xms1g -Xmx1g`, manager about 0.4 GiB, MySQL about 0.4 GiB, the rest under 20 MiB each). The 9.7 GiB VM has room; the earlier crash came from the dashboard plus host apps. With the unused manager modules off (below), the manager dropped to about 0.32 GiB.
+5. **Read-only user: works.** `webforensics_reader` has index-level `read`, `indices:data/read/search`, `indices:data/read/point_in_time/create` and `.../delete` on `wazuh-alerts-4.x-*` and `wazuh-archives-4.x-*`, and no cluster permissions. Create and delete document both return 403. PIT create, two `search_after` pages and PIT delete all return 200.
+
+Also confirmed:
+
+- **Archives hold every web line, unchanged.** With `log_format` `syslog`, the 6 `full_log` strings in `wazuh-archives-4.x-*` matched the 6 lines of `access.log` byte for byte (as a multiset). This backs D74 and D75.
+- **`mtime_after` has no offset** (`2026-10-28T22:49:07`), as §4.3 says. A one-off run with the manager in UTC+7 confirmed the 7 h shift in the index (details in §4.3).
+
+New findings the adapter must handle:
+
+- **Every re-enrollment gets a new `agent.id`** (001, 002, 003 for the same name `wf-lab-agent`, with `<auth><force>` enabled). Alerts from earlier IDs stay in the index. The adapter must select by agent name plus a time window, never by agent ID alone.
+- **Vulnerability detection fills the disk.** It is on by default in 4.14 and downloads the CTI feed into the `wazuh_queue` volume (13 GB under `queue/vd` in this lab; the Docker Desktop disk image grew to 73.7 GB and does not shrink by itself). The project does not use it, so `setup.py` sets `<vulnerability-detection><enabled>no`. After that, all Wazuh and lab volumes total about 224 MB.
+- **Unused manager modules are off.** The manager also monitors its own container: syscollector (inventory into `wazuh-states-inventory-*`, about 250 MB of queue within minutes), SCA, rootcheck and syscheck. None of it is lab evidence, and it adds alert noise. `setup.py` turns all of them off, as well as vulnerability detection (4.14 reference: "Disable the Syscollector wodle.", "Enables the module.", "Disables the execution of rootcheck.", "Indicates if the syscheck scan is disabled or not."). The manager log then shows "Module disabled" for each. Volumes stayed at about 229 MB over a full replay plus smoke check. The agent was already minimal (only FIM and logcollector).
+- **Upstream compose uses `restart: always`,** so Wazuh started with every Docker Desktop launch and held about 2 GiB of RAM. The override sets `restart: "no"`; Wazuh runs only after `setup.py up`.
+- **Old events stay indexed across replays.** Any "wait for event" or query must be bounded by time. The first version of the lab's FIM wait matched run 1's alert in later runs; it now filters by `agent.name` and `timestamp >= replay start`. `smoke_check.py` had the same flaw (its `deleted` wait matched an earlier smoke run's alert) and now uses the same filter.
 
 Resolved from source since the first draft: the meaning of `timestamp`, the archive event structure, the archive/alert `id` relation, the `mode` values, the `mtime_after` time zone, and the OpenSearch version and pagination method.

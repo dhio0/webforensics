@@ -1,0 +1,51 @@
+services:
+  wazuh.manager:
+    # Upstream uses restart: always; the lab should run only after setup.py up.
+    restart: "no"
+    ports: !reset []
+    environment:
+      TZ: UTC
+      INDEXER_USERNAME: admin
+      INDEXER_PASSWORD: ${WAZUH_ADMIN_PASSWORD}
+      API_PASSWORD: ${WAZUH_API_PASSWORD}
+      SSL_CERTIFICATE_AUTHORITIES: /etc/ssl/root-ca.pem
+      SSL_CERTIFICATE: /etc/ssl/filebeat.pem
+      SSL_KEY: /etc/ssl/filebeat.key
+    volumes:
+      - ../../.runtime/wazuh_manager.conf:/wazuh-config-mount/etc/ossec.conf:ro
+      - ../../.runtime/filebeat-archives.sh:/etc/cont-init.d/2-config-archives:ro
+    networks:
+      - wazuh-lab
+
+  wazuh.indexer:
+    # Upstream uses restart: always; the lab should run only after setup.py up.
+    restart: "no"
+    ports: !override ["127.0.0.1:9200:9200"]
+    environment:
+      TZ: UTC
+    volumes:
+      - ../../.runtime/internal_users.yml:/usr/share/wazuh-indexer/config/opensearch-security/internal_users.yml:ro
+      - ../../.runtime/roles.yml:/usr/share/wazuh-indexer/config/opensearch-security/roles.yml:ro
+      - ../../.runtime/roles_mapping.yml:/usr/share/wazuh-indexer/config/opensearch-security/roles_mapping.yml:ro
+    networks:
+      - wazuh-lab
+
+  wazuh.dashboard:
+    # Upstream uses restart: always; the lab should run only after setup.py up.
+    restart: "no"
+    profiles: ["dashboard"]
+    ports: !override ["127.0.0.1:4443:5601"]
+    environment:
+      TZ: UTC
+      INDEXER_USERNAME: admin
+      INDEXER_PASSWORD: ${WAZUH_ADMIN_PASSWORD}
+      DASHBOARD_USERNAME: kibanaserver
+      DASHBOARD_PASSWORD: ${WAZUH_KIBANASERVER_PASSWORD}
+      API_PASSWORD: ${WAZUH_API_PASSWORD}
+    networks:
+      - wazuh-lab
+
+networks:
+  wazuh-lab:
+    external: true
+    name: wazuh-lab

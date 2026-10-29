@@ -8,6 +8,7 @@ import urllib.request
 from common import (
     STEP_DELAY_SECONDS,
     collect_baseline,
+    finish_scenario,
     lab_request,
     multipart_file,
     start_fresh_lab,
@@ -136,6 +137,7 @@ def run() -> None:
     lab_request(crawler, "/", "198.51.100.70", user_agent=UA)
     lab_request(crawler, "/product.php?id=1", "198.51.100.70", user_agent=UA)
     lab_request(crawler, "/product.php?id=2", "198.51.100.70", user_agent=UA)
+    finish_scenario()
     print("Scenario D replay complete: busy benign traffic and non-compromising probes.")
 
 
