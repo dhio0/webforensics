@@ -83,5 +83,8 @@ ruff check .
 - [docs/wazuh-notes.md](docs/wazuh-notes.md): Wazuh 4.14 behaviour verified against docs, source and the lab
 - [benchmark/README.md](benchmark/README.md): scenario format, and how to score another tool
 
+## License
+MIT, see [LICENSE](LICENSE). Third-party code used as test fixtures keeps its own license; each fixture states its source and license.
+
 ## Roadmap
 Planned work is listed in [docs/plan.md](docs/plan.md) (§5). A comparison with related tools will be added only after checking those tools first-hand.
