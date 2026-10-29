@@ -23,6 +23,7 @@ from tests.correlate_helpers import (
 )
 from tests.unit.test_correlate_properties import _random_case
 from tests.unit.test_file_rules import _request_exec, _with_content
+from tests.unit.test_held_out_lessons import rce_case
 from tests.unit.test_logonly import sqlmap_case
 from tests.unit.test_wazuh_adapter import MARKER_SHA, upload_story
 from tests.wazuh_helpers import DOCROOT, fim_hit, recording
@@ -171,6 +172,10 @@ def _crafted(tmp_path):
                  file_ev("about.php", btime=0, ctime=0, mtime=0)))
     # scripts seen only in the log: written by INTO OUTFILE, used, then deleted (D85)
     yield sqlmap_case(), files(), None
+    # a shell written from a code-injection exploit, outside HTTP (D86)
+    logs, evidence = rce_case()
+    yield logs, files(evidence.files[0].model_copy(update={
+        "url_paths": ("/jabc/scripts/update.php",)})), None
     # directory scan without a manifest
     (tmp_path / "web" / "uploads").mkdir(parents=True)
     (tmp_path / "web" / "uploads" / "h.php").write_text("inert")

@@ -21,6 +21,9 @@ MESSAGES: dict[str, str] = {
         "Request yang kemungkinan menulis {file} tanpa login sebelumnya: "
         "{method} {path} → {status}."),
     "timeline.file_write_request": "Request yang menulis {file}: {method} {path} → {status}.",
+    "timeline.rce_exploit": (
+        "Request injeksi kode (RCE) yang dijawab sukses: {method} {path} → {status}. "
+        "Setelahnya {file} muncul tanpa request HTTP yang menulisnya."),
     "timeline.sqli_file_write": (
         "SQL injection yang menulis {file} ke webroot (INTO OUTFILE): {method} {path} → "
         "{status}."),
@@ -92,7 +95,13 @@ MESSAGES: dict[str, str] = {
     "seed.lonely_write": "File kode ditulis sendirian, di luar batch deploy. Tanpa baseline, "
                          "ini hanya sinyal lemah.",
     # --- Entry point ----------------------------------------------------------------------
-    "root.sqli_file_write": "Request SQL injection ini sendiri menulis skrip ke webroot, dan "
+    "root.rce_then_file_outside_http": "File ini tidak ditulis oleh request HTTP mana pun, "
+                                       "tetapi aktor yang memakainya sebelumnya mengirim "
+                                       "request injeksi kode yang dijawab sukses. Kemungkinan "
+                                       "file ditulis dari shell hasil exploit itu.",
+    "confidence.rce_success_not_visible": "Status 2xx tidak membuktikan kodenya berjalan; "
+                                          "kaitannya disimpulkan dari aktor dan urutan waktu.",
+    "root.sqli_file_write":"Request SQL injection ini sendiri menulis skrip ke webroot, dan "
                             "skrip itu kemudian dipakai. Isi skrip tidak bisa diperiksa karena "
                             "file-nya sudah tidak ada.",
     "logonly.not_in_webroot": "Tidak ada file di bukti webroot yang melayani URL ini, jadi isi "
@@ -162,6 +171,8 @@ MESSAGES: dict[str, str] = {
     "finding.LOG-SQLI-QUOTE-COMMENT": "Kutip diikuti komentar SQL: {matched}",
     "finding.LOG-TRAVERSAL-DOTS": "Path traversal (../): {matched}",
     "finding.LOG-TRAVERSAL-SENSITIVE": "Upaya membaca file sensitif: {matched}",
+    "finding.LOG-RCE-CODE-INJECTION": "Kode atau callback yang menjalankan kode ada di "
+                                      "request: {matched}",
     "finding.LOG-SCANNER-UA": "User agent tool pemindai: {matched}",
     "finding.LOG-WEBSHELL-UPLOAD-DIR": "Akses ke skrip di folder upload: {matched}",
     "finding.LOG-WEBSHELL-CMD-PARAM": "Parameter yang mirip perintah webshell: {matched}",
@@ -219,6 +230,9 @@ MESSAGES: dict[str, str] = {
                                       "dari input user.",
     "rec.eradication.fix_sqli_write": "Perbaiki SQL injection di {path} dengan prepared "
                                       "statement dan cabut hak FILE dari user database aplikasi.",
+    "rec.eradication.patch_rce": "Perbarui atau tambal aplikasi yang melayani {path}: request "
+                                 "ke endpoint ini menyisipkan kode. Cocokkan versi aplikasi yang "
+                                 "terpasang dengan CVE yang diketahui.",
     "rec.eradication.fix_login": "Periksa cara login di {path} berhasil: kredensial bocor, "
                                  "password lemah, atau SQL injection lewat POST.",
     "rec.eradication.unknown_entry": "Titik masuk belum pasti. Periksa endpoint di kronologi, "
@@ -279,6 +293,7 @@ RULE_NAMES: dict[str, str] = {
     "LOG-SQLI-QUOTE-COMMENT": "SQL injection (kutip + komentar)",
     "LOG-TRAVERSAL-DOTS": "Path traversal",
     "LOG-TRAVERSAL-SENSITIVE": "Path traversal ke file sensitif",
+    "LOG-RCE-CODE-INJECTION": "Injeksi kode (RCE)",
     "LOG-SCANNER-UA": "Tool pemindai",
     "LOG-WEBSHELL-UPLOAD-DIR": "Akses skrip di folder upload",
     "LOG-WEBSHELL-CMD-PARAM": "Parameter perintah webshell",
@@ -294,6 +309,7 @@ RULE_NAMES: dict[str, str] = {
 
 VULN_CLASSES: dict[str, str] = {
     "unrestricted_file_upload": "unrestricted file upload (upload tanpa validasi)",
+    "remote_code_execution": "eksekusi kode jarak jauh (RCE) di aplikasi",
     "sql_injection_auth_bypass": "SQL injection pada login (bypass autentikasi)",
     "sql_injection_file_write": "SQL injection yang menulis file",
 }

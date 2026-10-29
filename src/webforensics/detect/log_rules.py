@@ -89,6 +89,16 @@ LOG_RULES: tuple[LogRule, ...] = (
         Confidence.HIGH, ("T1190", "T1083"), Target.REQUEST,
         _rx(r"/etc/(?:passwd|shadow)\b|\bwin\.ini\b|\bboot\.ini\b|/proc/self/environ"),
     ),
+    # Code injection (D86): PHP code or a code-running callback in the request, e.g.
+    # Drupalgeddon2's `name[#post_render][]=passthru&name[#markup]=...`.
+    LogRule(
+        "LOG-RCE-CODE-INJECTION", FindingCategory.EXPLOIT_ATTEMPT, Severity.HIGH,
+        Confidence.MEDIUM, ("T1190", "T1059"), Target.REQUEST,
+        _rx(r"\b(?:eval|assert|base64_decode|gzinflate|str_rot13|passthru|shell_exec"
+            r"|proc_open|popen|pcntl_exec|call_user_func(?:_array)?|create_function)\s*\("
+            r"|\bsystem\s*\(\s*['\"$]|<\?php|\bphp\s+-r\s"
+            r"|\[#(?:post_render|pre_render|lazy_builder|access_callback|value_callback)\]"),
+    ),
     LogRule(
         "LOG-SCANNER-UA", FindingCategory.RECON, Severity.LOW, Confidence.MEDIUM,
         ("T1595.002",), Target.USER_AGENT,

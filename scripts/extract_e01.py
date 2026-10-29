@@ -4,6 +4,10 @@ NTFS timestamps and a SHA-256 for every file.
     python -I scripts/extract_e01.py IMAGE --list
     python -I scripts/extract_e01.py IMAGE OUT_DIR xampp/apache/logs xampp/htdocs ...
 
+Partitions holding an LVM2 physical volume are opened through their logical volumes
+(linear ones, the common case for a root volume): `--list` shows them as
+`lvm:<vg>/<lv>`.
+
 Writes OUT_DIR/files/<folder>/... and OUT_DIR/ntfs-listing.csv (path, type, size,
 allocated, created, modified, mft_changed, accessed, inode, sha256; times are NTFS
 $STANDARD_INFORMATION in UTC). Turn the listing into a webforensics manifest with
@@ -17,6 +21,7 @@ them out of the repository and never execute them.
 import contextlib
 import csv
 import hashlib
+import re
 import sys
 from datetime import UTC, datetime
 from pathlib import Path
@@ -55,14 +60,46 @@ def open_image(path: str) -> pytsk3.Img_Info:
     return pytsk3.Img_Info(path)
 
 
+def _lvm_volumes(image: pytsk3.Img_Info, start: int) -> list[tuple[int, str]]:
+    """Logical volumes of an LVM2 physical volume at byte `start` (linear ones only)."""
+    head = image.read(start, 1 << 20)
+    if head[512:520] != b"LABELONE":
+        return []
+    # The metadata area keeps several NUL-terminated text versions; the highest seqno wins.
+    texts = [chunk.decode("ascii", "replace") for chunk in head.split(b"\x00")
+             if b"logical_volumes" in chunk and b"seqno = " in chunk]
+    if not texts:
+        return []
+    meta = max(texts, key=lambda t: int(re.search(r"seqno = (\d+)", t).group(1)))
+    vg = re.search(r"^(\S+) \{", meta, re.M).group(1)
+    extent = int(re.search(r"extent_size = (\d+)", meta).group(1)) * 512
+    pe_start = int(re.search(r"pe_start = (\d+)", meta).group(1)) * 512
+    lvs = meta[meta.index("logical_volumes"):]
+    headers = list(re.finditer(r"^\s*([\w.+-]+) \{\s*\n\s*id = ", lvs, re.M))
+    found = []
+    for i, header in enumerate(headers):
+        body = lvs[header.end(): headers[i + 1].start() if i + 1 < len(headers) else None]
+        segments = re.search(r"segment_count = (\d+)", body)
+        stripe = re.search(r'stripes = \[\s*"pv0", (\d+)', body)
+        if segments and segments.group(1) == "1" and stripe:  # linear volumes only
+            found.append((start + pe_start + int(stripe.group(1)) * extent,
+                          f"lvm:{vg}/{header.group(1)}"))
+    return found
+
+
 def volumes(image: pytsk3.Img_Info) -> list[tuple[int, str]]:
     try:
         table = pytsk3.Volume_Info(image)
     except OSError:
         return [(0, "whole image")]
     block = table.info.block_size
-    return [(p.start * block, p.desc.decode(errors="replace")) for p in table
-            if p.len > 2048 and b"Unallocated" not in p.desc and b"Primary Table" not in p.desc]
+    found = []
+    for p in table:
+        if p.len <= 2048 or b"Unallocated" in p.desc or b"Primary Table" in p.desc:
+            continue
+        found.append((p.start * block, p.desc.decode(errors="replace")))
+        found += _lvm_volumes(image, p.start * block)
+    return found
 
 
 def _iso(ts: int) -> str:
@@ -84,7 +121,10 @@ def _copy(entry, size: int, target: Path) -> str:
     return digest.hexdigest()
 
 
-def walk(directory, rel: str, out: Path, rows: list[dict]) -> None:
+def walk(directory, rel: str, out: Path, rows: list[dict],
+         ancestors: frozenset[int] = frozenset()) -> None:
+    """Deleted names are listed but not followed: their inode may since belong to another
+    file or to a parent directory (a loop)."""
     for entry in directory:
         name = entry.info.name.name.decode(errors="replace")
         meta = entry.info.meta
@@ -98,9 +138,12 @@ def walk(directory, rel: str, out: Path, rows: list[dict]) -> None:
                "mft_changed": _iso(meta.ctime), "accessed": _iso(meta.atime),
                "inode": meta.addr, "sha256": ""}
         rows.append(row)
+        if not row["allocated"]:
+            continue  # deleted: content and children are not reliable
         if is_dir:
-            with contextlib.suppress(OSError):  # unreadable directory: keep going
-                walk(entry.as_directory(), path, out, rows)
+            if meta.addr not in ancestors:
+                with contextlib.suppress(OSError):  # unreadable directory: keep going
+                    walk(entry.as_directory(), path, out, rows, ancestors | {meta.addr})
             continue
         try:
             row["sha256"] = _copy(entry, meta.size, out / path.lstrip("/"))

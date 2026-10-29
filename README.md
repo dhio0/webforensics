@@ -97,6 +97,17 @@ That second run was measured on the case that drove the fixes, so it is not proo
 they generalize. The first exploit, a command injection sent in a POST body, cannot be
 seen in an access log at all.
 
+### A second case, held out
+
+The tool was then frozen and run on a second public case it had never seen (Ali Hadi's
+Linux "Compromised Web Server": Drupal 7.26, Metasploit Drupalgeddon2), with the answer
+key written first ([benchmark/external/ashemery-linux1](benchmark/external/ashemery-linux1/README.md)).
+It found the webshell and correctly found no HTTP request that wrote it, but missed the
+exploit (no rule for code injection), named a 2016 phpMyAdmin request as the way in, and
+accused the VM author's IP. After the fixes in D86 it gets every metric of that case right,
+but that second run is post-hoc. The honest summary: each new real case has exposed new
+gaps, so expect the next one to as well.
+
 ## Development
 ```bash
 pytest
@@ -112,6 +123,7 @@ ruff check .
 - [docs/wazuh-notes.md](docs/wazuh-notes.md): Wazuh 4.14 behaviour verified against docs, source and the lab
 - [benchmark/README.md](benchmark/README.md): scenario format, and how to score another tool
 - [benchmark/external/ashemery-case1](benchmark/external/ashemery-case1/README.md): the public DFIR case, its answer key and scores
+- [benchmark/external/ashemery-linux1](benchmark/external/ashemery-linux1/README.md): the held-out Linux case
 
 ## License
 MIT, see [LICENSE](LICENSE). Third-party code used as test fixtures keeps its own license; each fixture states its source and license.

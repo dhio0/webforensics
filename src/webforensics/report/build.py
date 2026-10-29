@@ -34,6 +34,7 @@ _FIX_FOR_VULN = {
     "unrestricted_file_upload": "rec.eradication.fix_upload",
     "sql_injection_auth_bypass": "rec.eradication.fix_sqli_login",
     "sql_injection_file_write": "rec.eradication.fix_sqli_write",
+    "remote_code_execution": "rec.eradication.patch_rce",
 }
 LIMITATIONS = ("limit.automated", "limit.post_body", "limit.timestamps",
                "limit.log_tampering", "limit.shared_ip")

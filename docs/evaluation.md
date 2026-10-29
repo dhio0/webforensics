@@ -125,6 +125,23 @@ lab benchmark scores did not change. The strict root cause (a command injection 
 body) is out of reach for any access-log analysis. A second, untouched case is the next
 step before claiming the fixes generalize.
 
+### Second case, held out
+
+Ali Hadi's Linux "Compromised Web Server" (Ubuntu, Drupal 7.26, Metasploit Drupalgeddon2)
+was scored with the tool frozen after case 1, and an answer key written before the
+evidence was opened ([benchmark/external/ashemery-linux1](../benchmark/external/ashemery-linux1/README.md)).
+
+| | Run 1: frozen tool (held out) | Run 2: after D86 (post-hoc) |
+|---|---|---|
+| Attacker file found, no invented HTTP writer | yes | yes |
+| Files / IPs falsely accused | 2 / 1 | 0 / 0 |
+| Exploit request in the timeline | missed | found |
+| Root cause, strict / lenient | wrong / wrong | correct / correct |
+
+The held-out run is the number to quote, and it was poor: the case-1 fixes did not cover
+code injection, a shell written from a root shell, or a form POST near an app install.
+Two cases, two different sets of failures: the next case will likely find more.
+
 ## Using the benchmark with another tool
 
 See [benchmark/README.md](../benchmark/README.md). The ground truth format is tool-neutral.

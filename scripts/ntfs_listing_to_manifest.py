@@ -7,9 +7,11 @@ WEBROOT_IN_IMAGE is the webroot's path inside the image, e.g. /xampp/htdocs (in 
 on Windows, set MSYS_NO_PATHCONV=1 so it is not rewritten into a Windows path).
 
 NTFS mapping: mtime = modified, ctime = MFT entry changed, btime = created, atime =
-accessed (all $STANDARD_INFORMATION, settable by programs). NTFS has no POSIX mode or
-owner, so mode is written as 644 and uid as 0. The header says `#filesystem=ntfs`, which
-makes the analysis match URLs case-insensitively and distrust birth times (D84).
+accessed (all $STANDARD_INFORMATION, settable by programs). On ext4 the same columns are
+the inode's mtime, ctime, crtime and atime. The listing has no POSIX mode or owner, so
+mode is written as 644 and uid as 0. `--filesystem` (default ntfs) goes into the header:
+a Windows filesystem makes the analysis match URLs case-insensitively and distrust birth
+times (D84).
 """
 
 import argparse
@@ -29,6 +31,8 @@ def main() -> int:
     parser.add_argument("out")
     parser.add_argument("--hostname", default="unknown")
     parser.add_argument("--utc-offset", default="+0000", help="server offset, e.g. -0700")
+    parser.add_argument("--filesystem", default="ntfs",
+                        help="`stat -f -c %%T` name of the filesystem, e.g. ntfs, ext2/ext3")
     args = parser.parse_args()
     root = args.webroot.rstrip("/") + "/"
     with open(args.listing, encoding="utf-8") as handle:
@@ -37,7 +41,7 @@ def main() -> int:
     with open(args.out, "w", encoding="utf-8", newline="\n") as out:
         out.write("#webforensics-manifest v1\n#collector=extract_e01.py (pytsk3)\n")
         out.write(f"#hostname={args.hostname}\n#webroot={root}\n#utc_offset={args.utc_offset}\n")
-        out.write("#birth_time_supported=1\n#filesystem=ntfs\n")
+        out.write(f"#birth_time_supported=1\n#filesystem={args.filesystem}\n")
         out.write("#columns=path_hex,type,size,mode,uid,inode,atime,mtime,ctime,btime,sha256\n")
         for r in rows:
             rel = r["path"][len(root):]

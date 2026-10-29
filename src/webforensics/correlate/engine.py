@@ -623,6 +623,35 @@ def _unlinked_bypasses(index: _Index, in_timeline: set[str],
 # --- Step 7b: scripts seen only in the logs (D85) ------------------------------------
 
 
+RCE_RULE = "LOG-RCE-CODE-INJECTION"
+
+
+def _entry_by_code_execution(chain: _Chain, anchor: Anchor, index: _Index) -> None:
+    """A webshell no request wrote, used by an actor who earlier sent a code injection that
+    was answered 2xx: the shell was most likely written from that exploit (D86). The first
+    such request of the actors who used the file is the entry point."""
+    if not any(f.category is FindingCategory.WEBSHELL for f in chain.findings):
+        return
+    since = anchor.ts - _seconds(index.config.lookback_s)
+    until = anchor.ts + _seconds(index.config.clock_skew_s)
+    found = [
+        e for actor in sorted(chain.suspect_invokers)
+        for e in index.actor_since(actor, since)
+        if e.ts <= until and rq.is_success(e) and any(f.rule_id == RCE_RULE for f in index.of(e))
+    ]
+    if not found:
+        return
+    first = min(found, key=lambda e: (e.ts, e.log_file, e.line_no))
+    root = _log_draft(index, "rce_exploit", first,
+                      cap(chain.file_event.confidence, Confidence.MEDIUM), "T1190",
+                      vuln_class="remote_code_execution", file=chain.file.path)
+    root.reasons += [Reason(key="root.rce_then_file_outside_http"),
+                     Reason(key="confidence.rce_success_not_visible")]
+    root.root_cap = Confidence.MEDIUM
+    root.window = (root.ts, chain.file_event.window[1])
+    chain.root = root
+
+
 def _log_only_drafts(shell: LogOnlyFile, index: _Index) -> tuple[list[_Draft], _Draft | None]:
     """Timeline events for one log-only script, and its entry point if it shows one."""
     first, drafts, root = shell.uses[0], [], None
@@ -673,6 +702,8 @@ def _trace(file: FileEvidence, findings: list[Finding], index: _Index,
         # A PUT to the file's own URL is the write, not a later use of the file.
         chain.invocations = [d for d in chain.invocations if d.subject != chain.creation.subject]
     _entry_point(chain, index)
+    if chain.creation is None:
+        _entry_by_code_execution(chain, anchor, index)
     return chain
 
 
@@ -821,8 +852,11 @@ def correlate(logs: LogCollection, files: FileCollection, *,
         if lone:
             own.append(lonely_finding(file))
         chain = _trace(file, own, index, weak)
-        linked = chain is not None and (chain.write is not None or (
-            chain.rare_post is not None and not deploy))
+        # A deploy file needs an upload-like writer: one form POST nearby does not write a
+        # batch of hundreds of files (D86).
+        wrote = chain is not None and chain.write is not None and (
+            not deploy or chain.write.level is rq.WriteLevel.LIKELY)
+        linked = chain is not None and (wrote or (chain.rare_post is not None and not deploy))
         if chain is None or (weak and not linked) or (
                 _looks_generated(chain, file_findings, signal is not None, index)):
             if chain is not None or weak:

@@ -1,0 +1,31 @@
+run: run2   timeline rows: 6
+
+Events (web logs)
+  HIT  W1 Drupalgeddon2 POST  (2 cited lines)
+  HIT  W3 update.php?cmd= use  (2 cited lines)
+  event recall 2/2
+
+Files
+  attacker files flagged 1/1  missed: []
+  false accusations 0: []
+  HTTP writer claimed for update.php (should be none): 0
+
+IPs (IOC list)
+  accused: ['192.168.210.131']   other than attacker: []
+
+Root cause
+  192.168.210.131 POST /jabc/ at 2019-10-05 11:01:27 UTC (remote_code_execution, confidence low)
+  strict OK   lenient OK
+
+Code (not scored: CVE-2018-7600 is not SQL injection)
+  findings: []
+
+Scripts seen only in the logs: []
+Unexplained changes (review): 13
+Gaps: 28
+
+Inputs (SHA-256):
+  files/var/log/apache2/access.log  208d792d8aadf3e0550d6bb06e84db4659dfc50c576b25966138f5aaf0da35d7
+  files/var/log/apache2/error.log  46e4f6231c8e0672391bef719783ab2cd1a71fec84687e8b6f95134ffda74607
+  manifest.tsv  7286f2317b29c77d5b6e6b5a3a74eba0c5066540d125cbc2ef0757a80d0eddf6
+Tool: 0.1.0 ruleset 0.1.0 config b76fdac793d85a92

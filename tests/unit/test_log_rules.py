@@ -42,6 +42,13 @@ POSITIVE = [
     ("/uploads/x.php?cmd=id", "LOG-WEBSHELL-UPLOAD-DIR"),
     ("/a.php?cmd=whoami", "LOG-WEBSHELL-CMD-PARAM"),
     ("/a.php?x=1&exec=ls%20-la", "LOG-WEBSHELL-CMD-PARAM"),
+    # Drupalgeddon2 as sent by Metasploit (Ali Hadi's Linux case, D86)
+    ("/jabc/?q=user/password&name%5b%23post_render%5d%5b%5d=assert"
+     "&name%5b%23markup%5d=eval%28base64_decode%28Lyo8P3Bo", "LOG-RCE-CODE-INJECTION"),
+    ("/?q=user/password&name%5b%23post_render%5d%5b%5d=passthru&name%5b%23markup%5d=id",
+     "LOG-RCE-CODE-INJECTION"),
+    ("/x.php?a=php%20-r%20%27phpinfo();%27", "LOG-RCE-CODE-INJECTION"),
+    ("/x.php?c=<?php%20echo%201;?>", "LOG-RCE-CODE-INJECTION"),
 ]
 
 NEGATIVE = [
@@ -60,6 +67,10 @@ NEGATIVE = [
     "/docs/passwd-policy.html",
     "/api/items?c=3",  # short param names are too common to flag as a shell command
     "/shop.php?cmdline_help=1",
+    "/search.php?q=system+design",  # function names as plain words
+    "/search.php?q=evaluation+of+assert+statements",
+    "/docs/eval.html",
+    "/node?q=#markup",  # a fragment-like word, not a render-array key
 ]
 
 
