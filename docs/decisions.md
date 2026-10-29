@@ -338,3 +338,12 @@ Status: accepted (M6). Refines D75–D78.
 ## D81 — An error-log client that is a trusted proxy is not an actor
 Status: accepted (M6). Fixes a bug from M5.
 Error logs have no X-Forwarded-For. When a file's writer is found only in the error log (no access-log line, e.g. Wazuh without archives), its client IP was taken as the attacker. Behind a reverse proxy that IP is the proxy itself, so the report told the admin to block their own proxy. Found by pulling scenario E from the lab in alerts-only mode. Now a trusted-proxy client leaves the actor unknown, the event says why (`error_log.client_is_proxy`), and no IP is accused.
+
+## D82 — Extend the plan: realistic benchmark (M8) and wider coverage (M9)
+Status: accepted (2026-10-29, after M6).
+The five lab scenarios are small, synthetic, and written by the rule author, so perfect scores there prove little about real incidents. Order: M7 first (the pitch's unmet promise), then M8, then M9.
+- **Independent ground truth where possible.** M7 adds fixtures from SQLi CVEs in open-source PHP projects; the lines changed by the upstream fix commit are the answer key. M8 adds scenarios attacked blind by third parties.
+- **Realism from real sources, not invented data.** Real vulnerable applications, real attack tools (sqlmap, Weevely, commix), real public access-log traffic as background. All attacks stay inside the isolated lab; webshell samples stay defanged or inert in the repository.
+- **No uncensored LLM for benchmark data.** Suggested: an "abliterated" model. Rejected: LLM-invented scenarios are still synthetic and self-made, which is the problem being fixed; real tools already produce real traffic; and an unverifiable, refusal-stripped hosted model is a poor fit for a blue-team project and for evidence privacy. Mainstream assistants may still help write scenario scripts and noise generators.
+- **Hard limits stay stated.** A root-level attacker can forge timestamps and logs, and POST bodies are not in access logs unless another source (ModSecurity, application logs) is given. M9 narrows both (Wazuh-vs-server log comparison, optional ModSecurity evidence) but the report keeps saying what cannot be proven.
+- **UI deferred.**

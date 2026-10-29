@@ -9,6 +9,8 @@ description = "Reconstruct how a website was compromised by correlating webroot 
 readme = "README.md"
 requires-python = ">=3.11"
 authors = [{ name = "Dhio" }]
+license = "MIT"
+license-files = ["LICENSE"]
 dependencies = [
     "pydantic>=2.6,<3",
     "typer>=0.12",
