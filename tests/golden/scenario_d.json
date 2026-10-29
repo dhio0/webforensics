@@ -16,6 +16,7 @@
     "files": 12,
     "files_rejected": 0,
     "baseline_files": 10,
+    "file_adapter": "file",
     "collected_at": "2026-10-28T03:49:52Z"
   },
   "run": {

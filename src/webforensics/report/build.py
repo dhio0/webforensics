@@ -174,7 +174,8 @@ def _eradication(result: CorrelationResult) -> list[Reason]:
     return recs
 
 
-def build_recommendations(result: CorrelationResult, review: int) -> list[Reason]:
+def build_recommendations(result: CorrelationResult, review: int,
+                          fim_in_use: bool = False) -> list[Reason]:
     compromised = bool(result.affected_files)
     recs = [_r("rec.containment.preserve")]
     if compromised:
@@ -197,7 +198,10 @@ def build_recommendations(result: CorrelationResult, review: int) -> list[Reason
         recs.append(_r("rec.lessons.log_retention"))
     if GapKind.NO_BASELINE in kinds:
         recs.append(_r("rec.lessons.baseline"))
-    recs.append(_r("rec.lessons.fim"))
+    if GapKind.PARTIAL_LOG_SOURCE in kinds:
+        recs.append(_r("rec.lessons.wazuh_archives"))
+    if not fim_in_use:
+        recs.append(_r("rec.lessons.fim"))
     if any(r.key == "creation.post_body_not_logged"
            for e in result.timeline for r in e.confidence_reasons):
         recs.append(_r("rec.lessons.log_uploads"))
@@ -219,7 +223,8 @@ def without_noise(result: CorrelationResult, logs: LogCollection) -> Correlation
 
 
 def evidence_scope(logs: LogCollection, files: FileCollection,
-                   baseline: FileCollection | None = None) -> EvidenceScope:
+                   baseline: FileCollection | None = None,
+                   file_adapter: str = "file") -> EvidenceScope:
     times = [e.ts for e in logs.events]
     return EvidenceScope(
         log_first=min(times, default=None), log_last=max(times, default=None),
@@ -228,6 +233,7 @@ def evidence_scope(logs: LogCollection, files: FileCollection,
         files=len(files.files), files_rejected=len(files.failures),
         baseline_files=len(baseline.files) if baseline is not None else None,
         collected_at=files.header.collected_at if files.header else None,
+        file_adapter=file_adapter,
     )
 
 
@@ -242,6 +248,9 @@ def build_report(result: CorrelationResult, logs: LogCollection, case: CaseInfo,
         summary=tuple(build_summary(result, background_requests(result, logs), review,
                                     tuple(background))),
         background=tuple(background),
-        recommendations=tuple(build_recommendations(result, review)),
-        limitations=tuple(_r(key) for key in (*LIMITATIONS, "limit.no_code_analysis")),
+        recommendations=tuple(build_recommendations(
+            result, review, fim_in_use=scope is not None and scope.file_adapter == "wazuh")),
+        limitations=tuple(_r(key) for key in (
+            *LIMITATIONS, *(("limit.fim_blind_spots",) if scope and scope.file_adapter == "wazuh"
+                            else ()), "limit.no_code_analysis")),
     )

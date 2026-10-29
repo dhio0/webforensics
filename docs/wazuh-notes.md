@@ -171,16 +171,19 @@ How a manager's time zone is actually set: Wazuh daemons run chrooted in `/var/o
   - Use a dedicated **read-only** user with read on `wazuh-alerts-4.x-*` and `wazuh-archives-4.x-*` only ([doc] https://documentation.wazuh.com/4.14/user-manual/user-administration/rbac.html).
 - **No network by default** (CLAUDE.md). The adapter only connects when `--wazuh-url` is given.
 
-## 6. Adapter design (proposal, no code yet)
+## 6. Adapter design (implemented in M6)
 
 ```
 adapters/wazuh/
   schema_v4.py   # every 4.x field name and index pattern, in one place
   client.py      # PIT + search_after, bounded window, no retries that reorder
+  pull.py        # `webforensics pull`: index checks, alerts-only fallback, writes a recording
   recording.py   # read/write a recording (JSONL of raw hits + query metadata)
   logs.py        # archive hit -> LogEvent (via the existing parser on full_log)
-  fim.py         # FIM alert hits -> FileEvidence (+ findings for deleted/outside-docroot)
+  fim.py         # FIM alert hits -> FileEvidence (+ findings outside the docroot)
+  __init__.py    # WazuhRecordingSource: the LogSource + FileEvidenceSource for the core
 ```
+Details that changed while building it are in D80.
 
 **Two-step flow.** `pull` writes a recording, and `analyze --wazuh-recording` reads it offline.
 - Only `pull` touches the network.
@@ -190,7 +193,7 @@ adapters/wazuh/
 
 **Recording format.** One JSON object per line: `_index`, `_id` and `_source` as returned. Nothing is altered, so it is an evidence copy. Its SHA-256 goes into the report.
 
-## 7. Gaps in our own engine that M6 must close
+## 7. Gaps in our own engine that M6 must close (all closed; see D76–D80)
 
 Found by checking the above against `models.py`, `correlate/seeds.py`, `correlate/anchor.py` and `correlate/gaps.py`.
 
@@ -211,7 +214,7 @@ Found by checking the above against `models.py`, `correlate/seeds.py`, `correlat
 4. **Absolute paths.** FIM reports `/var/www/html/...`. A docroot-prefix config maps these to relative paths plus `url_paths` (the same map the FileAdapter uses). Paths outside the docroot become persistence findings; they are not dropped.
 5. **Many events per file.** All events for one path build one `FileEvidence`. Every event stays a citation, so the timeline shows each change.
 6. **Silence gaps in alerts-only mode.** Without archives, `gaps.py` would report "no log" for almost every minute, because normal requests are missing. In that mode the silence detector is off, and one explicit gap replaces it: `wazuh.alerts_only`.
-7. **No line numbers.** The report text says the line number is not available.
+7. **No line numbers.** Solved differently: citations point at the line of the recording that holds the raw log line (D80).
 
 **M6 "done" test.** Unchanged: the same root cause and the same affected files via the WazuhAdapter (realtime FIM + archives) as via the FileAdapter. Citations and confidence may legitimately differ; the report shows why.
 
@@ -259,5 +262,13 @@ New findings the adapter must handle:
 - **Unused manager modules are off.** The manager also monitors its own container: syscollector (inventory into `wazuh-states-inventory-*`, about 250 MB of queue within minutes), SCA, rootcheck and syscheck. None of it is lab evidence, and it adds alert noise. `setup.py` turns all of them off, as well as vulnerability detection (4.14 reference: "Disable the Syscollector wodle.", "Enables the module.", "Disables the execution of rootcheck.", "Indicates if the syscheck scan is disabled or not."). The manager log then shows "Module disabled" for each. Volumes stayed at about 229 MB over a full replay plus smoke check. The agent was already minimal (only FIM and logcollector).
 - **Upstream compose uses `restart: always`,** so Wazuh started with every Docker Desktop launch and held about 2 GiB of RAM. The override sets `restart: "no"`; Wazuh runs only after `setup.py up`.
 - **Old events stay indexed across replays.** Any "wait for event" or query must be bounded by time. The first version of the lab's FIM wait matched run 1's alert in later runs; it now filters by `agent.name` and `timestamp >= replay start`. `smoke_check.py` had the same flaw (its `deleted` wait matched an earlier smoke run's alert) and now uses the same filter.
+
+End-to-end check of the adapter (2026-10-29), `tests/integration/test_wazuh_lab.py`:
+
+- **All five scenarios agree.** Each scenario was replayed with Wazuh on; the FileAdapter evidence (logs + manifest) and a `pull` recording from that same run gave the same root-cause request, affected files and attacker IPs. Scenario E's forged mtime was caught through FIM: `added` at 04:27:53, then `modified` with `mtime_after` 2024-01-15.
+- **A deploy inside the window looks like an attack.** The app's files are copied into the webroot right after the agent's baseline scan, so FIM sometimes reports all of them as `added` within 0.1 s. Before D79 all eight code files were reported as affected. Whether this happens depends on which container wins the race.
+- **The agent restarts itself once after enrolling** (`auto_restart` defaults to yes; the agent got a new configuration from the manager). Scenario D's cache file was written at 04:33:17.26, between the agent stopping (04:33:15) and its new baseline scan (04:33:18), and never produced an alert. The lab agent now sets `<auto_restart>no</auto_restart>` (4.14 client reference: "Toggles on and off the automatic restart of agents when a new valid configuration is received from the manager"). In a real incident this blind spot cannot be detected from the alerts, so Wazuh reports state it (`limit.fim_blind_spots`).
+- **Alerts-only, measured.** Pulling scenario E with the archives index treated as missing: none of the 7 access-log lines was an alert (all 2xx), only the PHP error-log line (rule 31301, level 3). The upload was still traced, through the error log, at low confidence and with the partial-log gap. This is D74 on real data. It also exposed D81: the error log's client was the edge proxy, which had been reported as the attacker.
+- **Pull windows must start at the replay.** Back-to-back replays with a window that started 30 s early pulled the previous scenario's upload, which the adapter then correctly reported. Events stay indexed; the window decides what is evidence.
 
 Resolved from source since the first draft: the meaning of `timestamp`, the archive event structure, the archive/alert `id` relation, the `mode` values, the `mtime_after` time zone, and the OpenSearch version and pagination method.

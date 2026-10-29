@@ -16,6 +16,7 @@ from webforensics.attack.mitre import tactic_for
 from webforensics.correlate import requests as rq
 from webforensics.correlate.actors import (
     LoginOutcome,
+    is_trusted_proxy,
     login_outcomes,
     parse_networks,
     resolve_actor,
@@ -26,9 +27,11 @@ from webforensics.correlate.confidence import cap, lower, rank
 from webforensics.correlate.config import CorrelationConfig
 from webforensics.correlate.gaps import coverage_gap, make_gap, parse_error_gaps, silence_gaps
 from webforensics.correlate.seeds import (
+    deploy_writes,
     is_strong_seed,
     lonely_finding,
     lonely_writes,
+    only_status_signals,
     rare_post_finding,
 )
 from webforensics.detect import RULESET_VERSION
@@ -42,6 +45,7 @@ from webforensics.models import (
     EvidenceGap,
     FileCollection,
     FileEvidence,
+    FimEventType,
     Finding,
     FindingCategory,
     GapKind,
@@ -59,7 +63,9 @@ from webforensics.models import (
 TIMESTOMP_RULE = "FILE-ANTIFORENSICS-TIMESTOMP"
 BYPASS_RULE = "CORR-SQLI-LOGIN-BYPASS"
 # Only these gap kinds describe missing time; the others are listed but do not downgrade.
-_TIME_GAPS = (GapKind.NO_LOG_LINES, GapKind.PARSE_ERRORS, GapKind.ROTATION_BOUNDARY)
+# A partial log source has no time bounds, so it downgrades every event once (D74).
+_TIME_GAPS = (GapKind.NO_LOG_LINES, GapKind.PARSE_ERRORS, GapKind.ROTATION_BOUNDARY,
+              GapKind.PARTIAL_LOG_SOURCE)
 _LAST = "￿"  # sorts after any log file name
 _WRITE_METHODS = ("POST", "PUT", "PATCH")
 # Rules that judge only the URL, so they fire for anyone who merely fetches the file.
@@ -161,8 +167,8 @@ class _Index:
         self.by_subject: dict[str, list[Finding]] = defaultdict(list)
         for finding in self.findings:
             self.by_subject[finding.subject].append(finding)
-        proxies = parse_networks(config.trusted_proxies)
-        self.actor_of = {e.evidence_id: resolve_actor(e, proxies) for e in self.events}
+        self.proxies = parse_networks(config.trusted_proxies)
+        self.actor_of = {e.evidence_id: resolve_actor(e, self.proxies) for e in self.events}
         self.by_actor: dict[str, list[LogEvent]] = defaultdict(list)
         self.by_url: dict[str, list[LogEvent]] = defaultdict(list)
         for event in self.events:
@@ -272,13 +278,18 @@ def _file_draft(file: FileEvidence, anchor: Anchor, findings: list[Finding],
                 config: CorrelationConfig) -> _Draft:
     kind = {TimestampBasis.BTIME: "file_created", TimestampBasis.CTIME: "file_changed"}.get(
         anchor.basis, "file_modified_mtime")
+    written = file.fim_written
+    if anchor.basis is TimestampBasis.FIM and written is not None:
+        kind = "file_created" if written.event is FimEventType.ADDED else "file_changed"
     suspicious = any(f.category in (FindingCategory.WEBSHELL, FindingCategory.PERSISTENCE)
                      for f in findings)
     return _Draft(
         kind=kind, subject=file.evidence_id, ts=anchor.ts, basis=anchor.basis,
         params={"path": file.path, "sha256": file.sha256,
                 "baseline_status": file.baseline_status.value},
-        citations=[file.citation()], confidence=anchor.max_confidence,
+        # Every FIM alert for the file is cited, so the report shows each change.
+        citations=[file.citation(), *(change.citation for change in file.fim)],
+        confidence=anchor.max_confidence,
         order=(_LAST, 0, 1),
         window=(anchor.ts - _seconds(config.creation_window_s),
                 anchor.ts + _seconds(config.clock_skew_s)),
@@ -406,6 +417,15 @@ def _creation_from_error_log(chain: _Chain, anchor: Anchor, index: _Index) -> bo
     best = min(candidates, key=lambda err: (
         -rq.write_level_for(err.method, err.path, []), abs((err.ts - anchor.ts).total_seconds()),
         err.log_file, err.line_no))
+    reasons = [Reason(key="creation.error_log_only"),
+               Reason(key="error_log.assumed_utc_offset",
+                      params={"offset": best.assumed_utc_offset})]
+    # Error logs carry no X-Forwarded-For: behind a trusted proxy the real client is
+    # unknown, and naming the proxy would put the site's own proxy on the block list.
+    actor = best.client_ip
+    if actor and is_trusted_proxy(actor, index.proxies):
+        reasons.append(Reason(key="error_log.client_is_proxy", params={"ip": actor}))
+        actor = None
     draft = _Draft(
         kind="file_write_request", subject=best.evidence_id, ts=best.ts,
         basis=TimestampBasis.LOG,
@@ -413,14 +433,11 @@ def _creation_from_error_log(chain: _Chain, anchor: Anchor, index: _Index) -> bo
                 "file": chain.file.path},
         citations=[best.citation(), chain.file.citation()], confidence=Confidence.LOW,
         order=(best.log_file, best.line_no, 0), window=chain.file_event.window,
-        technique="T1505.003", actor=best.client_ip,
-        reasons=[Reason(key="creation.error_log_only"),
-                 Reason(key="error_log.assumed_utc_offset",
-                        params={"offset": best.assumed_utc_offset})],
+        technique="T1505.003", actor=actor, reasons=reasons,
     )
     chain.creation = draft
     chain.write = _Write(
-        actor=best.client_ip or "", method=best.method, path=best.path, ts=best.ts,
+        actor=actor or "", method=best.method, path=best.path, ts=best.ts,
         position=(best.ts, "", 0), user_agent=None,
         level=rq.write_level_for(best.method, best.path, []), findings=(),
     )
@@ -542,6 +559,7 @@ def _corroborate(drafts: list[_Draft], index: _Index) -> None:
             continue
         draft.citations += [err.citation() for err in matches]
         draft.reasons.append(Reason(key="error_log.corroborates", params={
+            "source": matches[0].log_file,
             "lines": ",".join(str(err.line_no) for err in matches),
             "offset": matches[0].assumed_utc_offset}))
 
@@ -595,7 +613,8 @@ def _unlinked_bypasses(index: _Index, in_timeline: set[str],
 
 
 def _trace(file: FileEvidence, findings: list[Finding], index: _Index,
-           weak: bool) -> _Chain | None:
+           weak: str | None) -> _Chain | None:
+    """`weak` is the reason key when the file must earn its place with an HTTP link."""
     anchor = choose_anchor(file, index.config)
     if anchor is None:
         return None
@@ -603,7 +622,7 @@ def _trace(file: FileEvidence, findings: list[Finding], index: _Index,
                    findings=list(findings))
     if weak:
         chain.file_event.confidence = cap(chain.file_event.confidence, Confidence.MEDIUM)
-        chain.file_event.reasons.append(Reason(key="seed.lonely_write"))
+        chain.file_event.reasons.append(Reason(key=weak))
     _invocations(chain, anchor, index)
     _creation(chain, anchor, index)
     if chain.creation is not None:
@@ -615,11 +634,30 @@ def _trace(file: FileEvidence, findings: list[Finding], index: _Index,
 
 def _timestomp_draft(file: FileEvidence, finding: Finding, file_event: _Draft) -> _Draft:
     ts = file.ctime or file_event.ts
+    basis = TimestampBasis.CTIME if file.ctime else file_event.basis
+    citations = [file.citation()]
+    writes = [c for c in file.fim if c.event is not FimEventType.DELETED]
+    if file.ctime is None and writes:
+        # The current mtime arrived with the last FIM alert (e.g. the `touch`), so date
+        # the forgery there and cite that alert.
+        ts, basis = writes[-1].ts, TimestampBasis.FIM
+        citations.append(writes[-1].citation)
     return _Draft(
-        kind="file_timestomp", subject=file.evidence_id, ts=ts, basis=TimestampBasis.CTIME,
-        params={"path": file.path, **finding.reasons[0].params}, citations=[file.citation()],
+        kind="file_timestomp", subject=file.evidence_id, ts=ts, basis=basis,
+        params={"path": file.path, **finding.reasons[0].params}, citations=citations,
         confidence=finding.confidence, order=(_LAST, 0, 2), window=(ts, ts),
         technique="T1070.006", finding_ids=[finding.finding_id],
+    )
+
+
+def _deleted_draft(file: FileEvidence) -> _Draft:
+    """FIM saw an implicated file deleted: often the attacker cleaning up (T1070.004)."""
+    change = file.fim[-1]
+    return _Draft(
+        kind="file_deleted", subject=file.evidence_id, ts=change.ts, basis=TimestampBasis.FIM,
+        params={"path": file.path, "mode": change.mode.value}, citations=[change.citation],
+        confidence=Confidence.MEDIUM, order=(_LAST, 0, 3), window=(change.ts, change.ts),
+        technique="T1070.004", reasons=[Reason(key="file.deleted_after_write")],
     )
 
 
@@ -639,7 +677,14 @@ def _iocs(chains: list[_Chain], drafts: list[_Draft], actors: set[str],
 
 def _input_gaps(files: FileCollection, logs: LogCollection, index: _Index,
                 baseline_used: bool) -> list[EvidenceGap]:
-    gaps = [*files.gaps, *silence_gaps(index.events, index.config), *parse_error_gaps(logs)]
+    gaps = [*files.gaps, *parse_error_gaps(logs)]
+    if logs.complete:
+        gaps += silence_gaps(index.events, index.config)
+    else:
+        # Silence is normal when only flagged requests are logged, so it is not a gap; one
+        # explicit gap says the log is partial instead.
+        gaps.append(make_gap(GapKind.PARTIAL_LOG_SOURCE, None, None, None,
+                             "gap.partial_log_source"))
     if not baseline_used:
         gaps.append(make_gap(GapKind.NO_BASELINE, None, None, None, "gap.no_baseline"))
     return gaps
@@ -702,11 +747,13 @@ def correlate(logs: LogCollection, files: FileCollection, *,
     deleted: tuple[str, ...] = ()
     if baseline is not None:
         files, deleted = apply_baseline(files, baseline)
+    deleted = tuple(sorted({*deleted, *files.deleted_paths}))
     index = _Index(logs, config, files.files)
-    gaps = _input_gaps(files, logs, index, baseline is not None)
+    gaps = _input_gaps(files, logs, index, baseline is not None or files.has_baseline)
     lonely = lonely_writes(list(files.files), config)
+    deploys = deploy_writes(list(files.files), config)
 
-    findings: list[Finding] = list(index.findings)
+    findings: list[Finding] = [*index.findings, *files.findings]
     chains: list[_Chain] = []
     extra: list[_Draft] = []
     unexplained: list[str] = []
@@ -714,17 +761,23 @@ def correlate(logs: LogCollection, files: FileCollection, *,
         file_findings = detect_file(file)
         findings.extend(file_findings)
         strong = is_strong_seed(file, file_findings)
-        weak = not strong and file.path in lonely
+        # New/changed is the only signal, and many files were written with it: a deploy.
+        # Only a request that wrote the file can tie it to the attack (D79).
+        deploy = strong and only_status_signals(file_findings) and file.path in deploys
+        lone = not strong and file.path in lonely
+        weak = "seed.deploy_batch" if deploy else "seed.lonely_write" if lone else None
         if not strong and not weak:
             continue
         own = list(file_findings)
         signal = timestomp_signal(file, config)
         if signal is not None:
             own.append(_timestomp_finding(file, signal))
-        if weak:
+        if lone:
             own.append(lonely_finding(file))
         chain = _trace(file, own, index, weak)
-        if chain is None or (weak and chain.write is None and chain.rare_post is None) or (
+        linked = chain is not None and (chain.write is not None or (
+            chain.rare_post is not None and not deploy))
+        if chain is None or (weak and not linked) or (
                 _looks_generated(chain, file_findings, signal is not None, index)):
             if chain is not None or weak:
                 unexplained.append(file.path)  # no HTTP link strong enough to accuse
@@ -734,6 +787,8 @@ def correlate(logs: LogCollection, files: FileCollection, *,
         if signal is not None:
             stomp = next(f for f in chain.findings if f.rule_id == TIMESTOMP_RULE)
             extra.append(_timestomp_draft(file, stomp, chain.file_event))
+        if file.deleted:
+            extra.append(_deleted_draft(file))
         missing = coverage_gap(chain.file_event.ts, file.path, index.span, config)
         if missing is not None:
             gaps.append(missing)

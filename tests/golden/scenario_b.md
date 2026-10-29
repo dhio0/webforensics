@@ -45,7 +45,7 @@ _WF-EA5033B89A · 2026-10-28 09:00:00 WIB_
 
 - \#1: Server membalas 401.
 - \#2: Login berhasil, lalu aktor yang sama menulis file di area yang sama. Respons berbeda dari login yang gagal dan tidak diikuti percobaan ulang. Cara login tidak terlihat (misalnya kredensial bocor, atau SQL injection lewat POST).
-- \#3: Hanya satu request penulis yang cocok dengan waktu file dibuat. Aktor yang sama kemudian mengakses file ini. Isi POST tidak tercatat di access log, jadi nama file yang diupload tidak terbukti dari log. Didukung error log baris 2 (diasumsikan UTC+0000).
+- \#3: Hanya satu request penulis yang cocok dengan waktu file dibuat. Aktor yang sama kemudian mengakses file ini. Isi POST tidak tercatat di access log, jadi nama file yang diupload tidak terbukti dari log. Didukung error log (error.log baris 2, diasumsikan UTC+0000).
 - \#4: Waktu dari btime (waktu file lahir), yang tidak bisa diubah dengan touch.
 
 ## 4. Akar Masalah

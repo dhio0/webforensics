@@ -27,7 +27,7 @@ def parse_networks(values: Sequence[str]) -> tuple[Network, ...]:
     return tuple(ip_network(value, strict=False) for value in values)
 
 
-def _trusted(value: str, networks: tuple[Network, ...]) -> bool:
+def is_trusted_proxy(value: str, networks: tuple[Network, ...]) -> bool:
     try:
         address = ip_address(value)
     except ValueError:
@@ -44,10 +44,10 @@ def _valid_ip(value: str) -> bool:
 
 
 def resolve_actor(event: LogEvent, proxies: tuple[Network, ...]) -> str:
-    if not proxies or not event.xff or not _trusted(event.client_ip, proxies):
+    if not proxies or not event.xff or not is_trusted_proxy(event.client_ip, proxies):
         return event.client_ip
     for hop in reversed([part.strip() for part in event.xff.split(",")]):
-        if _valid_ip(hop) and not _trusted(hop, proxies):
+        if _valid_ip(hop) and not is_trusted_proxy(hop, proxies):
             return hop
     return event.client_ip
 

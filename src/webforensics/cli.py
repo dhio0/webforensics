@@ -16,6 +16,9 @@ from webforensics.adapters.file_adapter import (
     LogFileSource,
     ManifestFileSource,
 )
+from webforensics.adapters.wazuh.client import Credentials, IndexerClient, IndexerError
+from webforensics.adapters.wazuh.pull import PullError, PullRequest
+from webforensics.adapters.wazuh.pull import pull as run_pull
 from webforensics.analysis import CaseOptions, EvidenceInputs
 from webforensics.analysis import analyze as run_analysis
 from webforensics.correlate import CorrelationConfig
@@ -176,14 +179,20 @@ def report_lines(report: Report, written: list[Path]) -> list[str]:
 @app.command()
 def analyze(
     log: Annotated[
-        list[Path], typer.Option("--log", "-l", help="Access log file or directory (repeatable).")
-    ],
+        list[Path] | None,
+        typer.Option("--log", "-l", help="Access log file or directory (repeatable)."),
+    ] = None,
+    wazuh_recording: Annotated[
+        Path | None,
+        typer.Option(help="Recording from `webforensics pull`, used instead of --log/--manifest."),
+    ] = None,
     manifest: Annotated[
         Path | None, typer.Option(help="Webroot manifest from collect.sh (recommended).")
     ] = None,
     webroot: Annotated[
         Path | None,
-        typer.Option(help="Extracted webroot (content for a manifest, or scanned directly)."),
+        typer.Option(help="Extracted webroot (content for a manifest or a Wazuh recording, "
+                          "or scanned directly)."),
     ] = None,
     baseline: Annotated[
         Path | None, typer.Option(help="Manifest of a known-good webroot to compare against.")
@@ -250,10 +259,10 @@ def analyze(
             trusted_proxies=tuple(trusted_proxy or ()),
         )
         inputs = EvidenceInputs(
-            logs=tuple(log), log_format=log_format, log_glob=log_glob, manifest=manifest,
+            logs=tuple(log or ()), log_format=log_format, log_glob=log_glob, manifest=manifest,
             webroot=webroot, live=live, url_prefix=url_prefix, baseline=baseline,
             error_logs=tuple(error_log or ()), error_format=error_log_format,
-            error_utc_offset=error_log_utc_offset,
+            error_utc_offset=error_log_utc_offset, wazuh_recording=wazuh_recording,
         )
         report = run_analysis(inputs, config, when, CaseOptions(
             case_id=case_id, title=title, analyst=analyst, redact_host=redact_host))
@@ -306,3 +315,81 @@ def eval_command(
     if json_out is not None:
         json_out.write_text(json.dumps(evaluate.to_json(scores), indent=2) + "\n",
                             encoding="utf-8", newline="\n")
+
+
+def _credentials(user: str | None, password_file: Path | None) -> Credentials:
+    """User from --user or WF_WAZUH_USER; password from a file or WF_WAZUH_PASSWORD.
+
+    A password option is deliberately missing: command lines end up in shell history.
+    """
+    name = user or os.environ.get("WF_WAZUH_USER")
+    if password_file is not None:
+        secret = password_file.read_text(encoding="utf-8").strip()
+    else:
+        secret = os.environ.get("WF_WAZUH_PASSWORD", "")
+    if not name or not secret:
+        raise ValueError("indexer credentials missing: set --user (or WF_WAZUH_USER) and "
+                         "--password-file (or WF_WAZUH_PASSWORD)")
+    return Credentials(name, secret)
+
+
+def _aware(value: str, option: str) -> datetime:
+    parsed = datetime.fromisoformat(value)
+    if parsed.tzinfo is None:
+        raise ValueError(f"{option} needs a UTC offset, e.g. 2026-10-29T09:00:00+07:00")
+    return parsed
+
+
+@app.command()
+def pull(
+    indexer: Annotated[str, typer.Option(help="Wazuh indexer URL, e.g. https://127.0.0.1:9200.")],
+    agent: Annotated[str, typer.Option(help="Wazuh agent name of the web server.")],
+    since: Annotated[str, typer.Option(help="Window start (ISO 8601 with offset).")],
+    docroot: Annotated[
+        str, typer.Option(help="Webroot path on the web server, e.g. /var/www/html.")
+    ],
+    access_log: Annotated[
+        list[str],
+        typer.Option(help="Access log path as Wazuh `location`, e.g. /var/log/nginx/access.log "
+                          "(repeatable)."),
+    ],
+    out: Annotated[Path, typer.Option(help="Recording file to write (JSONL).")],
+    until: Annotated[
+        str | None, typer.Option(help="Window end (ISO 8601 with offset). Default: now.")
+    ] = None,
+    error_log: Annotated[
+        list[str] | None, typer.Option(help="Error log path as Wazuh `location` (repeatable).")
+    ] = None,
+    ca_cert: Annotated[
+        Path | None, typer.Option(help="CA certificate that signed the indexer certificate.")
+    ] = None,
+    tls_server_name: Annotated[
+        str | None,
+        typer.Option(help="Certificate name to verify when it differs from the URL host."),
+    ] = None,
+    user: Annotated[str | None, typer.Option(help="Indexer user (or WF_WAZUH_USER).")] = None,
+    password_file: Annotated[
+        Path | None, typer.Option(help="File holding the password (or WF_WAZUH_PASSWORD).")
+    ] = None,
+    page_size: Annotated[int, typer.Option(min=1, max=10000, help="Hits per page.")] = 1000,
+) -> None:
+    """Copy Wazuh web logs and FIM alerts into a recording (the only command that uses the
+    network). Analyze it offline with `analyze --wazuh-recording`."""
+    try:
+        client = IndexerClient(indexer, _credentials(user, password_file),
+                               ca_file=str(ca_cert) if ca_cert else None,
+                               server_name=tls_server_name)
+        request = PullRequest(
+            agent=agent, since=_aware(since, "--since"),
+            until=_aware(until, "--until") if until else datetime.now(UTC),
+            docroot=docroot, access_logs=tuple(access_log), error_logs=tuple(error_log or ()),
+            page_size=page_size)
+        header = run_pull(client, request, out)
+    except (OSError, ValueError, IndexerError, PullError) as exc:
+        typer.echo(_ascii(f"error: {exc}"), err=True)
+        raise typer.Exit(code=2) from exc
+    counts = ", ".join(f"{k}={v}" for k, v in sorted(header.counts.items()))
+    typer.echo(f"Wrote {out} ({counts}; web events from {header.web_index})")
+    if not header.archives:
+        typer.echo("warning: no wazuh-archives-4.x-* index; web events come from alerts only, "
+                   "so successful uploads are missing (docs/wazuh-notes.md section 3.1)")

@@ -64,3 +64,20 @@ Apache: [Tue Oct 27 10:00:10.123456 2026] [php:warn] [pid 12] [client 203.0.113.
 - Error-log timestamps have **no UTC offset**. Pass the server's offset (e.g. `+0700`, from the manifest's `#utc_offset`). The offset used is stored on each event and shown with every error-log citation.
 - nginx entries include the request line, so they are matched to access-log lines by IP + method + path + time. Apache entries are matched by IP + time only.
 - Lines that don't start an entry (PHP stack traces, wrapped messages) are counted as `not_entry_start` failures in `error_failures`. They are expected and do not create evidence gaps.
+
+## Wazuh recording v1 (`webforensics pull`)
+A JSONL file. Line 1 is the header; every other line is one indexer hit, with its values unchanged (keys sorted):
+```
+{"header": {"format": "webforensics-wazuh-recording/1", "agent": "web01",
+  "since": "...", "until": "...", "pulled_at": "...", "tool_version": "...",
+  "docroot": "/var/www/html", "access_logs": ["/var/log/nginx/access.log"],
+  "error_logs": ["/var/log/nginx/error.log"], "archives": true,
+  "web_index": "wazuh-archives-4.x-*", "fim_index": "wazuh-alerts-4.x-*",
+  "counts": {"web": 7, "fim": 1}}}
+{"stream": "web", "_index": "wazuh-archives-4.x-2026.10.29", "_id": "...", "_source": {...}}
+{"stream": "fim", "_index": "wazuh-alerts-4.x-2026.10.29", "_id": "...", "_source": {...}}
+```
+- `web` hits: one log line each. The raw line is `_source.full_log`, `_source.location` says which file it came from (an `access_logs` or `error_logs` entry). With `"archives": false` they come from alerts, so most requests are missing.
+- `fim` hits: FIM alerts (`_source.syscheck`: `path`, `event`, `mode`, `sha256_after`, `mtime_after`, ...). `mtime_after` is read in the time zone of the alert's `timestamp` (docs/wazuh-notes.md §4.3).
+- Every query is bounded by `agent.name` and the time window; hits are in `timestamp`, `_id` order.
+- Citations in the report point at line numbers of this file (`case01.jsonl:17`), and the report lists the file's SHA-256 under its inputs. Keep the recording with the case like any other evidence copy.

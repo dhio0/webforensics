@@ -165,14 +165,15 @@ def _scope(ctx: _Ctx) -> Fields:
     pairs = [(t.label("scope.period"), period), (t.label("scope.access"), access)]
     if s.error_events or s.error_unparsed:
         pairs.append((t.label("scope.errors"), _count(t, s.error_events, "scope.entries")))
-    files = _count(t, s.files, "scope.files")
+    wazuh = s.file_adapter == "wazuh"
+    files = _count(t, s.files, "scope.fim_files" if wazuh else "scope.files")
     if s.files_rejected:
         files += f", {_count(t, s.files_rejected, 'scope.rejected')}"
     pairs.append((t.label("scope.webroot"), files))
     if s.collected_at:
         pairs.append((t.label("scope.collected_at"), t.time(s.collected_at)))
     baseline = (_count(t, s.baseline_files, "scope.files") if s.baseline_files is not None
-                else t.label("scope.no_baseline"))
+                else t.label("scope.fim_baseline") if wazuh else t.label("scope.no_baseline"))
     pairs.append((t.label("scope.baseline"), baseline))
     return Fields(tuple(pairs))
 
@@ -284,6 +285,7 @@ def _file_blocks(ctx: _Ctx, file: FileEvidence) -> list[Block]:
             (t.label("file.times"), times or t.label("not_set")),
             (t.label("file.ts_source"), m.TIMESTAMP_SOURCE[file.timestamp_source.value]),
             (t.label("file.urls"), clean(", ".join(file.url_paths)) or t.label("not_set")),
+            *_fim_history(ctx, file),
         )),
     ]
     ctx.ref(file.citation())
@@ -291,6 +293,17 @@ def _file_blocks(ctx: _Ctx, file: FileEvidence) -> list[Block]:
         blocks += [Para(t.label("file.findings")),
                    Bullets(tuple(_finding_line(t, f) for f in own))]
     return blocks
+
+
+def _fim_history(ctx: _Ctx, file: FileEvidence) -> tuple[tuple[str, str], ...]:
+    """One entry per FIM alert: what happened, when, how it was seen, and where it is cited."""
+    if not file.fim:
+        return ()
+    t = ctx.texts
+    entries = "; ".join(
+        f"{m.FIM_EVENTS[c.event.value]} {t.time(c.ts)} ({c.mode.value}, {ctx.ref(c.citation)})"
+        for c in file.fim)
+    return ((t.label("file.fim"), entries),)
 
 
 def _files(ctx: _Ctx) -> Section:

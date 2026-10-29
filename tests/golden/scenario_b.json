@@ -16,6 +16,7 @@
     "files": 11,
     "files_rejected": 0,
     "baseline_files": null,
+    "file_adapter": "file",
     "collected_at": "2026-10-28T03:49:02Z"
   },
   "run": {
@@ -178,6 +179,7 @@
           {
             "key": "error_log.corroborates",
             "params": {
+              "source": "error.log",
               "lines": "2",
               "offset": "+0000"
             }
@@ -359,7 +361,8 @@
         "ctime": "2026-10-28T03:49:00Z",
         "btime": "2026-10-28T03:49:00Z",
         "timestamp_source": "manifest",
-        "baseline_status": "unknown"
+        "baseline_status": "unknown",
+        "fim": []
       }
     ],
     "deleted_paths": [],

@@ -16,6 +16,7 @@
     "files": 11,
     "files_rejected": 0,
     "baseline_files": 10,
+    "file_adapter": "file",
     "collected_at": "2026-10-28T03:50:35Z"
   },
   "run": {
@@ -105,6 +106,7 @@
           {
             "key": "error_log.corroborates",
             "params": {
+              "source": "error.log",
               "lines": "2",
               "offset": "+0000"
             }
@@ -235,6 +237,7 @@
         {
           "key": "error_log.corroborates",
           "params": {
+            "source": "error.log",
             "lines": "2",
             "offset": "+0000"
           }
@@ -363,7 +366,8 @@
         "ctime": "2026-10-28T03:50:30Z",
         "btime": "2026-10-28T03:50:26Z",
         "timestamp_source": "manifest",
-        "baseline_status": "new"
+        "baseline_status": "new",
+        "fim": []
       }
     ],
     "deleted_paths": [],

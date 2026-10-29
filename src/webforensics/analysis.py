@@ -15,6 +15,7 @@ from webforensics.adapters.file_adapter import (
     LogFileSource,
     ManifestFileSource,
 )
+from webforensics.adapters.wazuh import WazuhRecordingSource
 from webforensics.correlate import CorrelationConfig, correlate
 from webforensics.detect import RULESET_VERSION
 from webforensics.models import CaseInfo, FileCollection, LogCollection, Report, RunInfo
@@ -27,7 +28,7 @@ from webforensics.report.messages_id import LABELS
 
 @dataclass(frozen=True)
 class EvidenceInputs:
-    logs: tuple[Path, ...]
+    logs: tuple[Path, ...] = ()
     log_format: AccessLogFormat = AccessLogFormat.NGINX_COMBINED
     log_glob: str = "*access*"
     manifest: Path | None = None
@@ -40,6 +41,9 @@ class EvidenceInputs:
     error_utc_offset: str = "+0000"
     # Citations and input names are relative to this. None: the evidence's common folder.
     base_dir: Path | None = None
+    # A `webforensics pull` recording replaces --log/--manifest (WazuhAdapter, D78).
+    # `webroot` then only supplies content, used where its hash matches FIM (D77).
+    wazuh_recording: Path | None = None
 
 
 @dataclass(frozen=True)
@@ -55,12 +59,14 @@ class Evidence:
     logs: LogCollection
     files: FileCollection
     baseline: FileCollection | None
+    adapter: str = "file"
 
 
 def evidence_root(inputs: EvidenceInputs) -> Path | None:
     """Deepest folder holding all evidence inputs, so names in the report do not depend on
     where the command runs and never reveal the analyst's own paths (D66)."""
-    paths = [*inputs.logs, *inputs.error_logs, inputs.manifest, inputs.baseline]
+    paths = [*inputs.logs, *inputs.error_logs, inputs.manifest, inputs.baseline,
+             inputs.wazuh_recording]
     folders = [p.resolve() if p.is_dir() else p.resolve().parent
                for p in paths if p is not None]
     if not folders:
@@ -71,8 +77,23 @@ def evidence_root(inputs: EvidenceInputs) -> Path | None:
         return None
 
 
+def _load_wazuh(inputs: EvidenceInputs) -> Evidence:
+    if inputs.logs or inputs.error_logs or inputs.manifest or inputs.baseline:
+        raise ValueError("a Wazuh recording is used alone: leave out --log, --error-log, "
+                         "--manifest and --baseline (FIM is the baseline)")
+    assert inputs.wazuh_recording is not None
+    source = WazuhRecordingSource(
+        inputs.wazuh_recording, base_dir=inputs.base_dir or evidence_root(inputs),
+        webroot=inputs.webroot, url_prefix=inputs.url_prefix,
+        access_format=inputs.log_format, error_format=inputs.error_format,
+        error_utc_offset=inputs.error_utc_offset)
+    return Evidence(source.load_logs(), source.load_files(), None, adapter="wazuh")
+
+
 def load_evidence(inputs: EvidenceInputs) -> Evidence:
-    """Raises FileNotFoundError or ManifestError on bad inputs."""
+    """Raises FileNotFoundError, ManifestError or RecordingError on bad inputs."""
+    if inputs.wazuh_recording is not None:
+        return _load_wazuh(inputs)
     if not inputs.logs:
         raise ValueError("at least one access log is needed")
     if inputs.manifest is None and inputs.webroot is None:
@@ -130,5 +151,6 @@ def analyze(inputs: EvidenceInputs, config: CorrelationConfig, generated_at: dat
                        config=config)
     run = run_info(evidence, config, generated_at)
     case = case_info(evidence, run, options or CaseOptions())
-    scope = evidence_scope(evidence.logs, evidence.files, evidence.baseline)
+    scope = evidence_scope(evidence.logs, evidence.files, evidence.baseline,
+                           file_adapter=evidence.adapter)
     return build_report(result, evidence.logs, case, run, scope, config.trusted_proxies)

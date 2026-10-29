@@ -29,12 +29,19 @@ MESSAGES: dict[str, str] = {
         "File {path} diubah menurut mtime, yang bisa dipalsukan (SHA-256 {sha256_short})."),
     "timeline.file_invoked": "File {file} diakses: {method} {path} → {status}.",
     "timeline.file_timestomp": "Timestamp {path} kemungkinan dipalsukan (timestomping).",
+    "timeline.file_deleted": "File {path} dihapus (terdeteksi Wazuh FIM {mode}).",
     # --- Why a time was chosen ----------------------------------------------------------
     "anchor.btime": "Waktu dari btime (waktu file lahir), yang tidak bisa diubah dengan touch.",
     "anchor.ctime": "Waktu dari ctime (perubahan inode terakhir), yang tidak bisa diatur "
                     "dengan touch.",
     "anchor.mtime_only": "Hanya ada mtime, dan mtime mudah dipalsukan. Keyakinan paling "
                          "tinggi: sedang.",
+    "anchor.fim_realtime": "Waktu dari alert Wazuh FIM ({mode}), yang muncul beberapa detik "
+                           "setelah file ditulis. Ini batas atas waktu tulis, diukur dengan jam "
+                           "manager Wazuh, bukan jam web server. Keyakinan paling tinggi: sedang.",
+    "anchor.fim_scheduled": "Wazuh FIM memindai terjadwal, jadi alert-nya bisa terlambat sampai "
+                            "berjam-jam. Waktu diambil dari mtime, yang mudah dipalsukan. "
+                            "Keyakinan paling tinggi: rendah.",
     "anchor.copied_timestamps": "Timestamp berasal dari salinan file, bukan dari server asli. "
                                 "Keyakinan paling tinggi: rendah.",
     # --- Which request wrote the file ---------------------------------------------------
@@ -52,10 +59,19 @@ MESSAGES: dict[str, str] = {
     "creation.alternative_candidate": "Kandidat alternatif. Bukti tidak cukup untuk "
                                       "memilih satu request saja.",
     "error_log.assumed_utc_offset": "Waktu error log diasumsikan UTC{offset}.",
-    "error_log.corroborates": "Didukung error log baris {lines} (diasumsikan UTC{offset}).",
+    "error_log.client_is_proxy": "Error log hanya mencatat IP proxy tepercaya ({ip}), jadi "
+                                 "klien aslinya tidak diketahui dan tidak dituduh.",
+    "error_log.corroborates": "Didukung error log ({source} baris {lines}, diasumsikan "
+                              "UTC{offset}).",
     "file.invoked_before_anchor": "File sudah berhasil diakses {count} kali sebelum waktu "
                                   "lahirnya (pertama di baris {first_line}). Timestamp atau "
                                   "riwayat file tidak konsisten.",
+    "file.deleted_after_write": "Wazuh FIM mencatat file ini dihapus. Hash yang dipakai adalah "
+                                "hash terakhir sebelum dihapus. Penghapusan sering berarti "
+                                "penyerang membersihkan jejak.",
+    "seed.deploy_batch": "File ini ditulis bersama banyak file lain dalam beberapa detik, "
+                         "seperti deploy. Statusnya baru atau berubah, tapi tanpa request "
+                         "HTTP yang menulisnya, file ini tidak dianggap serangan.",
     "seed.lonely_write": "File kode ditulis sendirian, di luar batch deploy. Tanpa baseline, "
                          "ini hanya sinyal lemah.",
     # --- Entry point ----------------------------------------------------------------------
@@ -86,6 +102,8 @@ MESSAGES: dict[str, str] = {
                               "jadi keyakinan diturunkan.",
     "timestomp.mtime_before_btime": "mtime ({mtime}) lebih awal dari btime ({btime}).",
     "timestomp.mtime_older_than_ctime": "mtime ({mtime}) jauh lebih tua dari ctime ({ctime}).",
+    "timestomp.mtime_before_fim": "mtime ({mtime}) jauh lebih tua dari saat Wazuh FIM realtime "
+                                  "melihat isi file ini muncul ({fim}).",
     # --- Evidence gaps --------------------------------------------------------------------
     "gap.log_silence": "Tidak ada baris log selama {seconds} detik (ambang lokal {threshold} "
                        "detik). Log mungkin dihapus, dirotasi, atau server mati.",
@@ -101,6 +119,13 @@ MESSAGES: dict[str, str] = {
     "gap.missing_timestamps": "Sebagian data tidak punya timestamp.",
     "gap.clock_skew_suspected": "Jam antar sumber bukti diduga tidak sinkron.",
     "gap.post_body_not_logged": "Isi request POST tidak tercatat.",
+    "gap.partial_log_source": "Hanya sebagian request yang tersedia (alert Wazuh tanpa "
+                              "archives). Request biasa seperti upload yang berhasil tidak "
+                              "tercatat, jadi semua kesimpulan diturunkan satu tingkat dan "
+                              "jeda antarbaris log tidak dihitung sebagai celah.",
+    "gap.no_file_content": "Isi file tidak tersedia (Wazuh FIM hanya memberi hash dan metadata). "
+                           "Analisis isi file tidak dilakukan. Berikan --webroot untuk "
+                           "mengaktifkannya.",
     # --- Findings (one per rule) ----------------------------------------------------------
     "finding.LOG-SQLI-UNION": "Pola SQL injection UNION SELECT: {matched}",
     "finding.LOG-SQLI-TAUTOLOGY": "Pola SQL injection tautologi (OR 1=1): {matched}",
@@ -113,6 +138,9 @@ MESSAGES: dict[str, str] = {
     "finding.LOG-WEBSHELL-UPLOAD-DIR": "Akses ke skrip di folder upload: {matched}",
     "finding.LOG-WEBSHELL-CMD-PARAM": "Parameter yang mirip perintah webshell: {matched}",
     "finding.FILE-WEBSHELL-WRITABLE-EXEC": "File skrip di folder yang bisa ditulis: {path}",
+    "finding.FILE-WAZUH-FIM-OUTSIDE-DOCROOT": "Wazuh FIM mencatat {events} perubahan pada "
+                                              "{path}, di luar webroot. Periksa apakah ini "
+                                              "perubahan yang sah.",
     "finding.FILE-WEBSHELL-REQUEST-EXEC": "Fungsi berbahaya {function}() menerima input dari "
                                           "request.",
     "finding.FILE-WEBSHELL-OBFUSCATION": "Konten terobfuskasi ({signal}, {length} karakter).",
@@ -178,6 +206,9 @@ MESSAGES: dict[str, str] = {
     "rec.lessons.baseline": "Simpan baseline webroot (daftar hash file) secara berkala supaya "
                             "file baru atau berubah bisa dipastikan.",
     "rec.lessons.fim": "Aktifkan pemantauan integritas file (FIM) pada webroot.",
+    "rec.lessons.wazuh_archives": "Aktifkan archives Wazuh (logall_json dan archives di "
+                                  "Filebeat). Tanpa archives, request web biasa seperti upload "
+                                  "yang berhasil tidak tersimpan di Wazuh.",
     "rec.lessons.log_uploads": "Catat nama file upload di log aplikasi, karena access log "
                                "tidak mencatat isi POST.",
     # --- Standard limitations ---------------------------------------------------------------
@@ -191,11 +222,17 @@ MESSAGES: dict[str, str] = {
                            "dideteksi hanya celah waktu yang mencolok.",
     "limit.shared_ip": "IP yang dipakai bersama (NAT, proxy, CDN tanpa X-Forwarded-For) bisa "
                        "menggabungkan beberapa orang menjadi satu aktor.",
+    "limit.fim_blind_spots": "Wazuh FIM hanya melihat perubahan selama agent berjalan. File "
+                             "yang ditulis sebelum scan awal agent, atau saat agent restart, "
+                             "masuk ke baseline FIM tanpa alert. Di lab, restart beberapa "
+                             "detik sudah cukup untuk melewatkan satu file. Mode terjadwal "
+                             "bisa terlambat sampai 12 jam.",
     "limit.no_code_analysis": "Versi ini belum menganalisis kode sumber untuk menunjuk baris "
                               "yang rentan.",
 }
 
 RULE_NAMES: dict[str, str] = {
+    "FILE-WAZUH-FIM-OUTSIDE-DOCROOT": "Perubahan di luar webroot (Wazuh FIM)",
     "LOG-SQLI-UNION": "SQL injection (UNION)",
     "LOG-SQLI-TAUTOLOGY": "SQL injection (tautologi)",
     "LOG-SQLI-BLIND": "Blind SQL injection",
@@ -235,6 +272,10 @@ BASELINE_STATUS: dict[str, str] = {
     "unknown": "tidak diketahui (tanpa baseline)",
 }
 
+FIM_EVENTS: dict[str, str] = {
+    "added": "ditambahkan", "modified": "diubah", "deleted": "dihapus",
+}
+
 TIMESTAMP_SOURCE: dict[str, str] = {
     "manifest": "manifest collect.sh", "live_stat": "stat langsung di server",
     "wazuh_fim": "Wazuh FIM", "copied": "salinan (kurang terpercaya)",
@@ -246,6 +287,7 @@ GAP_KINDS: dict[str, str] = {
     "clock_skew_suspected": "Jam tidak sinkron", "no_baseline": "Tanpa baseline",
     "post_body_not_logged": "Isi POST tidak tercatat", "no_manifest": "Tanpa manifest",
     "untrusted_file_timestamps": "Timestamp tidak terpercaya",
+    "partial_log_source": "Log tidak lengkap", "no_file_content": "Isi file tidak tersedia",
 }
 
 PHASES: dict[str, str] = {
@@ -309,12 +351,15 @@ LABELS: dict[str, str] = {
     "scope.entries": "entri",
     "scope.files": "file",
     "scope.rejected": "baris manifest ditolak",
+    "scope.fim_files": "file berubah menurut Wazuh FIM",
+    "scope.fim_baseline": "scan awal Wazuh FIM (file yang tidak berubah tidak tercantum)",
     "timeline.notes": "Catatan keyakinan",
     "root.event": "Kejadian", "root.vuln": "Jenis kelemahan", "root.confidence": "Keyakinan",
     "root.why": "Alasan", "root.alternatives": "Kandidat lain",
     "root.none": "Akar masalah tidak dapat ditentukan dari bukti yang ada.",
     "file.sha256": "SHA-256", "file.size": "Ukuran", "file.status": "Status baseline",
     "file.times": "Timestamp", "file.ts_source": "Sumber timestamp", "file.urls": "URL",
+    "file.fim": "Riwayat Wazuh FIM",
     "file.findings": "Temuan", "bytes": "byte",
     "review.unexplained": "File kode berubah tanpa kaitan HTTP yang cukup kuat untuk "
                           "dituduh (misalnya cache CMS atau deploy). Periksa manual:",

@@ -5,6 +5,11 @@ Strong seeds: a file rule fired, or the baseline says new/modified (executable o
 written on its own, apart from any deploy batch ("lonely write"). A weak seed only joins
 the incident if a request plausibly wrote it or it is a rarely-hit POST target;
 otherwise it is listed for manual review (D49).
+
+The same batches catch deploys: a code file whose only signal is being new or changed,
+written together with more than `lonely_cluster_max` other files, is held to the weak-seed
+standard too (D79). Wazuh FIM marks every file a deploy writes as `added`, so without this
+a deploy inside the pull window would be reported as an attack.
 """
 
 from datetime import datetime, timedelta
@@ -29,6 +34,9 @@ from webforensics.models import (
 
 LONELY_RULE = "CORR-LONELY-EXEC-WRITE"
 RARE_POST_RULE = "CORR-RARE-POST-TARGET"
+# Rules that fire only because a file is new or changed, so they add nothing to the
+# status itself when deciding whether a deploy wrote the file.
+STATUS_ONLY_RULES = frozenset({"FILE-PERSISTENCE-ENTRYPOINT-CHANGE"})
 
 
 def _code_like(path: str) -> bool:
@@ -53,12 +61,10 @@ def _trusted_write_time(file: FileEvidence, config: CorrelationConfig) -> dateti
     return anchor.ts
 
 
-def lonely_writes(files: list[FileEvidence], config: CorrelationConfig) -> set[str]:
-    """Code files whose write time is in a batch of at most `lonely_cluster_max` files.
-
-    Batches are built over all files: consecutive write times closer than
-    `lonely_cluster_gap_s` belong to the same batch (a deploy writes many files at once).
-    """
+def write_batches(files: list[FileEvidence],
+                  config: CorrelationConfig) -> list[list[FileEvidence]]:
+    """Files grouped by trusted write time: consecutive times closer than
+    `lonely_cluster_gap_s` belong to the same batch (a deploy writes many files at once)."""
     timed = sorted(
         ((ts, f) for f in files if (ts := _trusted_write_time(f, config)) is not None),
         key=lambda item: (item[0], item[1].path),
@@ -71,10 +77,27 @@ def lonely_writes(files: list[FileEvidence], config: CorrelationConfig) -> set[s
             batches.append([])
         batches[-1].append(file)
         last = ts
+    return batches
+
+
+def lonely_writes(files: list[FileEvidence], config: CorrelationConfig) -> set[str]:
+    """Code files without a baseline whose write is in a batch of at most
+    `lonely_cluster_max` files."""
     return {
-        f.path for batch in batches if len(batch) <= config.lonely_cluster_max for f in batch
+        f.path for batch in write_batches(files, config)
+        if len(batch) <= config.lonely_cluster_max for f in batch
         if f.baseline_status is BaselineStatus.UNKNOWN and _code_like(f.path)
     }
+
+
+def only_status_signals(findings: list[Finding]) -> bool:
+    return all(f.rule_id in STATUS_ONLY_RULES for f in findings)
+
+
+def deploy_writes(files: list[FileEvidence], config: CorrelationConfig) -> set[str]:
+    """Files written in a batch larger than `lonely_cluster_max` (a deploy or unpack)."""
+    return {f.path for batch in write_batches(files, config)
+            if len(batch) > config.lonely_cluster_max for f in batch}
 
 
 def _finding(file: FileEvidence, rule_id: str, category: FindingCategory,

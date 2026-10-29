@@ -16,6 +16,7 @@
     "files": 9,
     "files_rejected": 0,
     "baseline_files": null,
+    "file_adapter": "file",
     "collected_at": "2026-10-27T14:17:03Z"
   },
   "run": {
@@ -402,7 +403,8 @@
         "ctime": "2026-10-27T14:16:55Z",
         "btime": "2026-10-27T14:16:55Z",
         "timestamp_source": "manifest",
-        "baseline_status": "unknown"
+        "baseline_status": "unknown",
+        "fim": []
       }
     ],
     "deleted_paths": [],

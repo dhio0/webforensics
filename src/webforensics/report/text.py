@@ -13,7 +13,7 @@ from webforensics.models import Citation, CitationKind, Reason
 from webforensics.report import messages_id as m
 
 _OFFSET = re.compile(r"^([+-])(\d{2}):?(\d{2})$")
-_TIME_PARAMS = frozenset({"mtime", "btime", "ctime"})
+_TIME_PARAMS = frozenset({"mtime", "btime", "ctime", "fim"})
 # C0 controls and DEL would make terminals and some viewers misbehave; show them instead.
 _CONTROL = re.compile(r"[\x00-\x08\x0b-\x1f\x7f]")
 
@@ -139,8 +139,11 @@ class Texts:
                                                  reason.key)))
 
     def cite(self, citation: Citation) -> str:
-        """Short reference, e.g. `access.log:5` or `uploads/x.php @52d31ac74301`."""
-        if citation.kind is CitationKind.LOG_LINE:
+        """Short reference, e.g. `access.log:5` or `uploads/x.php @52d31ac74301`.
+
+        Wazuh citations (log lines and FIM alerts) point at a line of the recording."""
+        if citation.kind is CitationKind.LOG_LINE or (
+                citation.kind is CitationKind.WAZUH_ALERT and citation.line_no is not None):
             return clean(f"{citation.source}:{citation.line_no}")
         if citation.sha256:
             return clean(f"{citation.source} @{citation.sha256[:12]}")

@@ -3,6 +3,11 @@
 Order of preference: btime (birth), then ctime, then mtime. Userland `touch` can set
 mtime but not ctime or btime, so an mtime-only anchor caps confidence at medium, and
 timestamps from a plain copy cap it at low (D10).
+
+Wazuh FIM gives no btime or ctime (D76). With realtime or whodata FIM, the alert for the
+write is the anchor: an upper bound seconds after the write, measured by the manager's
+clock rather than the web server's, so it is capped at medium. Scheduled FIM alerts up to
+`frequency` seconds late, so the mtime stays the anchor, capped at low.
 """
 
 from datetime import datetime, timedelta
@@ -12,10 +17,13 @@ from webforensics.correlate.config import CorrelationConfig
 from webforensics.models import (
     Confidence,
     FileEvidence,
+    FimMode,
     Reason,
     TimestampBasis,
     TimestampSource,
 )
+
+_PROMPT_FIM = (FimMode.REALTIME, FimMode.WHODATA)
 
 
 class Anchor(NamedTuple):
@@ -25,7 +33,21 @@ class Anchor(NamedTuple):
     reasons: tuple[Reason, ...]
 
 
+def _fim_anchor(file: FileEvidence) -> Anchor | None:
+    written = file.fim_written
+    if written is not None and written.mode in _PROMPT_FIM:
+        return Anchor(ts=written.ts, basis=TimestampBasis.FIM, max_confidence=Confidence.MEDIUM,
+                      reasons=(Reason(key="anchor.fim_realtime",
+                                      params={"mode": written.mode.value}),))
+    if file.mtime is None:
+        return None
+    return Anchor(ts=file.mtime, basis=TimestampBasis.MTIME, max_confidence=Confidence.LOW,
+                  reasons=(Reason(key="anchor.fim_scheduled"),))
+
+
 def choose_anchor(file: FileEvidence, config: CorrelationConfig) -> Anchor | None:
+    if file.timestamp_source is TimestampSource.WAZUH_FIM:
+        return _fim_anchor(file)
     skew = timedelta(seconds=config.clock_skew_s)
     born_and_untouched = file.btime and (file.ctime is None or file.ctime - file.btime <= skew)
     # If mtime looks forged, a later ctime is probably the `touch` itself, not a content
@@ -58,6 +80,12 @@ def timestomp_signal(file: FileEvidence, config: CorrelationConfig) -> Reason | 
     if file.mtime is None:
         return None
     skew = timedelta(seconds=config.clock_skew_s)
+    written = file.fim_written
+    if (written is not None and written.mode in _PROMPT_FIM
+            and written.ts - file.mtime > timedelta(seconds=config.timestomp_min_s)):
+        # Realtime FIM saw this content appear long after the time the file claims.
+        return Reason(key="timestomp.mtime_before_fim",
+                      params={"mtime": file.mtime.isoformat(), "fim": written.ts.isoformat()})
     if file.btime and file.mtime < file.btime - skew:
         return Reason(key="timestomp.mtime_before_btime",
                       params={"mtime": file.mtime.isoformat(), "btime": file.btime.isoformat()})

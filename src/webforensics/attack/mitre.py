@@ -24,6 +24,7 @@ TECHNIQUES: dict[str, Technique] = {
         Technique("T1083", "File and Directory Discovery", "Discovery"),
         Technique("T1027", "Obfuscated Files or Information", "Defense Evasion"),
         Technique("T1070.006", "Indicator Removal: Timestomp", "Defense Evasion"),
+        Technique("T1070.004", "Indicator Removal: File Deletion", "Defense Evasion"),
     )
 }
 

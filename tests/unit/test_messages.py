@@ -15,11 +15,15 @@ import pytest
 from tests.correlate_helpers import ATTACKER, at, file_ev, files, load_scenario, numbered
 from tests.unit.test_correlate_properties import _random_case
 from tests.unit.test_file_rules import _request_exec, _with_content
+from tests.unit.test_wazuh_adapter import MARKER_SHA, upload_story
+from tests.wazuh_helpers import DOCROOT, fim_hit, recording
 from webforensics.adapters.file_adapter import DirectoryFileSource
+from webforensics.adapters.wazuh import WazuhRecordingSource
 from webforensics.correlate import correlate
 from webforensics.detect.log_rules import LOG_RULES
 from webforensics.models import (
     CaseInfo,
+    EvidenceScope,
     GapKind,
     LogCollection,
     ParseFailure,
@@ -161,15 +165,43 @@ def _crafted(tmp_path):
     yield numbered((1, "/")), DirectoryFileSource(tmp_path / "web").load_files(), None
 
 
+def _wazuh_cases(tmp_path):
+    """FIM-based evidence: realtime, scheduled, deleted, backdated, outside the docroot,
+    and alerts-only (no archives)."""
+    marker = f"{DOCROOT}/uploads/x.php"
+    cases = {
+        "realtime_deleted": (upload_story([fim_hit(marker, "deleted", at(120),
+                                                    sha256=MARKER_SHA, n=2)]), {}),
+        "scheduled": ((upload_story()[0], [fim_hit(marker, "added", at(7200),
+                                                   mode="scheduled", mtime=at(60))]), {}),
+        "backdated_outside": ((upload_story()[0], [
+            fim_hit(marker, "added", at(60.4), sha256=MARKER_SHA, mtime=at(-86400)),
+            fim_hit("/etc/cron.d/x", "added", at(5), n=2)]), {}),
+        "alerts_only": (upload_story(), {"archives": False}),
+        "kit_unpacked": (upload_story([
+            fim_hit(f"{DOCROOT}/lib/k{i}.php", "added", at(60.5 + i * 0.1), n=20 + i,
+                    sha256=f"{i:064x}") for i in range(3)]), {}),
+    }
+    for name, ((web, fim), header) in cases.items():
+        path = recording(tmp_path / f"{name}.jsonl", web, fim, **header)
+        source = WazuhRecordingSource(path, base_dir=tmp_path)
+        yield source.load_logs(), source.load_files(), None
+
+
 def _results(tmp_path):
+    """(result, logs, scope); the scope says which adapter supplied the files."""
+    plain = EvidenceScope()
     for name in ("a", "f"):
         logs, evidence = load_scenario(name)
-        yield correlate(logs, evidence), logs
+        yield correlate(logs, evidence), logs, plain
     for seed in range(100):
         logs, evidence, config = _random_case(seed)
-        yield correlate(logs, evidence, config=config), logs
+        yield correlate(logs, evidence, config=config), logs, plain
     for logs, evidence, baseline in _crafted(tmp_path):
-        yield correlate(logs, evidence, baseline=baseline), logs
+        yield correlate(logs, evidence, baseline=baseline), logs, plain
+    for logs, evidence, baseline in _wazuh_cases(tmp_path):
+        yield (correlate(logs, evidence, baseline=baseline), logs,
+               EvidenceScope(file_adapter="wazuh"))
 
 
 def _emitted(result) -> set[str]:
@@ -186,9 +218,9 @@ def _emitted(result) -> set[str]:
 def test_real_results_render_strictly_and_cover_the_catalog(tmp_path):
     run = RunInfo(tool_version="t", ruleset_version="r", generated_at=datetime.now(UTC))
     emitted: set[str] = set()
-    for result, logs in _results(tmp_path):
+    for result, logs, scope in _results(tmp_path):
         emitted |= _emitted(result)
-        report = build_report(result, logs, CaseInfo(case_id="c", title="t"), run)
+        report = build_report(result, logs, CaseInfo(case_id="c", title="t"), run, scope)
         emitted |= {r.key for r in (*report.summary, *report.recommendations,
                                     *report.limitations)}
         render(report, parse_display_offset("+07:00"), strict=True)

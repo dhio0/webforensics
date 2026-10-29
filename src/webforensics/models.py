@@ -114,6 +114,23 @@ class FileType(StrEnum):
     SYMLINK = "symlink"
 
 
+class FimEventType(StrEnum):
+    """Wazuh syscheck `event` values (rules 554, 550, 553)."""
+
+    ADDED = "added"
+    MODIFIED = "modified"
+    DELETED = "deleted"
+
+
+class FimMode(StrEnum):
+    """How Wazuh FIM noticed the change. Realtime and whodata alert within seconds of the
+    write; scheduled scans only every `frequency` seconds (default 12 h)."""
+
+    REALTIME = "realtime"
+    WHODATA = "whodata"
+    SCHEDULED = "scheduled"
+
+
 class FindingCategory(StrEnum):
     RECON = "recon"
     EXPLOIT_ATTEMPT = "exploit_attempt"
@@ -133,6 +150,10 @@ class GapKind(StrEnum):
     POST_BODY_NOT_LOGGED = "post_body_not_logged"
     NO_MANIFEST = "no_manifest"
     UNTRUSTED_FILE_TIMESTAMPS = "untrusted_file_timestamps"
+    # Only part of the access log is available (Wazuh alerts without archives, D74).
+    PARTIAL_LOG_SOURCE = "partial_log_source"
+    # File hashes and metadata are known, but not the bytes (Wazuh FIM without --webroot, D77).
+    NO_FILE_CONTENT = "no_file_content"
 
 
 class Reason(_Frozen):
@@ -162,6 +183,17 @@ class Citation(_Frozen):
         return self
 
 
+class FimChange(_Frozen):
+    """One Wazuh FIM alert about a file. `ts` is the manager's alert time, an upper bound
+    for when the change happened (D76)."""
+
+    ts: UtcDatetime
+    event: FimEventType
+    mode: FimMode
+    sha256: Sha256Hex | None = None
+    citation: Citation
+
+
 class Evidence(_Frozen):
     evidence_id: str = Field(min_length=1)
     adapter: str = Field(min_length=1)
@@ -186,11 +218,25 @@ class FileEvidence(Evidence):
     btime: UtcDatetime | None = None
     timestamp_source: TimestampSource
     baseline_status: BaselineStatus = BaselineStatus.UNKNOWN
+    # Wazuh FIM alerts for this path, oldest first. Empty for the FileAdapter.
+    fim: tuple[FimChange, ...] = ()
     # Local path to readable content for static analysis. Machine-specific, so it is
     # kept out of serialized output to keep reports deterministic.
     content_ref: str | None = Field(default=None, exclude=True)
 
     _check_path = field_validator("path")(check_relative_path)
+
+    @property
+    def deleted(self) -> bool:
+        """FIM saw the file deleted last. `sha256` is then its last known hash (D78)."""
+        return bool(self.fim) and self.fim[-1].event is FimEventType.DELETED
+
+    @property
+    def fim_written(self) -> FimChange | None:
+        """The FIM alert for the write that produced the current content: the first add or
+        change whose hash is `sha256`, else the first add or change."""
+        writes = [c for c in self.fim if c.event is not FimEventType.DELETED]
+        return next((c for c in writes if c.sha256 == self.sha256), writes[0] if writes else None)
 
     def citation(self) -> Citation:
         return Citation(
@@ -314,6 +360,9 @@ class ErrorLogEvent(Evidence):
 
 class LogCollection(_Frozen):
     events: tuple[LogEvent, ...] = ()
+    # False when the source holds only some requests (Wazuh alerts without archives): then
+    # silence between lines is normal and must not be reported as missing log time (D74).
+    complete: bool = True
     failures: tuple[ParseFailure, ...] = ()
     sources: tuple[SourceFile, ...] = ()
     # Kept apart from access-log data: error logs have multi-line entries (stack traces),
@@ -326,6 +375,7 @@ class LogCollection(_Frozen):
             events=self.events + other.events, failures=self.failures + other.failures,
             sources=self.sources + other.sources, errors=self.errors + other.errors,
             error_failures=self.error_failures + other.error_failures,
+            complete=self.complete and other.complete,
         )
 
 
@@ -346,6 +396,13 @@ class FileCollection(_Frozen):
     header: ManifestHeader | None = None
     gaps: tuple[EvidenceGap, ...] = ()
     sources: tuple[SourceFile, ...] = ()
+    # Findings the source itself produces, e.g. FIM changes outside the webroot.
+    findings: tuple["Finding", ...] = ()
+    # True when the source knows which files changed against an earlier state (Wazuh FIM's
+    # own baseline scan), so `baseline_status` is meaningful without a baseline manifest.
+    has_baseline: bool = False
+    # Paths the source saw deleted without a known content to trace (FIM `deleted` only).
+    deleted_paths: tuple[str, ...] = ()
 
 
 class Finding(_Frozen):
@@ -430,8 +487,10 @@ class CorrelationResult(_Frozen):
     root_cause: RootCause | None = None
     findings: tuple[Finding, ...] = ()
     affected_files: tuple[FileEvidence, ...] = ()
-    deleted_paths: tuple[str, ...] = ()  # in the baseline but missing now
-    # Executable files written apart from any deploy batch, with no HTTP link: review by hand.
+    # In the baseline but missing now, or seen only as a FIM `deleted` alert.
+    deleted_paths: tuple[str, ...] = ()
+    # Code files changed without an HTTP link strong enough to accuse (a lonely write, or
+    # a file of a deploy batch): review by hand.
     unexplained_changes: tuple[str, ...] = ()
     gaps: tuple[EvidenceGap, ...] = ()
     iocs: Iocs = Iocs()
@@ -477,6 +536,7 @@ class EvidenceScope(_Frozen):
     files: int = 0
     files_rejected: int = 0
     baseline_files: int | None = None  # None: no baseline given
+    file_adapter: str = "file"  # "wazuh": `files` counts FIM-changed files, not the webroot
     collected_at: UtcDatetime | None = None  # from the manifest header
 
 

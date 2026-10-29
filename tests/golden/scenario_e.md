@@ -42,7 +42,7 @@ _WF-2BBC40C4D0 · 2026-10-28 09:00:00 WIB_
 
 ### Catatan keyakinan
 
-- \#1: Hanya satu request penulis yang cocok dengan waktu file dibuat. Aktor yang sama kemudian mengakses file ini. Isi POST tidak tercatat di access log, jadi nama file yang diupload tidak terbukti dari log. Didukung error log baris 2 (diasumsikan UTC+0000).
+- \#1: Hanya satu request penulis yang cocok dengan waktu file dibuat. Aktor yang sama kemudian mengakses file ini. Isi POST tidak tercatat di access log, jadi nama file yang diupload tidak terbukti dari log. Didukung error log (error.log baris 2, diasumsikan UTC+0000).
 - \#2: Waktu dari btime (waktu file lahir), yang tidak bisa diubah dengan touch.
 
 ## 4. Akar Masalah
@@ -63,7 +63,7 @@ _WF-2BBC40C4D0 · 2026-10-28 09:00:00 WIB_
 - Hanya satu request penulis yang cocok dengan waktu file dibuat.
 - Aktor yang sama kemudian mengakses file ini.
 - Isi POST tidak tercatat di access log, jadi nama file yang diupload tidak terbukti dari log.
-- Didukung error log baris 2 (diasumsikan UTC+0000).
+- Didukung error log (error.log baris 2, diasumsikan UTC+0000).
 - Tidak ada login yang terlihat sebelum request penulis, jadi request itu sendiri dianggap titik masuk.
 - Tidak terlihat login bukan berarti tidak ada login: sesi bisa dibuat sebelum periode log.
 
