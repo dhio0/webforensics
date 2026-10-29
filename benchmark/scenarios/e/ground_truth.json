@@ -7,7 +7,7 @@
     {"id": "benign_product", "category": "benign_request", "mitre": [], "log_file": "access.log", "line_no": 2, "is_root_cause": false},
     {"id": "benign_login_form", "category": "benign_request", "mitre": [], "log_file": "access.log", "line_no": 3, "is_root_cause": false},
     {"id": "unauthenticated_marker_upload", "category": "unrestricted_upload", "mitre": ["T1190"], "log_file": "access.log", "line_no": 4, "is_root_cause": true},
-    {"id": "upload_error_log_message", "category": "error_log_upload_message", "mitre": [], "log_file": "error.log", "line_no": 2, "is_root_cause": false},
+    {"id": "upload_error_log_message", "category": "error_log_upload_message", "mitre": [], "log_file": "error.log", "line_no": 1, "is_root_cause": false},
     {"id": "request_marker_path", "category": "marker_invocation", "mitre": [], "log_file": "access.log", "line_no": 5, "is_root_cause": false},
     {"id": "benign_after_timestomp_home", "category": "benign_request", "mitre": [], "log_file": "access.log", "line_no": 6, "is_root_cause": false},
     {"id": "benign_after_timestomp_product", "category": "benign_request", "mitre": [], "log_file": "access.log", "line_no": 7, "is_root_cause": false}

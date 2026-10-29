@@ -1,51 +1,51 @@
 # Laporan Insiden Website
 
-_WF-EA5033B89A · 2026-10-28 09:00:00 WIB_
+_WF-6A5510F7FF · 2026-10-28 09:00:00 WIB_
 
 ## 1. Ringkasan
 
-- Ditemukan 1 file mencurigakan yang terkait dengan 1 alamat IP. Aktivitas pertama aktor pada 2026-10-28 10:48:52 WIB, terakhir pada 2026-10-28 10:49:02 WIB.
-- Titik masuk yang paling mungkin: kelemahan yang belum bisa dipastikan lewat POST /admin/login.php pada 2026-10-28 10:48:58 WIB (keyakinan rendah).
+- Ditemukan 1 file mencurigakan yang terkait dengan 1 alamat IP. Aktivitas pertama aktor pada 2026-10-29 12:17:05 WIB, terakhir pada 2026-10-29 12:17:15 WIB.
+- Titik masuk yang paling mungkin: kelemahan yang belum bisa dipastikan lewat POST /admin/login.php pada 2026-10-29 12:17:11 WIB (keyakinan rendah).
 
 ### Alur serangan
 
-- \#2 2026-10-28 10:48:58 WIB: Login berhasil dengan cara yang tidak terlihat di log: POST /admin/login.php → 200.
-- \#3 2026-10-28 10:49:00 WIB: Request yang menulis uploads/scenario-b-marker.php: POST /admin/auth\_upload.php → 200.
-- \#4 2026-10-28 10:49:00 WIB: File uploads/scenario-b-marker.php dibuat (SHA-256 105ddd6ab59b…).
-- \#5 2026-10-28 10:49:02 WIB: File uploads/scenario-b-marker.php diakses: GET /uploads/scenario-b-marker.php → 200.
+- \#2 2026-10-29 12:17:11 WIB: Login berhasil dengan cara yang tidak terlihat di log: POST /admin/login.php → 200.
+- \#3 2026-10-29 12:17:13 WIB: Request yang menulis uploads/scenario-b-marker.php: POST /admin/auth\_upload.php → 200.
+- \#4 2026-10-29 12:17:13 WIB: File uploads/scenario-b-marker.php dibuat (SHA-256 105ddd6ab59b…).
+- \#5 2026-10-29 12:17:15 WIB: File uploads/scenario-b-marker.php diakses: GET /uploads/scenario-b-marker.php → 200.
 
 ## 2. Informasi Kasus
 
-- **ID kasus:** WF-EA5033B89A
+- **ID kasus:** WF-6A5510F7FF
 - **Analis:** -
-- **Host target:** 9f61b9407738
+- **Host target:** 65789fc488e1
 - **Laporan dibuat:** 2026-10-28 09:00:00 WIB
 - **Zona waktu laporan:** WIB (UTC+07:00)
 
 ### Cakupan bukti
 
-- **Periode access log:** 2026-10-28 10:48:52 WIB s.d. 2026-10-28 10:49:02 WIB
+- **Periode access log:** 2026-10-29 12:17:05 WIB s.d. 2026-10-29 12:17:15 WIB
 - **Access log:** 6 baris terbaca
-- **Error log:** 2 entri
+- **Error log:** 1 entri
 - **Webroot:** 11 file
-- **Bukti dikumpulkan:** 2026-10-28 10:49:02 WIB
+- **Bukti dikumpulkan:** 2026-10-29 12:17:20 WIB
 - **Baseline:** tidak ada
 
 ## 3. Kronologi Serangan
 
 | # | Waktu | Dasar waktu | Fase (ATT\&CK) | Aktor | Kejadian | Keyakinan | Bukti |
 |---|---|---|---|---|---|---|---|
-| #1 | 2026-10-28 10:48:52 WIB | log | - | 192.0.2.10 | Login gagal: POST /admin/login.php → 401. | tinggi | access.log:1 |
-| #2 | 2026-10-28 10:48:58 WIB | log | Initial Access (akses awal) · T1078 | 192.0.2.10 | **AKAR MASALAH: Login berhasil dengan cara yang tidak terlihat di log: POST /admin/login.php → 200.** | rendah | access.log:4 |
-| #3 | 2026-10-28 10:49:00 WIB | log | Persistence (bertahan) · T1505.003 | 192.0.2.10 | Request yang menulis uploads/scenario-b-marker.php: POST /admin/auth\_upload.php → 200. | tinggi | access.log:5, uploads/scenario-b-marker.php @105ddd6ab59b, error.log:2 |
-| #4 | 2026-10-28 10:49:00 WIB | btime | Persistence (bertahan) · T1505.003 | - | File uploads/scenario-b-marker.php dibuat (SHA-256 105ddd6ab59b…). | tinggi | uploads/scenario-b-marker.php @105ddd6ab59b |
-| #5 | 2026-10-28 10:49:02 WIB | log | Persistence (bertahan) · T1505.003 | 192.0.2.10 | File uploads/scenario-b-marker.php diakses: GET /uploads/scenario-b-marker.php → 200. | tinggi | access.log:6 |
+| #1 | 2026-10-29 12:17:05 WIB | log | - | 192.0.2.10 | Login gagal: POST /admin/login.php → 401. | tinggi | access.log:1 |
+| #2 | 2026-10-29 12:17:11 WIB | log | Initial Access (akses awal) · T1078 | 192.0.2.10 | **AKAR MASALAH: Login berhasil dengan cara yang tidak terlihat di log: POST /admin/login.php → 200.** | rendah | access.log:4 |
+| #3 | 2026-10-29 12:17:13 WIB | log | Persistence (bertahan) · T1505.003 | 192.0.2.10 | Request yang menulis uploads/scenario-b-marker.php: POST /admin/auth\_upload.php → 200. | tinggi | access.log:5, uploads/scenario-b-marker.php @105ddd6ab59b, error.log:1 |
+| #4 | 2026-10-29 12:17:13 WIB | btime | Persistence (bertahan) · T1505.003 | - | File uploads/scenario-b-marker.php dibuat (SHA-256 105ddd6ab59b…). | tinggi | uploads/scenario-b-marker.php @105ddd6ab59b |
+| #5 | 2026-10-29 12:17:15 WIB | log | Persistence (bertahan) · T1505.003 | 192.0.2.10 | File uploads/scenario-b-marker.php diakses: GET /uploads/scenario-b-marker.php → 200. | tinggi | access.log:6 |
 
 ### Catatan keyakinan
 
 - \#1: Server membalas 401.
 - \#2: Login berhasil, lalu aktor yang sama menulis file di area yang sama. Respons berbeda dari login yang gagal dan tidak diikuti percobaan ulang. Cara login tidak terlihat (misalnya kredensial bocor, atau SQL injection lewat POST).
-- \#3: Hanya satu request penulis yang cocok dengan waktu file dibuat. Aktor yang sama kemudian mengakses file ini. Isi POST tidak tercatat di access log, jadi nama file yang diupload tidak terbukti dari log. Didukung error log (error.log baris 2, diasumsikan UTC+0000).
+- \#3: Hanya satu request penulis yang cocok dengan waktu file dibuat. Aktor yang sama kemudian mengakses file ini. Isi POST tidak tercatat di access log, jadi nama file yang diupload tidak terbukti dari log. Didukung error log (error.log baris 1, diasumsikan UTC+0000).
 - \#4: Waktu dari btime (waktu file lahir), yang tidak bisa diubah dengan touch.
 
 ## 4. Akar Masalah
@@ -58,7 +58,7 @@ _WF-EA5033B89A · 2026-10-28 09:00:00 WIB_
 ### Baris log asli
 
 ```
-172.30.0.3 - - [28/Oct/2026:03:48:58 +0000] "POST /admin/login.php HTTP/1.0" 200 347 "-" "webforensics-lab/1.0 scenario-b" "192.0.2.10"
+172.30.0.3 - - [29/Oct/2026:05:17:11 +0000] "POST /admin/login.php HTTP/1.0" 200 347 "-" "webforensics-lab/1.0 scenario-b" "192.0.2.10"
 ```
 
 ### Alasan
@@ -74,7 +74,7 @@ _WF-EA5033B89A · 2026-10-28 09:00:00 WIB_
 - **SHA-256:** 105ddd6ab59b87c2013943bab1e598aae952be1f7ae85aac56da08beec344bf6
 - **Ukuran:** 26 byte
 - **Status baseline:** tidak diketahui (tanpa baseline)
-- **Timestamp:** btime 2026-10-28 10:49:00 WIB; ctime 2026-10-28 10:49:00 WIB; mtime 2026-10-28 10:49:00 WIB
+- **Timestamp:** btime 2026-10-29 12:17:13 WIB; ctime 2026-10-29 12:17:13 WIB; mtime 2026-10-29 12:17:13 WIB
 - **Sumber timestamp:** manifest collect.sh
 - **URL:** /uploads/scenario-b-marker.php
 
@@ -167,12 +167,12 @@ Tidak ada.
 
 | Rujukan | Kutipan |
 |---|---|
-| access.log:1 | 172.30.0.3 - - \[28/Oct/2026:03:48:52 +0000\] "POST /admin/login.php HTTP/1.0" 401 343 "-" "webforensics-lab/1.0 scenario-b" "192.0.2.10" |
-| access.log:4 | 172.30.0.3 - - \[28/Oct/2026:03:48:58 +0000\] "POST /admin/login.php HTTP/1.0" 200 347 "-" "webforensics-lab/1.0 scenario-b" "192.0.2.10" |
-| access.log:5 | 172.30.0.3 - - \[28/Oct/2026:03:49:00 +0000\] "POST /admin/auth\_upload.php HTTP/1.0" 200 40 "-" "webforensics-lab/1.0 scenario-b" "192.0.2.10" |
+| access.log:1 | 172.30.0.3 - - \[29/Oct/2026:05:17:05 +0000\] "POST /admin/login.php HTTP/1.0" 401 343 "-" "webforensics-lab/1.0 scenario-b" "192.0.2.10" |
+| access.log:4 | 172.30.0.3 - - \[29/Oct/2026:05:17:11 +0000\] "POST /admin/login.php HTTP/1.0" 200 347 "-" "webforensics-lab/1.0 scenario-b" "192.0.2.10" |
+| access.log:5 | 172.30.0.3 - - \[29/Oct/2026:05:17:13 +0000\] "POST /admin/auth\_upload.php HTTP/1.0" 200 40 "-" "webforensics-lab/1.0 scenario-b" "192.0.2.10" |
 | uploads/scenario-b-marker.php @105ddd6ab59b | SHA-256 105ddd6ab59b87c2013943bab1e598aae952be1f7ae85aac56da08beec344bf6 |
-| error.log:2 | 2026/10/28 03:49:00 \[error\] 25#25: \*9 FastCGI sent in stderr: "PHP message: lab upload stored" while reading response header from upstream, client: 172.30.0.3, server: \_, request: "POST /admin/auth\_upload.php HTTP/1.0", upstream: "fastcgi://172.19.0.3:9000", host: "127.0.0.1" |
-| access.log:6 | 172.30.0.3 - - \[28/Oct/2026:03:49:02 +0000\] "GET /uploads/scenario-b-marker.php HTTP/1.0" 200 26 "-" "webforensics-lab/1.0 scenario-b" "192.0.2.10" |
+| error.log:1 | 2026/10/29 05:17:13 \[error\] 26#26: \*9 FastCGI sent in stderr: "PHP message: lab upload stored" while reading response header from upstream, client: 172.30.0.3, server: \_, request: "POST /admin/auth\_upload.php HTTP/1.0", upstream: "fastcgi://172.21.0.3:9000", host: "127.0.0.1" |
+| access.log:6 | 172.30.0.3 - - \[29/Oct/2026:05:17:15 +0000\] "GET /uploads/scenario-b-marker.php HTTP/1.0" 200 26 "-" "webforensics-lab/1.0 scenario-b" "192.0.2.10" |
 
 ## Lampiran B. Reproduksibilitas
 
@@ -184,8 +184,8 @@ Tidak ada.
 
 | File | SHA-256 | Ukuran |
 |---|---|---|
-| access.log | d96ea214ae16b239c4fb8d58dab198e0c4423958638ef9c58ff8a5d85209e206 | 822 byte |
-| error.log | 6c388822fb88b8a4085db85243cbc9435647aa7b39b248d59e753b722b1bdbf5 | 336 byte |
-| manifest.tsv | 8bf9eb254df011c6ab69854b10ca02be21290ea93e01dfd7623b4c8b5330e56d | 1976 byte |
+| access.log | 102e3a6aad3d5ae5636cb12e64a610bab1bf05c5fa32cfcb3301dfa0ef2b58b4 | 822 byte |
+| error.log | d0dea3926a1b81cb0f7c940f4fc9d80895d03d24cf206074e617d5ad29f8d9e8 | 277 byte |
+| manifest.tsv | d17f19e38c24ecb6c13aade8881ba5ec3091a871f76d57d5a417bffd33ae6de4 | 1987 byte |
 
 Input, versi, dan konfigurasi yang sama menghasilkan laporan yang sama persis.

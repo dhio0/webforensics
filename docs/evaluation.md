@@ -57,6 +57,18 @@ judged.
 | M5 | D (dev) | false root, admin IP and cache file blamed | D69: a request explained by another file's birth ranks lower |
 | M5 | D (dev, re-recorded) | fully correct; its report did not say the bots' SQLi login bypass probably worked | D71: such a bypass is reported (not accused), with fixes |
 | M5 | E (held-out) | fully correct on first run | none |
+| M6 | all, re-recorded with Wazuh on | FileAdapter unchanged (fully correct); WazuhAdapter fully correct on first scoring | none to the scores. The lab test behind it found D79 (deploy batch accused), D81 (proxy accused from the error log) and the FIM restart blind spot |
+
+M6 re-recorded every scenario in one replay with Wazuh on, so the file evidence and the
+Wazuh recording come from the same run. What changed in the evidence, and why:
+- A and F were from an older lab: client IP 172.19.0.1 and no X-Forwarded-For field. Now
+  172.30.0.1 and the current log format; F's vulnerable line moved from 8 to 13 because
+  `login.php` had changed since F was recorded (now the same file as in B).
+- In Wazuh mode the lab truncates the logs before nginx starts, so nginx's
+  `signal process started` notice is no longer line 1 of `error.log`; the upload's
+  error-log line moved from line 2 to 1 in B, D and E.
+- The steps were checked line by line against the new logs (`lab/wazuh/record_benchmark.py`
+  prints each step next to its line), including D's concurrent requests.
 
 ## Using the benchmark with another tool
 

@@ -22,9 +22,9 @@ webforensics analyze --manifest case01/manifest.tsv --log case01/logs --out case
 ```
 `analyze` writes `report.md`, `report.html` and `report.json` and prints a short summary:
 ```
-Case WF-A430D528E5: 1 affected file(s), 5 timeline event(s), 1 evidence gap(s)
-Root cause (medium): unrestricted_file_upload via POST /admin/upload.php at 2026-10-27T14:16:06+00:00
-Attacker IPs: 172.19.0.1
+Case WF-16040EE35A: 1 affected file(s), 5 timeline event(s), 1 evidence gap(s)
+Root cause (medium): unrestricted_file_upload via POST /admin/upload.php at 2026-10-29T05:16:16+00:00
+Attacker IPs: 172.30.0.1
 ```
 The report is in Indonesian and follows a CSIRT incident-handling flow: summary with a short attack story, case info and evidence scope, attack timeline (MITRE ATT&CK, evidence cited per row), root cause with its reasons and alternatives, affected files, changes to review by hand, IOCs, evidence gaps, unrelated attack noise (grouped), recommended actions (containment, eradication, recovery, lessons learned), limitations, and an evidence appendix. Example output for the benchmark scenarios is in [tests/golden/](tests/golden/).
 
@@ -47,15 +47,22 @@ webforensics analyze --wazuh-recording case01.jsonl --out case01/report
 In the lab (Wazuh 4.14.9), all five scenarios were replayed with Wazuh on, and the evidence from that same run was analyzed through both adapters. Root cause, affected files and attacker IPs were identical in every scenario (`tests/integration/test_wazuh_lab.py`, marked `lab`). Building that test exposed two problems: a deploy inside the pull window made every new app file look like an attack (now held to the same standard as lonely writes, D79), and FIM misses a file written while the agent restarts. That blind spot is a limitation of FIM itself; the report states it. Details: [docs/wazuh-notes.md](docs/wazuh-notes.md).
 
 ## Accuracy on the benchmark
-`webforensics eval benchmark/` runs the analyzer on every lab scenario and compares it with the scenario's ground truth ([docs/evaluation.md](docs/evaluation.md)):
+`webforensics eval benchmark/` runs the analyzer on every lab scenario and compares it with the scenario's ground truth ([docs/evaluation.md](docs/evaluation.md)). Each scenario's evidence was recorded in one replay with Wazuh on, so it is scored twice against the same ground truth: through the FileAdapter (logs + manifest) and through the WazuhAdapter (`evidence/wazuh/recording.jsonl`):
 
-| Scenario | Split | Step recall | Root cause | False IPs | False files | IP precision | File precision | Expected rules | Code line |
-|---|---|---|---|---|---|---|---|---|---|
-| A: unauthenticated upload | dev | 3/3 | correct | 0 | 0 | 1.00 | 1.00 | - | n/a (M7) |
-| B: POST SQLi login bypass, upload | dev | 5/5 | correct | 0 | 0 | 1.00 | 1.00 | - | n/a (M7) |
-| D: busy site, no compromise | dev | - | correct (none) | 0 | 0 | - | - | 1/1 | n/a (M7) |
-| E: upload + forged mtime | held-out | 3/3 | correct | 0 | 0 | 1.00 | 1.00 | 1/1 | n/a (M7) |
-| F: GET SQLi login bypass, upload | dev | 4/4 | correct | 0 | 0 | 1.00 | 1.00 | - | n/a (M7) |
+| Scenario | Adapter | Split | Step recall | Root cause | False IPs | False files | IP precision | File precision | Expected rules | Code line |
+|---|---|---|---|---|---|---|---|---|---|---|
+| A: unauthenticated upload | file | dev | 3/3 | correct | 0 | 0 | 1.00 | 1.00 | - | n/a (M7) |
+| | wazuh | dev | 3/3 | correct | 0 | 0 | 1.00 | 1.00 | - | n/a (M7) |
+| B: POST SQLi login bypass, upload | file | dev | 5/5 | correct | 0 | 0 | 1.00 | 1.00 | - | n/a (M7) |
+| | wazuh | dev | 5/5 | correct | 0 | 0 | 1.00 | 1.00 | - | n/a (M7) |
+| D: busy site, no compromise | file | dev | - | correct (none) | 0 | 0 | - | - | 1/1 | n/a (M7) |
+| | wazuh | dev | - | correct (none) | 0 | 0 | - | - | 1/1 | n/a (M7) |
+| E: upload + forged mtime | file | held-out | 3/3 | correct | 0 | 0 | 1.00 | 1.00 | 1/1 | n/a (M7) |
+| | wazuh | held-out | 3/3 | correct | 0 | 0 | 1.00 | 1.00 | 1/1 | n/a (M7) |
+| F: GET SQLi login bypass, upload | file | dev | 4/4 | correct | 0 | 0 | 1.00 | 1.00 | - | n/a (M7) |
+| | wazuh | dev | 4/4 | correct | 0 | 0 | 1.00 | 1.00 | - | n/a (M7) |
+
+The WazuhAdapter cites lines of the recording; `eval` maps each to the log line with the same text before scoring. In E it catches the forged mtime from FIM (the file was `added` in realtime, then `modified` with a 2024 mtime) instead of from ctime.
 
 Step recall in B and E includes the PHP error-log line written by the upload, so error-log correlation is measured too. In B the root-cause line is right, but the report does not claim SQL injection: the payload is in the POST body, which access logs don't record. It says the login method is not visible (low confidence) and names SQLi over POST as one possibility.
 

@@ -29,7 +29,12 @@ scenarios/<id>/
     error.log            # optional, nginx error log
     manifest.tsv         # webroot manifest from scripts/collect.sh (see docs/evidence-format.md)
     baseline.tsv         # optional, manifest taken before any traffic
+    wazuh/recording.jsonl  # optional, Wazuh web events + FIM alerts from the same replay
+                           # (format: docs/evidence-format.md, "Wazuh recording v1")
 ```
+A recording holds the same requests as `access.log`/`error.log`, with Wazuh's metadata.
+Its web events carry the raw line in `_source.full_log`, so a tool scored on the recording
+can be matched to the ground truth's `log_file`/`line_no` by that text.
 
 ## Ground truth
 

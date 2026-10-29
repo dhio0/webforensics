@@ -1,6 +1,6 @@
 # Laporan Insiden Website
 
-_WF-5D640831B0 · 2026-10-28 09:00:00 WIB_
+_WF-72CCDBC9E8 · 2026-10-28 09:00:00 WIB_
 
 ## 1. Ringkasan
 
@@ -11,19 +11,19 @@ _WF-5D640831B0 · 2026-10-28 09:00:00 WIB_
 
 ## 2. Informasi Kasus
 
-- **ID kasus:** WF-5D640831B0
+- **ID kasus:** WF-72CCDBC9E8
 - **Analis:** -
-- **Host target:** b5838e084553
+- **Host target:** f65084d6792d
 - **Laporan dibuat:** 2026-10-28 09:00:00 WIB
 - **Zona waktu laporan:** WIB (UTC+07:00)
 
 ### Cakupan bukti
 
-- **Periode access log:** 2026-10-28 10:49:31 WIB s.d. 2026-10-28 10:49:52 WIB
+- **Periode access log:** 2026-10-29 12:17:52 WIB s.d. 2026-10-29 12:18:12 WIB
 - **Access log:** 32 baris terbaca
-- **Error log:** 2 entri
+- **Error log:** 1 entri
 - **Webroot:** 12 file
-- **Bukti dikumpulkan:** 2026-10-28 10:49:52 WIB
+- **Bukti dikumpulkan:** 2026-10-29 12:18:21 WIB
 - **Baseline:** 10 file
 
 ## 3. Kronologi Serangan
@@ -58,10 +58,10 @@ Request ini cocok dengan pola serangan, tetapi pengirimnya tidak terkait dengan 
 
 | Aturan | Jumlah | Klien | Klien terbanyak | Rentang waktu | Contoh |
 |---|---|---|---|---|---|
-| SQL injection (tautologi) (LOG-SQLI-TAUTOLOGY) | 4 | 2 | 192.0.2.21 (2), 203.0.113.21 (2) | 2026-10-28 10:49:33 WIB s.d. 2026-10-28 10:49:44 WIB | access.log:21 |
-| Login bypass SQL injection yang tampaknya berhasil (CORR-SQLI-LOGIN-BYPASS) | 2 | 2 | 192.0.2.21 (1), 203.0.113.21 (1) | 2026-10-28 10:49:37 WIB s.d. 2026-10-28 10:49:44 WIB | access.log:23 |
-| SQL injection (kutip + komentar) (LOG-SQLI-QUOTE-COMMENT) | 2 | 2 | 192.0.2.21 (1), 203.0.113.21 (1) | 2026-10-28 10:49:37 WIB s.d. 2026-10-28 10:49:44 WIB | access.log:23 |
-| SQL injection (UNION) (LOG-SQLI-UNION) | 2 | 2 | 192.0.2.21 (1), 203.0.113.21 (1) | 2026-10-28 10:49:35 WIB s.d. 2026-10-28 10:49:42 WIB | access.log:22 |
+| SQL injection (tautologi) (LOG-SQLI-TAUTOLOGY) | 4 | 2 | 192.0.2.21 (2), 203.0.113.21 (2) | 2026-10-29 12:17:54 WIB s.d. 2026-10-29 12:18:04 WIB | access.log:21 |
+| Login bypass SQL injection yang tampaknya berhasil (CORR-SQLI-LOGIN-BYPASS) | 2 | 2 | 192.0.2.21 (1), 203.0.113.21 (1) | 2026-10-29 12:17:58 WIB s.d. 2026-10-29 12:18:04 WIB | access.log:23 |
+| SQL injection (kutip + komentar) (LOG-SQLI-QUOTE-COMMENT) | 2 | 2 | 192.0.2.21 (1), 203.0.113.21 (1) | 2026-10-29 12:17:58 WIB s.d. 2026-10-29 12:18:04 WIB | access.log:23 |
+| SQL injection (UNION) (LOG-SQLI-UNION) | 2 | 2 | 192.0.2.21 (1), 203.0.113.21 (1) | 2026-10-29 12:17:56 WIB s.d. 2026-10-29 12:18:02 WIB | access.log:22 |
 
 ## 10. Tindakan yang Disarankan
 
@@ -95,9 +95,9 @@ Request ini cocok dengan pola serangan, tetapi pengirimnya tidak terkait dengan 
 
 | Rujukan | Kutipan |
 |---|---|
-| access.log:21 | 172.30.0.3 - - \[28/Oct/2026:03:49:33 +0000\] "GET /product.php?id=1+OR+1%3D1 HTTP/1.0" 200 212 "-" "webforensics-lab/1.0 scenario-d" "192.0.2.21" |
-| access.log:23 | 172.30.0.3 - - \[28/Oct/2026:03:49:37 +0000\] "GET /admin/login.php?username=admin%27+OR+%271%27%3D%271%27+--+\&password= HTTP/1.0" 200 347 "-" "webforensics-lab/1.0 scenario-d" "192.0.2.21" |
-| access.log:22 | 172.30.0.3 - - \[28/Oct/2026:03:49:35 +0000\] "GET /product.php?id=1+UNION+SELECT+1%2C2 HTTP/1.0" 200 205 "-" "webforensics-lab/1.0 scenario-d" "192.0.2.21" |
+| access.log:21 | 172.30.0.3 - - \[29/Oct/2026:05:17:54 +0000\] "GET /product.php?id=1+OR+1%3D1 HTTP/1.0" 200 212 "-" "webforensics-lab/1.0 scenario-d" "192.0.2.21" |
+| access.log:23 | 172.30.0.3 - - \[29/Oct/2026:05:17:58 +0000\] "GET /admin/login.php?username=admin%27+OR+%271%27%3D%271%27+--+\&password= HTTP/1.0" 200 347 "-" "webforensics-lab/1.0 scenario-d" "192.0.2.21" |
+| access.log:22 | 172.30.0.3 - - \[29/Oct/2026:05:17:56 +0000\] "GET /product.php?id=1+UNION+SELECT+1%2C2 HTTP/1.0" 200 205 "-" "webforensics-lab/1.0 scenario-d" "192.0.2.21" |
 
 ## Lampiran B. Reproduksibilitas
 
@@ -109,9 +109,9 @@ Request ini cocok dengan pola serangan, tetapi pengirimnya tidak terkait dengan 
 
 | File | SHA-256 | Ukuran |
 |---|---|---|
-| access.log | 65a9e7f85e7eaa41f16bdb6619a77f388982635ce273b03a73d8ead62d756b52 | 4463 byte |
-| baseline.tsv | 6b9c25cdd13d074aba706b6c74f28a19d5d54ad09575f333e315af988d1cc6dd | 1790 byte |
-| error.log | c5c1ba27c651faad6b8bbdca29eaa8361c4030a313b40a14731fc521e35fa616 | 337 byte |
-| manifest.tsv | b88b773f5e4bb390e32b9a1d934b3f5d06f2a28d15d7ef25aa2537b02997d9e6 | 2124 byte |
+| access.log | f0dee937d86e560deba2187cf96014746cdbb6d508279fcd4453f0a48b5b0ac5 | 4463 byte |
+| baseline.tsv | 288f097edd6219d19138f4c6d95a041d326347d7c110cffae710cad264b78806 | 1800 byte |
+| error.log | 824cd382edd052df726aad18483fbed34fabb0b746d986f6b5cbf0e6d767de6d | 278 byte |
+| manifest.tsv | 70074d637bf6480c5f269c329bb7552bd5b3acf54f89f37037bc3f3aa5e13269 | 2136 byte |
 
 Input, versi, dan konfigurasi yang sama menghasilkan laporan yang sama persis.

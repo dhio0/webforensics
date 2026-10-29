@@ -1,23 +1,23 @@
 {
   "format": "webforensics-report/1",
   "case": {
-    "case_id": "WF-A430D528E5",
+    "case_id": "WF-16040EE35A",
     "title": "Laporan Insiden Website",
     "analyst": null,
-    "target_host": "682197025b3a"
+    "target_host": "bf89ed992aef"
   },
   "scope": {
-    "log_first": "2026-10-27T14:15:58Z",
-    "log_last": "2026-10-27T14:16:08Z",
+    "log_first": "2026-10-29T05:16:08Z",
+    "log_last": "2026-10-29T05:16:18Z",
     "log_events": 6,
     "log_unparsed": 0,
     "error_events": 0,
     "error_unparsed": 0,
-    "files": 9,
+    "files": 11,
     "files_rejected": 0,
     "baseline_files": null,
     "file_adapter": "file",
-    "collected_at": "2026-10-27T14:16:13Z"
+    "collected_at": "2026-10-29T05:16:25Z"
   },
   "run": {
     "tool_version": "0.1.0",
@@ -25,13 +25,13 @@
     "inputs": [
       {
         "path": "access.log",
-        "sha256": "b940bde78ed4f7cbda74f195c2070b460126f9e08496a70977b708230a741800",
-        "size": 736
+        "sha256": "27d5072520346aa778ef58b90d89f073afe4541ca6bf382183c60cc460138d17",
+        "size": 760
       },
       {
         "path": "manifest.tsv",
-        "sha256": "06e4d700167832ebe286d5c25eb6efc3c8fa3a9afb97bdd714ddd0095b4eca20",
-        "size": 1656
+        "sha256": "917ceb04335113a0c83d87337185c8f126f9fed19aa37970fff53f81aa22feec",
+        "size": 1973
       }
     ],
     "config_sha256": "c5151d3a2f13b07748750ef54e0aa218107778fc0a16cbf3101325edba953255",
@@ -41,11 +41,11 @@
     "timeline": [
       {
         "event_id": "901c4a5e44011a50",
-        "ts": "2026-10-27T14:15:58Z",
+        "ts": "2026-10-29T05:16:08Z",
         "ts_basis": "log",
         "mitre_tactic": null,
         "mitre_technique": null,
-        "actor": "172.19.0.1",
+        "actor": "172.30.0.1",
         "description": {
           "key": "timeline.actor_first_seen",
           "params": {
@@ -60,7 +60,7 @@
             "source": "access.log",
             "line_no": 1,
             "sha256": null,
-            "excerpt": "172.19.0.1 - - [27/Oct/2026:14:15:58 +0000] \"GET / HTTP/1.1\" 200 298 \"-\" \"webforensics-lab/1.0 scenario-a\""
+            "excerpt": "172.30.0.1 - - [29/Oct/2026:05:16:08 +0000] \"GET / HTTP/1.1\" 200 298 \"-\" \"webforensics-lab/1.0 scenario-a\" \"-\""
           }
         ],
         "confidence": "high",
@@ -70,11 +70,11 @@
       },
       {
         "event_id": "3ba7dce3fef8eb18",
-        "ts": "2026-10-27T14:16:04Z",
+        "ts": "2026-10-29T05:16:14Z",
         "ts_basis": "log",
         "mitre_tactic": "Initial Access",
         "mitre_technique": "T1190",
-        "actor": "172.19.0.1",
+        "actor": "172.30.0.1",
         "description": {
           "key": "timeline.exploit_attempt",
           "params": {
@@ -90,7 +90,7 @@
             "source": "access.log",
             "line_no": 4,
             "sha256": null,
-            "excerpt": "172.19.0.1 - - [27/Oct/2026:14:16:04 +0000] \"GET /product.php?id=1+OR+1%3D1 HTTP/1.1\" 200 223 \"-\" \"webforensics-lab/1.0 scenario-a\""
+            "excerpt": "172.30.0.1 - - [29/Oct/2026:05:16:14 +0000] \"GET /product.php?id=1+OR+1%3D1 HTTP/1.1\" 200 223 \"-\" \"webforensics-lab/1.0 scenario-a\" \"-\""
           }
         ],
         "confidence": "medium",
@@ -102,11 +102,11 @@
       },
       {
         "event_id": "5b45d04ba70d28d8",
-        "ts": "2026-10-27T14:16:06Z",
+        "ts": "2026-10-29T05:16:16Z",
         "ts_basis": "log",
         "mitre_tactic": "Initial Access",
         "mitre_technique": "T1190",
-        "actor": "172.19.0.1",
+        "actor": "172.30.0.1",
         "description": {
           "key": "timeline.upload_exploit",
           "params": {
@@ -123,7 +123,7 @@
             "source": "access.log",
             "line_no": 5,
             "sha256": null,
-            "excerpt": "172.19.0.1 - - [27/Oct/2026:14:16:06 +0000] \"POST /admin/upload.php HTTP/1.1\" 200 44 \"-\" \"webforensics-lab/1.0 scenario-a\""
+            "excerpt": "172.30.0.1 - - [29/Oct/2026:05:16:16 +0000] \"POST /admin/upload.php HTTP/1.1\" 200 44 \"-\" \"webforensics-lab/1.0 scenario-a\" \"-\""
           },
           {
             "kind": "file",
@@ -153,7 +153,7 @@
       },
       {
         "event_id": "0e08e106eb5187b4",
-        "ts": "2026-10-27T14:16:06Z",
+        "ts": "2026-10-29T05:16:16Z",
         "ts_basis": "btime",
         "mitre_tactic": "Persistence",
         "mitre_technique": "T1505.003",
@@ -190,11 +190,11 @@
       },
       {
         "event_id": "44deedc1659efc9f",
-        "ts": "2026-10-27T14:16:08Z",
+        "ts": "2026-10-29T05:16:18Z",
         "ts_basis": "log",
         "mitre_tactic": "Persistence",
         "mitre_technique": "T1505.003",
-        "actor": "172.19.0.1",
+        "actor": "172.30.0.1",
         "description": {
           "key": "timeline.file_invoked",
           "params": {
@@ -210,7 +210,7 @@
             "source": "access.log",
             "line_no": 6,
             "sha256": null,
-            "excerpt": "172.19.0.1 - - [27/Oct/2026:14:16:08 +0000] \"GET /uploads/lab-marker.php HTTP/1.1\" 200 35 \"-\" \"webforensics-lab/1.0 scenario-a\""
+            "excerpt": "172.30.0.1 - - [29/Oct/2026:05:16:18 +0000] \"GET /uploads/lab-marker.php HTTP/1.1\" 200 35 \"-\" \"webforensics-lab/1.0 scenario-a\" \"-\""
           }
         ],
         "confidence": "high",
@@ -274,7 +274,7 @@
             "source": "access.log",
             "line_no": 4,
             "sha256": null,
-            "excerpt": "172.19.0.1 - - [27/Oct/2026:14:16:04 +0000] \"GET /product.php?id=1+OR+1%3D1 HTTP/1.1\" 200 223 \"-\" \"webforensics-lab/1.0 scenario-a\""
+            "excerpt": "172.30.0.1 - - [29/Oct/2026:05:16:14 +0000] \"GET /product.php?id=1+OR+1%3D1 HTTP/1.1\" 200 223 \"-\" \"webforensics-lab/1.0 scenario-a\" \"-\""
           }
         ],
         "mitre": [
@@ -305,7 +305,7 @@
             "source": "access.log",
             "line_no": 6,
             "sha256": null,
-            "excerpt": "172.19.0.1 - - [27/Oct/2026:14:16:08 +0000] \"GET /uploads/lab-marker.php HTTP/1.1\" 200 35 \"-\" \"webforensics-lab/1.0 scenario-a\""
+            "excerpt": "172.30.0.1 - - [29/Oct/2026:05:16:18 +0000] \"GET /uploads/lab-marker.php HTTP/1.1\" 200 35 \"-\" \"webforensics-lab/1.0 scenario-a\" \"-\""
           }
         ],
         "mitre": [
@@ -346,8 +346,8 @@
       {
         "evidence_id": "cb73e6ba0d5fcbbd",
         "adapter": "file",
-        "source": "manifest.tsv:17",
-        "collected_at": "2026-10-27T14:16:13Z",
+        "source": "manifest.tsv:19",
+        "collected_at": "2026-10-29T05:16:25Z",
         "path": "uploads/lab-marker.php",
         "file_type": "file",
         "url_paths": [
@@ -357,11 +357,11 @@
         "size": 24,
         "mode": 420,
         "uid": 82,
-        "inode": 54654,
-        "atime": "2026-10-27T14:16:08Z",
-        "mtime": "2026-10-27T14:16:06Z",
-        "ctime": "2026-10-27T14:16:06Z",
-        "btime": "2026-10-27T14:16:06Z",
+        "inode": 207722,
+        "atime": "2026-10-29T05:16:18Z",
+        "mtime": "2026-10-29T05:16:16Z",
+        "ctime": "2026-10-29T05:16:16Z",
+        "btime": "2026-10-29T05:16:16Z",
         "timestamp_source": "manifest",
         "baseline_status": "unknown",
         "fim": []
@@ -385,7 +385,7 @@
     ],
     "iocs": {
       "ips": [
-        "172.19.0.1"
+        "172.30.0.1"
       ],
       "user_agents": [
         "webforensics-lab/1.0 scenario-a"
@@ -408,8 +408,8 @@
       "params": {
         "files": "1",
         "actors": "1",
-        "first_at": "2026-10-27T14:15:58+00:00",
-        "last_at": "2026-10-27T14:16:08+00:00"
+        "first_at": "2026-10-29T05:16:08+00:00",
+        "last_at": "2026-10-29T05:16:18+00:00"
       }
     },
     {
@@ -418,7 +418,7 @@
         "vuln_class": "unrestricted_file_upload",
         "method": "POST",
         "path": "/admin/upload.php",
-        "at": "2026-10-27T14:16:06+00:00",
+        "at": "2026-10-29T05:16:16+00:00",
         "confidence": "medium"
       }
     }
@@ -437,7 +437,7 @@
     {
       "key": "rec.containment.block_ips",
       "params": {
-        "ips": "172.19.0.1"
+        "ips": "172.30.0.1"
       }
     },
     {

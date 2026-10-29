@@ -1,7 +1,7 @@
 {
   "scenario_id": "f",
   "description": "Benign browsing and a failed normal login precede a GET-based SQLi login bypass, an authenticated upload of inert marker text, and a request that serves the marker. The SQLi login request is the root cause.",
-  "attacker_ips": ["172.19.0.1"],
+  "attacker_ips": ["172.30.0.1"],
   "steps": [
     {
       "id": "browse_home",
@@ -70,7 +70,7 @@
   "root_cause_step": "sqli_login_bypass",
   "vulnerable_code": {
     "file": "lab/app/admin/login.php",
-    "line": 8,
-    "sha256": "38357f12143ab78110c81951af0381438385f3528d011bbfbba5e735adac5648"
+    "line": 13,
+    "sha256": "fa2a9d556bc98ba3751bc6f7eee860d187cd579c6658a6b962c0f32cbac77d45"
   }
 }

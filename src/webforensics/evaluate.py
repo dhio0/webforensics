@@ -11,18 +11,29 @@ done. Metrics (docs/evaluation.md):
   ground truth (precision = correct / reported);
 - expected rules: rule ids that must be reported (e.g. timestomp);
 - runtime: wall time of load + correlate (not deterministic, reported apart).
+
+A scenario with `evidence/wazuh/recording.jsonl` (recorded in the same replay as the file
+evidence) is scored a second time through the WazuhAdapter. Its citations point at lines
+of the recording, so they are mapped back to the access/error-log lines that hold the same
+text before scoring; the ground truth is the same for both adapters.
 """
 
 import json
 import time
+from collections import defaultdict, deque
 from dataclasses import dataclass, field
 from enum import StrEnum
 from pathlib import Path
 
+from webforensics.adapters.wazuh.recording import Stream, read_recording
 from webforensics.analysis import EvidenceInputs, load_evidence
 from webforensics.correlate import CorrelationConfig, correlate
 from webforensics.models import CitationKind, CorrelationResult
 from webforensics.parsers.error_log import ErrorLogFormat
+
+ADAPTERS = ("file", "wazuh")
+RECORDING = "wazuh/recording.jsonl"
+LineMap = dict[tuple[str, int], tuple[str, int]]
 
 
 class RootVerdict(StrEnum):
@@ -51,6 +62,7 @@ class ScenarioScore:
     rules_expected: tuple[str, ...]
     missed_rules: tuple[str, ...]
     runtime_s: float = field(compare=False)
+    adapter: str = "file"
 
     @property
     def step_recall(self) -> float | None:
@@ -88,18 +100,54 @@ def scenario_inputs(folder: Path, truth: dict) -> tuple[EvidenceInputs, Correlat
     return inputs, config
 
 
-def _cited_lines(result: CorrelationResult) -> set[tuple[str, int]]:
-    return {(c.source, c.line_no) for e in result.timeline for c in e.citations
-            if c.kind is CitationKind.LOG_LINE and c.line_no is not None}
+def _lines(citations, line_map: LineMap | None) -> set[tuple[str, int]]:
+    found = {(c.source, c.line_no) for c in citations
+             if c.kind is CitationKind.LOG_LINE and c.line_no is not None}
+    return {line_map.get(line, line) for line in found} if line_map else found
 
 
-def _event_lines(result: CorrelationResult, event_id: str) -> set[tuple[str, int]]:
+def _cited_lines(result: CorrelationResult,
+                 line_map: LineMap | None = None) -> set[tuple[str, int]]:
+    return _lines([c for e in result.timeline for c in e.citations], line_map)
+
+
+def _event_lines(result: CorrelationResult, event_id: str,
+                 line_map: LineMap | None = None) -> set[tuple[str, int]]:
     event = next(e for e in result.timeline if e.event_id == event_id)
-    return {(c.source, c.line_no) for c in event.citations
-            if c.kind is CitationKind.LOG_LINE and c.line_no is not None}
+    return _lines(event.citations, line_map)
 
 
-def root_verdict(truth: dict, result: CorrelationResult) -> RootVerdict:
+def _log_lines(path: Path) -> list[str]:
+    """Physical lines decoded like the log parsers do, so they compare with `full_log`."""
+    raw = path.read_bytes().split(b"\n")
+    if raw and raw[-1] == b"":
+        raw.pop()
+    return [line.rstrip(b"\r").decode("utf-8", "backslashreplace") for line in raw]
+
+
+def recording_line_map(folder: Path, truth: dict) -> LineMap:
+    """(recording, line) -> (log file, line) for every web event whose text is a line of
+    the scenario's own log files. Repeated lines are matched in order."""
+    evidence = folder / "evidence"
+    header, hits = read_recording(evidence / RECORDING)
+    spec = truth.get("analysis", {})
+    names = dict(zip(header.access_logs, spec.get("access_logs", ["access.log"]), strict=False))
+    names |= dict(zip(header.error_logs, spec.get("error_logs", []), strict=False))
+    free: dict[tuple[str, str], deque[int]] = defaultdict(deque)
+    for name in set(names.values()):
+        for line_no, text in enumerate(_log_lines(evidence / name), start=1):
+            free[(name, text)].append(line_no)
+    mapping: LineMap = {}
+    for hit in hits:
+        name = names.get(str(hit.source.get("location")))
+        key = (name or "", str(hit.source.get("full_log")))
+        if hit.stream is Stream.WEB and free.get(key):
+            mapping[(RECORDING, hit.line_no)] = (key[0], free[key].popleft())
+    return mapping
+
+
+def root_verdict(truth: dict, result: CorrelationResult,
+                 line_map: LineMap | None = None) -> RootVerdict:
     root_id = truth.get("root_cause_step")
     if root_id is None:
         return RootVerdict.CORRECT if result.root_cause is None else RootVerdict.FALSE_ROOT
@@ -107,15 +155,17 @@ def root_verdict(truth: dict, result: CorrelationResult) -> RootVerdict:
         return RootVerdict.MISSED
     step = next(s for s in truth["steps"] if s["id"] == root_id)
     line = (step["log_file"], step["line_no"])
-    if line in _event_lines(result, result.root_cause.event_id):
+    if line in _event_lines(result, result.root_cause.event_id, line_map):
         return RootVerdict.CORRECT
-    if any(line in _event_lines(result, alt) for alt in result.root_cause.alternative_event_ids):
+    if any(line in _event_lines(result, alt, line_map)
+           for alt in result.root_cause.alternative_event_ids):
         return RootVerdict.ALTERNATIVE
     return RootVerdict.WRONG
 
 
-def score(truth: dict, result: CorrelationResult, runtime_s: float) -> ScenarioScore:
-    cited = _cited_lines(result)
+def score(truth: dict, result: CorrelationResult, runtime_s: float,
+          line_map: LineMap | None = None, adapter: str = "file") -> ScenarioScore:
+    cited = _cited_lines(result, line_map)
     expected = [s for s in truth["steps"] if _expected(s)]
     missed = tuple(s["id"] for s in expected if (s["log_file"], s["line_no"]) not in cited)
     attackers = set(truth["attacker_ips"])
@@ -126,25 +176,45 @@ def score(truth: dict, result: CorrelationResult, runtime_s: float) -> ScenarioS
     return ScenarioScore(
         scenario_id=truth["scenario_id"], split=truth.get("split", "dev"),
         steps_expected=len(expected), steps_found=len(expected) - len(missed),
-        missed_steps=missed, root=root_verdict(truth, result),
+        missed_steps=missed, root=root_verdict(truth, result, line_map),
         attacker_ips=len(attackers), reported_ips=len(result.iocs.ips),
         false_ips=tuple(sorted(set(result.iocs.ips) - attackers)),
         truth_files=len(truth_files), reported_files=len(reported_files),
         false_files=tuple(sorted(reported_files - truth_files)),
         missed_files=tuple(sorted(truth_files - reported_files)),
         rules_expected=rules, missed_rules=tuple(r for r in rules if r not in reported_rules),
-        runtime_s=runtime_s,
+        runtime_s=runtime_s, adapter=adapter,
     )
 
 
-def evaluate_scenario(folder: Path) -> ScenarioScore:
+def available_adapters(folder: Path) -> tuple[str, ...]:
+    return ADAPTERS if (folder / "evidence" / RECORDING).is_file() else ("file",)
+
+
+def evaluate_scenario(folder: Path, adapter: str = "file") -> ScenarioScore:
     truth = json.loads((folder / "ground_truth.json").read_text(encoding="utf-8"))
     inputs, config = scenario_inputs(folder, truth)
+    line_map = None
+    if adapter == "wazuh":
+        inputs = EvidenceInputs(wazuh_recording=folder / "evidence" / RECORDING,
+                                error_format=inputs.error_format,
+                                error_utc_offset=inputs.error_utc_offset,
+                                base_dir=inputs.base_dir)
+        line_map = recording_line_map(folder, truth)
+    elif adapter != "file":
+        raise ValueError(f"unknown adapter: {adapter}")
     start = time.perf_counter()
     evidence = load_evidence(inputs)
     result = correlate(evidence.logs, evidence.files, baseline=evidence.baseline,
                        config=config)
-    return score(truth, result, time.perf_counter() - start)
+    return score(truth, result, time.perf_counter() - start, line_map, adapter)
+
+
+def evaluate_all(folders: list[Path], adapters: tuple[str, ...] = ADAPTERS
+                 ) -> list[ScenarioScore]:
+    """Every folder through every requested adapter it has evidence for."""
+    return [evaluate_scenario(folder, adapter) for folder in folders
+            for adapter in adapters if adapter in available_adapters(folder)]
 
 
 def scenario_folders(benchmark: Path, only: tuple[str, ...] = ()) -> list[Path]:
@@ -188,13 +258,14 @@ def totals(scores: list[ScenarioScore]) -> dict[str, object]:
 
 def markdown_table(scores: list[ScenarioScore], *, runtime: bool = True) -> str:
     """README-ready results. `runtime=False` gives a deterministic table."""
-    head = ["Scenario", "Split", "Step recall", "Root cause", "False IPs", "False files",
+    head = ["Scenario", "Adapter", "Split", "Step recall", "Root cause", "False IPs", "False files",
             "IP precision", "File precision", "Expected rules", "Code line"]
     if runtime:
         head.append("Runtime")
     rows = ["| " + " | ".join(head) + " |", "|" + "---|" * len(head)]
     for s in scores:
-        cells = [s.scenario_id.upper(), s.split, _ratio(s.steps_found, s.steps_expected),
+        cells = [s.scenario_id.upper(), s.adapter, s.split,
+                 _ratio(s.steps_found, s.steps_expected),
                  s.root.value, str(len(s.false_ips)), str(len(s.false_files)),
                  _precision(s.reported_ips, len(s.false_ips)),
                  _precision(s.reported_files, len(s.false_files)),
@@ -204,16 +275,22 @@ def markdown_table(scores: list[ScenarioScore], *, runtime: bool = True) -> str:
             cells.append(f"{s.runtime_s:.2f} s")
         rows.append("| " + " | ".join(cells) + " |")
     lines = ["\n".join(rows), ""]
-    for split in ("dev", "held_out"):
-        group = [s for s in scores if s.split == split]
+    for adapter, split in _groups(scores):
+        group = [s for s in scores if s.split == split and s.adapter == adapter]
         if group:
             t = totals(group)
             recall = f"{t['step_recall']:.2f}" if t["step_recall"] is not None else "-"
-            lines.append(f"**{split}**: {t['passed']}/{t['scenarios']} scenarios fully "
+            lines.append(f"**{adapter}, {split}**: {t['passed']}/{t['scenarios']} "
+                         "scenarios fully "
                          f"correct, step recall {recall}, root cause "
                          f"{t['root_cause_correct']}/{t['scenarios']}, "
                          f"false accusations {t['false_accusations']}.")
     return "\n".join(lines).rstrip() + "\n"
+
+
+def _groups(scores: list[ScenarioScore]) -> list[tuple[str, str]]:
+    return [(a, s) for a in ADAPTERS for s in ("dev", "held_out")
+            if any(x.adapter == a and x.split == s for x in scores)]
 
 
 def details(scores: list[ScenarioScore]) -> list[str]:
@@ -228,21 +305,24 @@ def details(scores: list[ScenarioScore]) -> list[str]:
                     f"missed rules: {', '.join(s.missed_rules)}" if s.missed_rules else ""]
         problems = [p for p in problems if p]
         if problems:
-            out.append(f"{s.scenario_id.upper()}: " + "; ".join(problems))
+            label = s.scenario_id.upper() + ("" if s.adapter == "file" else f" ({s.adapter})")
+            out.append(f"{label}: " + "; ".join(problems))
     return out
 
 
 def to_json(scores: list[ScenarioScore]) -> dict[str, object]:
     def one(s: ScenarioScore) -> dict[str, object]:
         return {
-            "scenario_id": s.scenario_id, "split": s.split, "passed": s.passed,
+            "scenario_id": s.scenario_id, "adapter": s.adapter, "split": s.split,
+            "passed": s.passed,
             "step_recall": s.step_recall, "steps_expected": s.steps_expected,
             "missed_steps": list(s.missed_steps), "root_cause": s.root.value,
             "false_ips": list(s.false_ips), "false_files": list(s.false_files),
             "missed_files": list(s.missed_files), "missed_rules": list(s.missed_rules),
             "runtime_s": round(s.runtime_s, 3),
         }
-    return {"scenarios": [one(s) for s in scores],
-            "totals": {split: totals([s for s in scores if s.split == split])
-                       for split in ("dev", "held_out")
-                       if any(s.split == split for s in scores)}}
+    totals_by: dict[str, dict[str, object]] = defaultdict(dict)
+    for adapter, split in _groups(scores):
+        totals_by[adapter][split] = totals([s for s in scores
+                                            if s.adapter == adapter and s.split == split])
+    return {"scenarios": [one(s) for s in scores], "totals": dict(totals_by)}

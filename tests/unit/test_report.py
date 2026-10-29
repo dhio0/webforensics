@@ -39,7 +39,7 @@ def test_scenario_a_recommends_fixing_the_upload_endpoint():
     recs = {r.key: r.params for r in report.recommendations}
     assert recs["rec.eradication.fix_upload"] == {"path": "/admin/upload.php"}
     assert "rec.eradication.fix_sqli_login" not in recs
-    assert recs["rec.containment.block_ips"] == {"ips": "172.19.0.1"}
+    assert recs["rec.containment.block_ips"] == {"ips": "172.30.0.1"}
     assert _keys(report.summary)[:2] == ["summary.compromise_found", "summary.root_cause"]
     assert report.summary[1].params["vuln_class"] == "unrestricted_file_upload"
 

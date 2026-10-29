@@ -1,43 +1,43 @@
 # Laporan Insiden Website
 
-_WF-A430D528E5 · 2026-10-28 09:00:00 WIB_
+_WF-16040EE35A · 2026-10-28 09:00:00 WIB_
 
 ## 1. Ringkasan
 
-- Ditemukan 1 file mencurigakan yang terkait dengan 1 alamat IP. Aktivitas pertama aktor pada 2026-10-27 21:15:58 WIB, terakhir pada 2026-10-27 21:16:08 WIB.
-- Titik masuk yang paling mungkin: unrestricted file upload (upload tanpa validasi) lewat POST /admin/upload.php pada 2026-10-27 21:16:06 WIB (keyakinan sedang).
+- Ditemukan 1 file mencurigakan yang terkait dengan 1 alamat IP. Aktivitas pertama aktor pada 2026-10-29 12:16:08 WIB, terakhir pada 2026-10-29 12:16:18 WIB.
+- Titik masuk yang paling mungkin: unrestricted file upload (upload tanpa validasi) lewat POST /admin/upload.php pada 2026-10-29 12:16:16 WIB (keyakinan sedang).
 
 ### Alur serangan
 
-- \#3 2026-10-27 21:16:06 WIB: Upload yang menulis uploads/lab-marker.php tanpa login sebelumnya: POST /admin/upload.php → 200.
-- \#4 2026-10-27 21:16:06 WIB: File uploads/lab-marker.php dibuat (SHA-256 52d31ac74301…).
-- \#5 2026-10-27 21:16:08 WIB: File uploads/lab-marker.php diakses: GET /uploads/lab-marker.php → 200.
+- \#3 2026-10-29 12:16:16 WIB: Upload yang menulis uploads/lab-marker.php tanpa login sebelumnya: POST /admin/upload.php → 200.
+- \#4 2026-10-29 12:16:16 WIB: File uploads/lab-marker.php dibuat (SHA-256 52d31ac74301…).
+- \#5 2026-10-29 12:16:18 WIB: File uploads/lab-marker.php diakses: GET /uploads/lab-marker.php → 200.
 
 ## 2. Informasi Kasus
 
-- **ID kasus:** WF-A430D528E5
+- **ID kasus:** WF-16040EE35A
 - **Analis:** -
-- **Host target:** 682197025b3a
+- **Host target:** bf89ed992aef
 - **Laporan dibuat:** 2026-10-28 09:00:00 WIB
 - **Zona waktu laporan:** WIB (UTC+07:00)
 
 ### Cakupan bukti
 
-- **Periode access log:** 2026-10-27 21:15:58 WIB s.d. 2026-10-27 21:16:08 WIB
+- **Periode access log:** 2026-10-29 12:16:08 WIB s.d. 2026-10-29 12:16:18 WIB
 - **Access log:** 6 baris terbaca
-- **Webroot:** 9 file
-- **Bukti dikumpulkan:** 2026-10-27 21:16:13 WIB
+- **Webroot:** 11 file
+- **Bukti dikumpulkan:** 2026-10-29 12:16:25 WIB
 - **Baseline:** tidak ada
 
 ## 3. Kronologi Serangan
 
 | # | Waktu | Dasar waktu | Fase (ATT\&CK) | Aktor | Kejadian | Keyakinan | Bukti |
 |---|---|---|---|---|---|---|---|
-| #1 | 2026-10-27 21:15:58 WIB | log | - | 172.19.0.1 | Request pertama aktor ini di log: GET / → 200. | tinggi | access.log:1 |
-| #2 | 2026-10-27 21:16:04 WIB | log | Initial Access (akses awal) · T1190 | 172.19.0.1 | Percobaan eksploitasi: GET /product.php → 200 (SQL injection (tautologi)). | sedang | access.log:4 |
-| #3 | 2026-10-27 21:16:06 WIB | log | Initial Access (akses awal) · T1190 | 172.19.0.1 | **AKAR MASALAH: Upload yang menulis uploads/lab-marker.php tanpa login sebelumnya: POST /admin/upload.php → 200.** | tinggi (sebagai titik masuk: sedang) | access.log:5, uploads/lab-marker.php @52d31ac74301 |
-| #4 | 2026-10-27 21:16:06 WIB | btime | Persistence (bertahan) · T1505.003 | - | File uploads/lab-marker.php dibuat (SHA-256 52d31ac74301…). | tinggi | uploads/lab-marker.php @52d31ac74301 |
-| #5 | 2026-10-27 21:16:08 WIB | log | Persistence (bertahan) · T1505.003 | 172.19.0.1 | File uploads/lab-marker.php diakses: GET /uploads/lab-marker.php → 200. | tinggi | access.log:6 |
+| #1 | 2026-10-29 12:16:08 WIB | log | - | 172.30.0.1 | Request pertama aktor ini di log: GET / → 200. | tinggi | access.log:1 |
+| #2 | 2026-10-29 12:16:14 WIB | log | Initial Access (akses awal) · T1190 | 172.30.0.1 | Percobaan eksploitasi: GET /product.php → 200 (SQL injection (tautologi)). | sedang | access.log:4 |
+| #3 | 2026-10-29 12:16:16 WIB | log | Initial Access (akses awal) · T1190 | 172.30.0.1 | **AKAR MASALAH: Upload yang menulis uploads/lab-marker.php tanpa login sebelumnya: POST /admin/upload.php → 200.** | tinggi (sebagai titik masuk: sedang) | access.log:5, uploads/lab-marker.php @52d31ac74301 |
+| #4 | 2026-10-29 12:16:16 WIB | btime | Persistence (bertahan) · T1505.003 | - | File uploads/lab-marker.php dibuat (SHA-256 52d31ac74301…). | tinggi | uploads/lab-marker.php @52d31ac74301 |
+| #5 | 2026-10-29 12:16:18 WIB | log | Persistence (bertahan) · T1505.003 | 172.30.0.1 | File uploads/lab-marker.php diakses: GET /uploads/lab-marker.php → 200. | tinggi | access.log:6 |
 
 ### Catatan keyakinan
 
@@ -54,7 +54,7 @@ _WF-A430D528E5 · 2026-10-28 09:00:00 WIB_
 ### Baris log asli
 
 ```
-172.19.0.1 - - [27/Oct/2026:14:16:06 +0000] "POST /admin/upload.php HTTP/1.1" 200 44 "-" "webforensics-lab/1.0 scenario-a"
+172.30.0.1 - - [29/Oct/2026:05:16:16 +0000] "POST /admin/upload.php HTTP/1.1" 200 44 "-" "webforensics-lab/1.0 scenario-a" "-"
 ```
 
 ### Alasan
@@ -72,7 +72,7 @@ _WF-A430D528E5 · 2026-10-28 09:00:00 WIB_
 - **SHA-256:** 52d31ac74301cc8fd601913c9cc75e1bc0b2f2ffd26fe71b9864200eda78865d
 - **Ukuran:** 24 byte
 - **Status baseline:** tidak diketahui (tanpa baseline)
-- **Timestamp:** btime 2026-10-27 21:16:06 WIB; ctime 2026-10-27 21:16:06 WIB; mtime 2026-10-27 21:16:06 WIB
+- **Timestamp:** btime 2026-10-29 12:16:16 WIB; ctime 2026-10-29 12:16:16 WIB; mtime 2026-10-29 12:16:16 WIB
 - **Sumber timestamp:** manifest collect.sh
 - **URL:** /uploads/lab-marker.php
 
@@ -89,7 +89,7 @@ Tidak ada.
 ### Alamat IP
 
 ```
-172.19.0.1
+172.30.0.1
 ```
 
 ### User agent
@@ -132,7 +132,7 @@ Tidak ada.
 
 - Amankan bukti dulu: salin log dan webroot beserta hash-nya sebelum mengubah apa pun di server.
 - Batasi akses ke situs (mode maintenance atau firewall) sampai file berbahaya dihapus.
-- Blokir sementara IP berikut: 172.19.0.1.
+- Blokir sementara IP berikut: 172.30.0.1.
 
 ### Pembersihan (eradication)
 
@@ -164,11 +164,11 @@ Tidak ada.
 
 | Rujukan | Kutipan |
 |---|---|
-| access.log:1 | 172.19.0.1 - - \[27/Oct/2026:14:15:58 +0000\] "GET / HTTP/1.1" 200 298 "-" "webforensics-lab/1.0 scenario-a" |
-| access.log:4 | 172.19.0.1 - - \[27/Oct/2026:14:16:04 +0000\] "GET /product.php?id=1+OR+1%3D1 HTTP/1.1" 200 223 "-" "webforensics-lab/1.0 scenario-a" |
-| access.log:5 | 172.19.0.1 - - \[27/Oct/2026:14:16:06 +0000\] "POST /admin/upload.php HTTP/1.1" 200 44 "-" "webforensics-lab/1.0 scenario-a" |
+| access.log:1 | 172.30.0.1 - - \[29/Oct/2026:05:16:08 +0000\] "GET / HTTP/1.1" 200 298 "-" "webforensics-lab/1.0 scenario-a" "-" |
+| access.log:4 | 172.30.0.1 - - \[29/Oct/2026:05:16:14 +0000\] "GET /product.php?id=1+OR+1%3D1 HTTP/1.1" 200 223 "-" "webforensics-lab/1.0 scenario-a" "-" |
+| access.log:5 | 172.30.0.1 - - \[29/Oct/2026:05:16:16 +0000\] "POST /admin/upload.php HTTP/1.1" 200 44 "-" "webforensics-lab/1.0 scenario-a" "-" |
 | uploads/lab-marker.php @52d31ac74301 | SHA-256 52d31ac74301cc8fd601913c9cc75e1bc0b2f2ffd26fe71b9864200eda78865d |
-| access.log:6 | 172.19.0.1 - - \[27/Oct/2026:14:16:08 +0000\] "GET /uploads/lab-marker.php HTTP/1.1" 200 35 "-" "webforensics-lab/1.0 scenario-a" |
+| access.log:6 | 172.30.0.1 - - \[29/Oct/2026:05:16:18 +0000\] "GET /uploads/lab-marker.php HTTP/1.1" 200 35 "-" "webforensics-lab/1.0 scenario-a" "-" |
 
 ## Lampiran B. Reproduksibilitas
 
@@ -180,7 +180,7 @@ Tidak ada.
 
 | File | SHA-256 | Ukuran |
 |---|---|---|
-| access.log | b940bde78ed4f7cbda74f195c2070b460126f9e08496a70977b708230a741800 | 736 byte |
-| manifest.tsv | 06e4d700167832ebe286d5c25eb6efc3c8fa3a9afb97bdd714ddd0095b4eca20 | 1656 byte |
+| access.log | 27d5072520346aa778ef58b90d89f073afe4541ca6bf382183c60cc460138d17 | 760 byte |
+| manifest.tsv | 917ceb04335113a0c83d87337185c8f126f9fed19aa37970fff53f81aa22feec | 1973 byte |
 
 Input, versi, dan konfigurasi yang sama menghasilkan laporan yang sama persis.

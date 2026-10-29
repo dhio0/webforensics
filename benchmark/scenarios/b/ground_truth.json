@@ -8,7 +8,7 @@
     {"id": "benign_client_two", "category": "benign_request", "mitre": [], "log_file": "access.log", "line_no": 3, "is_root_cause": false},
     {"id": "post_sqli_login_bypass", "category": "successful_login_bypass", "mitre": ["T1190"], "log_file": "access.log", "line_no": 4, "is_root_cause": true},
     {"id": "authenticated_marker_upload", "category": "authenticated_upload", "mitre": [], "log_file": "access.log", "line_no": 5, "is_root_cause": false},
-    {"id": "upload_error_log_message", "category": "error_log_upload_message", "mitre": [], "log_file": "error.log", "line_no": 2, "is_root_cause": false},
+    {"id": "upload_error_log_message", "category": "error_log_upload_message", "mitre": [], "log_file": "error.log", "line_no": 1, "is_root_cause": false},
     {"id": "request_marker_path", "category": "marker_invocation", "mitre": [], "log_file": "access.log", "line_no": 6, "is_root_cause": false}
   ],
   "files": [

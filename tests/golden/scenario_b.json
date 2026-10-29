@@ -1,23 +1,23 @@
 {
   "format": "webforensics-report/1",
   "case": {
-    "case_id": "WF-EA5033B89A",
+    "case_id": "WF-6A5510F7FF",
     "title": "Laporan Insiden Website",
     "analyst": null,
-    "target_host": "9f61b9407738"
+    "target_host": "65789fc488e1"
   },
   "scope": {
-    "log_first": "2026-10-28T03:48:52Z",
-    "log_last": "2026-10-28T03:49:02Z",
+    "log_first": "2026-10-29T05:17:05Z",
+    "log_last": "2026-10-29T05:17:15Z",
     "log_events": 6,
     "log_unparsed": 0,
-    "error_events": 2,
+    "error_events": 1,
     "error_unparsed": 0,
     "files": 11,
     "files_rejected": 0,
     "baseline_files": null,
     "file_adapter": "file",
-    "collected_at": "2026-10-28T03:49:02Z"
+    "collected_at": "2026-10-29T05:17:20Z"
   },
   "run": {
     "tool_version": "0.1.0",
@@ -25,18 +25,18 @@
     "inputs": [
       {
         "path": "access.log",
-        "sha256": "d96ea214ae16b239c4fb8d58dab198e0c4423958638ef9c58ff8a5d85209e206",
+        "sha256": "102e3a6aad3d5ae5636cb12e64a610bab1bf05c5fa32cfcb3301dfa0ef2b58b4",
         "size": 822
       },
       {
         "path": "error.log",
-        "sha256": "6c388822fb88b8a4085db85243cbc9435647aa7b39b248d59e753b722b1bdbf5",
-        "size": 336
+        "sha256": "d0dea3926a1b81cb0f7c940f4fc9d80895d03d24cf206074e617d5ad29f8d9e8",
+        "size": 277
       },
       {
         "path": "manifest.tsv",
-        "sha256": "8bf9eb254df011c6ab69854b10ca02be21290ea93e01dfd7623b4c8b5330e56d",
-        "size": 1976
+        "sha256": "d17f19e38c24ecb6c13aade8881ba5ec3091a871f76d57d5a417bffd33ae6de4",
+        "size": 1987
       }
     ],
     "config_sha256": "a327ad9cd4b7b387c7dbfe4a49da4ceac364dddc5291bf29aeadbcf8722e1dda",
@@ -46,7 +46,7 @@
     "timeline": [
       {
         "event_id": "8cdb032e09220e70",
-        "ts": "2026-10-28T03:48:52Z",
+        "ts": "2026-10-29T05:17:05Z",
         "ts_basis": "log",
         "mitre_tactic": null,
         "mitre_technique": null,
@@ -65,7 +65,7 @@
             "source": "access.log",
             "line_no": 1,
             "sha256": null,
-            "excerpt": "172.30.0.3 - - [28/Oct/2026:03:48:52 +0000] \"POST /admin/login.php HTTP/1.0\" 401 343 \"-\" \"webforensics-lab/1.0 scenario-b\" \"192.0.2.10\""
+            "excerpt": "172.30.0.3 - - [29/Oct/2026:05:17:05 +0000] \"POST /admin/login.php HTTP/1.0\" 401 343 \"-\" \"webforensics-lab/1.0 scenario-b\" \"192.0.2.10\""
           }
         ],
         "confidence": "high",
@@ -82,7 +82,7 @@
       },
       {
         "event_id": "35cfbff835127c44",
-        "ts": "2026-10-28T03:48:58Z",
+        "ts": "2026-10-29T05:17:11Z",
         "ts_basis": "log",
         "mitre_tactic": "Initial Access",
         "mitre_technique": "T1078",
@@ -102,7 +102,7 @@
             "source": "access.log",
             "line_no": 4,
             "sha256": null,
-            "excerpt": "172.30.0.3 - - [28/Oct/2026:03:48:58 +0000] \"POST /admin/login.php HTTP/1.0\" 200 347 \"-\" \"webforensics-lab/1.0 scenario-b\" \"192.0.2.10\""
+            "excerpt": "172.30.0.3 - - [29/Oct/2026:05:17:11 +0000] \"POST /admin/login.php HTTP/1.0\" 200 347 \"-\" \"webforensics-lab/1.0 scenario-b\" \"192.0.2.10\""
           }
         ],
         "confidence": "low",
@@ -125,7 +125,7 @@
       },
       {
         "event_id": "7d4bba0373ee495f",
-        "ts": "2026-10-28T03:49:00Z",
+        "ts": "2026-10-29T05:17:13Z",
         "ts_basis": "log",
         "mitre_tactic": "Persistence",
         "mitre_technique": "T1505.003",
@@ -145,7 +145,7 @@
             "source": "access.log",
             "line_no": 5,
             "sha256": null,
-            "excerpt": "172.30.0.3 - - [28/Oct/2026:03:49:00 +0000] \"POST /admin/auth_upload.php HTTP/1.0\" 200 40 \"-\" \"webforensics-lab/1.0 scenario-b\" \"192.0.2.10\""
+            "excerpt": "172.30.0.3 - - [29/Oct/2026:05:17:13 +0000] \"POST /admin/auth_upload.php HTTP/1.0\" 200 40 \"-\" \"webforensics-lab/1.0 scenario-b\" \"192.0.2.10\""
           },
           {
             "kind": "file",
@@ -157,9 +157,9 @@
           {
             "kind": "log_line",
             "source": "error.log",
-            "line_no": 2,
+            "line_no": 1,
             "sha256": null,
-            "excerpt": "2026/10/28 03:49:00 [error] 25#25: *9 FastCGI sent in stderr: \"PHP message: lab upload stored\" while reading response header from upstream, client: 172.30.0.3, server: _, request: \"POST /admin/auth_upload.php HTTP/1.0\", upstream: \"fastcgi://172.19.0.3:9000\", host: \"127.0.0.1\""
+            "excerpt": "2026/10/29 05:17:13 [error] 26#26: *9 FastCGI sent in stderr: \"PHP message: lab upload stored\" while reading response header from upstream, client: 172.30.0.3, server: _, request: \"POST /admin/auth_upload.php HTTP/1.0\", upstream: \"fastcgi://172.21.0.3:9000\", host: \"127.0.0.1\""
           }
         ],
         "confidence": "high",
@@ -180,7 +180,7 @@
             "key": "error_log.corroborates",
             "params": {
               "source": "error.log",
-              "lines": "2",
+              "lines": "1",
               "offset": "+0000"
             }
           }
@@ -190,7 +190,7 @@
       },
       {
         "event_id": "dc771c27c58a00d8",
-        "ts": "2026-10-28T03:49:00Z",
+        "ts": "2026-10-29T05:17:13Z",
         "ts_basis": "btime",
         "mitre_tactic": "Persistence",
         "mitre_technique": "T1505.003",
@@ -227,7 +227,7 @@
       },
       {
         "event_id": "44deedc1659efc9f",
-        "ts": "2026-10-28T03:49:02Z",
+        "ts": "2026-10-29T05:17:15Z",
         "ts_basis": "log",
         "mitre_tactic": "Persistence",
         "mitre_technique": "T1505.003",
@@ -247,7 +247,7 @@
             "source": "access.log",
             "line_no": 6,
             "sha256": null,
-            "excerpt": "172.30.0.3 - - [28/Oct/2026:03:49:02 +0000] \"GET /uploads/scenario-b-marker.php HTTP/1.0\" 200 26 \"-\" \"webforensics-lab/1.0 scenario-b\" \"192.0.2.10\""
+            "excerpt": "172.30.0.3 - - [29/Oct/2026:05:17:15 +0000] \"GET /uploads/scenario-b-marker.php HTTP/1.0\" 200 26 \"-\" \"webforensics-lab/1.0 scenario-b\" \"192.0.2.10\""
           }
         ],
         "confidence": "high",
@@ -303,7 +303,7 @@
             "source": "access.log",
             "line_no": 6,
             "sha256": null,
-            "excerpt": "172.30.0.3 - - [28/Oct/2026:03:49:02 +0000] \"GET /uploads/scenario-b-marker.php HTTP/1.0\" 200 26 \"-\" \"webforensics-lab/1.0 scenario-b\" \"192.0.2.10\""
+            "excerpt": "172.30.0.3 - - [29/Oct/2026:05:17:15 +0000] \"GET /uploads/scenario-b-marker.php HTTP/1.0\" 200 26 \"-\" \"webforensics-lab/1.0 scenario-b\" \"192.0.2.10\""
           }
         ],
         "mitre": [
@@ -345,7 +345,7 @@
         "evidence_id": "2e95bd82f649077b",
         "adapter": "file",
         "source": "manifest.tsv:19",
-        "collected_at": "2026-10-28T03:49:02Z",
+        "collected_at": "2026-10-29T05:17:20Z",
         "path": "uploads/scenario-b-marker.php",
         "file_type": "file",
         "url_paths": [
@@ -355,11 +355,11 @@
         "size": 26,
         "mode": 420,
         "uid": 82,
-        "inode": 54890,
-        "atime": "2026-10-28T03:49:02Z",
-        "mtime": "2026-10-28T03:49:00Z",
-        "ctime": "2026-10-28T03:49:00Z",
-        "btime": "2026-10-28T03:49:00Z",
+        "inode": 206072,
+        "atime": "2026-10-29T05:17:15Z",
+        "mtime": "2026-10-29T05:17:13Z",
+        "ctime": "2026-10-29T05:17:13Z",
+        "btime": "2026-10-29T05:17:13Z",
         "timestamp_source": "manifest",
         "baseline_status": "unknown",
         "fim": []
@@ -406,8 +406,8 @@
       "params": {
         "files": "1",
         "actors": "1",
-        "first_at": "2026-10-28T03:48:52+00:00",
-        "last_at": "2026-10-28T03:49:02+00:00"
+        "first_at": "2026-10-29T05:17:05+00:00",
+        "last_at": "2026-10-29T05:17:15+00:00"
       }
     },
     {
@@ -416,7 +416,7 @@
         "vuln_class": "",
         "method": "POST",
         "path": "/admin/login.php",
-        "at": "2026-10-28T03:48:58+00:00",
+        "at": "2026-10-29T05:17:11+00:00",
         "confidence": "low"
       }
     }

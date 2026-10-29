@@ -298,11 +298,19 @@ def eval_command(
     no_runtime: Annotated[
         bool, typer.Option(help="Leave out runtime, so the table is deterministic.")
     ] = False,
+    adapter: Annotated[
+        list[str] | None,
+        typer.Option(help="file and/or wazuh (default: every adapter a scenario has "
+                          "evidence for)."),
+    ] = None,
 ) -> None:
     """Score the analyzer against the benchmark ground truth."""
     try:
+        unknown = sorted(set(adapter or ()) - set(evaluate.ADAPTERS))
+        if unknown:
+            raise ValueError(f"unknown --adapter {', '.join(unknown)} (use file, wazuh)")
         folders = evaluate.scenario_folders(benchmark, tuple(scenario or ()))
-        scores = [evaluate.evaluate_scenario(folder) for folder in folders]
+        scores = evaluate.evaluate_all(folders, tuple(adapter or evaluate.ADAPTERS))
     except (FileNotFoundError, ManifestError, ValueError, KeyError) as exc:
         typer.echo(_ascii(f"error: {exc}"), err=True)
         raise typer.Exit(code=2) from exc

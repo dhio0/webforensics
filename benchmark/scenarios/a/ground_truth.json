@@ -1,7 +1,7 @@
 {
   "scenario_id": "a",
   "description": "GET-SQLi probe is a distractor; the unauthenticated upload is the root cause.",
-  "attacker_ips": ["172.19.0.1"],
+  "attacker_ips": ["172.30.0.1"],
   "steps": [
     {
       "id": "browse_home",
@@ -63,6 +63,6 @@
   "vulnerable_code": {
     "file": "lab/app/admin/upload.php",
     "line": 5,
-    "sha256": "efca480d475f253e0c148409493cc679d696cbd7801bc87097086d072360edb7"
+    "sha256": "75f5b1eb5fe26e864bbeb696a01cd75d96d0fb7328ce193c5f8e5ba322e6ee59"
   }
 }

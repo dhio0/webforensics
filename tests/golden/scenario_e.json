@@ -1,23 +1,23 @@
 {
   "format": "webforensics-report/1",
   "case": {
-    "case_id": "WF-2BBC40C4D0",
+    "case_id": "WF-54BD23F4D5",
     "title": "Laporan Insiden Website",
     "analyst": null,
-    "target_host": "32b11f0f40dc"
+    "target_host": "705740dbd2a2"
   },
   "scope": {
-    "log_first": "2026-10-28T03:50:20Z",
-    "log_last": "2026-10-28T03:50:34Z",
+    "log_first": "2026-10-29T05:18:53Z",
+    "log_last": "2026-10-29T05:19:08Z",
     "log_events": 7,
     "log_unparsed": 0,
-    "error_events": 2,
+    "error_events": 1,
     "error_unparsed": 0,
     "files": 11,
     "files_rejected": 0,
     "baseline_files": 10,
     "file_adapter": "file",
-    "collected_at": "2026-10-28T03:50:35Z"
+    "collected_at": "2026-10-29T05:19:16Z"
   },
   "run": {
     "tool_version": "0.1.0",
@@ -25,23 +25,23 @@
     "inputs": [
       {
         "path": "access.log",
-        "sha256": "404a4d45f39241800925a5deb03cebe97d7c6f1bbd386d5b0f92aa2a34fd4e14",
+        "sha256": "e956adb21584deab8fb56595f181fc6aab9e366242610ed6d303411693a4a3bf",
         "size": 944
       },
       {
         "path": "baseline.tsv",
-        "sha256": "bd64ad6fe3cb67540f28b048066dd31204602e070801080b0d41510b779c48c6",
-        "size": 1790
+        "sha256": "0f2acc4f2ecd64fb107f3f6a7808420f6953dbd5e5f23c201efa8f14818d9ca3",
+        "size": 1800
       },
       {
         "path": "error.log",
-        "sha256": "c6c3e30f63145d67b567a9043bc4654763cb28c1d8c74a8f213c53d2fec0c7ff",
-        "size": 331
+        "sha256": "d2b6c13f5b53ecf4d3c68e58c43aeb79f0d6da53f01bbc44238d915283717d29",
+        "size": 272
       },
       {
         "path": "manifest.tsv",
-        "sha256": "47a66c649ffd55561be2b46a339e5a6e6d733e872d459d1adcc379a9d0d13c9f",
-        "size": 1976
+        "sha256": "f7b3245e98d554bd0c951f5a615f3f6cf6bfcbdb6a50d1980dc0050619ce8af1",
+        "size": 1987
       }
     ],
     "config_sha256": "a327ad9cd4b7b387c7dbfe4a49da4ceac364dddc5291bf29aeadbcf8722e1dda",
@@ -51,7 +51,7 @@
     "timeline": [
       {
         "event_id": "4c0ec5df74cebedf",
-        "ts": "2026-10-28T03:50:26Z",
+        "ts": "2026-10-29T05:18:59Z",
         "ts_basis": "log",
         "mitre_tactic": "Initial Access",
         "mitre_technique": "T1190",
@@ -72,7 +72,7 @@
             "source": "access.log",
             "line_no": 4,
             "sha256": null,
-            "excerpt": "172.30.0.3 - - [28/Oct/2026:03:50:26 +0000] \"POST /admin/upload.php HTTP/1.0\" 200 40 \"-\" \"webforensics-lab/1.0 scenario-e\" \"192.0.2.31\""
+            "excerpt": "172.30.0.3 - - [29/Oct/2026:05:18:59 +0000] \"POST /admin/upload.php HTTP/1.0\" 200 40 \"-\" \"webforensics-lab/1.0 scenario-e\" \"192.0.2.31\""
           },
           {
             "kind": "file",
@@ -84,9 +84,9 @@
           {
             "kind": "log_line",
             "source": "error.log",
-            "line_no": 2,
+            "line_no": 1,
             "sha256": null,
-            "excerpt": "2026/10/28 03:50:26 [error] 24#24: *7 FastCGI sent in stderr: \"PHP message: lab upload stored\" while reading response header from upstream, client: 172.30.0.3, server: _, request: \"POST /admin/upload.php HTTP/1.0\", upstream: \"fastcgi://172.19.0.3:9000\", host: \"127.0.0.1\""
+            "excerpt": "2026/10/29 05:18:59 [error] 24#24: *7 FastCGI sent in stderr: \"PHP message: lab upload stored\" while reading response header from upstream, client: 172.30.0.3, server: _, request: \"POST /admin/upload.php HTTP/1.0\", upstream: \"fastcgi://172.21.0.3:9000\", host: \"127.0.0.1\""
           }
         ],
         "confidence": "high",
@@ -107,7 +107,7 @@
             "key": "error_log.corroborates",
             "params": {
               "source": "error.log",
-              "lines": "2",
+              "lines": "1",
               "offset": "+0000"
             }
           }
@@ -117,7 +117,7 @@
       },
       {
         "event_id": "82b2651e1970f168",
-        "ts": "2026-10-28T03:50:26Z",
+        "ts": "2026-10-29T05:18:59Z",
         "ts_basis": "btime",
         "mitre_tactic": "Persistence",
         "mitre_technique": "T1505.003",
@@ -155,7 +155,7 @@
       },
       {
         "event_id": "52cb940013ac86ee",
-        "ts": "2026-10-28T03:50:28Z",
+        "ts": "2026-10-29T05:19:01Z",
         "ts_basis": "log",
         "mitre_tactic": "Persistence",
         "mitre_technique": "T1505.003",
@@ -175,7 +175,7 @@
             "source": "access.log",
             "line_no": 5,
             "sha256": null,
-            "excerpt": "172.30.0.3 - - [28/Oct/2026:03:50:28 +0000] \"GET /uploads/scenario-e-marker.php HTTP/1.0\" 200 26 \"-\" \"webforensics-lab/1.0 scenario-e\" \"192.0.2.31\""
+            "excerpt": "172.30.0.3 - - [29/Oct/2026:05:19:01 +0000] \"GET /uploads/scenario-e-marker.php HTTP/1.0\" 200 26 \"-\" \"webforensics-lab/1.0 scenario-e\" \"192.0.2.31\""
           }
         ],
         "confidence": "high",
@@ -187,7 +187,7 @@
       },
       {
         "event_id": "80f304e9d8403aa5",
-        "ts": "2026-10-28T03:50:30Z",
+        "ts": "2026-10-29T05:19:03Z",
         "ts_basis": "ctime",
         "mitre_tactic": "Defense Evasion",
         "mitre_technique": "T1070.006",
@@ -197,7 +197,7 @@
           "params": {
             "path": "uploads/scenario-e-marker.php",
             "mtime": "2024-01-15T03:00:00+00:00",
-            "btime": "2026-10-28T03:50:26+00:00"
+            "btime": "2026-10-29T05:18:59+00:00"
           }
         },
         "citations": [
@@ -238,7 +238,7 @@
           "key": "error_log.corroborates",
           "params": {
             "source": "error.log",
-            "lines": "2",
+            "lines": "1",
             "offset": "+0000"
           }
         },
@@ -278,7 +278,7 @@
             "source": "access.log",
             "line_no": 5,
             "sha256": null,
-            "excerpt": "172.30.0.3 - - [28/Oct/2026:03:50:28 +0000] \"GET /uploads/scenario-e-marker.php HTTP/1.0\" 200 26 \"-\" \"webforensics-lab/1.0 scenario-e\" \"192.0.2.31\""
+            "excerpt": "172.30.0.3 - - [29/Oct/2026:05:19:01 +0000] \"GET /uploads/scenario-e-marker.php HTTP/1.0\" 200 26 \"-\" \"webforensics-lab/1.0 scenario-e\" \"192.0.2.31\""
           }
         ],
         "mitre": [
@@ -327,7 +327,7 @@
             "key": "timestomp.mtime_before_btime",
             "params": {
               "mtime": "2024-01-15T03:00:00+00:00",
-              "btime": "2026-10-28T03:50:26+00:00"
+              "btime": "2026-10-29T05:18:59+00:00"
             }
           }
         ],
@@ -350,7 +350,7 @@
         "evidence_id": "2d5635d0ce82fb37",
         "adapter": "file",
         "source": "manifest.tsv:19",
-        "collected_at": "2026-10-28T03:50:35Z",
+        "collected_at": "2026-10-29T05:19:16Z",
         "path": "uploads/scenario-e-marker.php",
         "file_type": "file",
         "url_paths": [
@@ -360,11 +360,11 @@
         "size": 26,
         "mode": 420,
         "uid": 82,
-        "inode": 54892,
-        "atime": "2024-01-15T03:00:00Z",
+        "inode": 207884,
+        "atime": "2026-10-29T05:19:16Z",
         "mtime": "2024-01-15T03:00:00Z",
-        "ctime": "2026-10-28T03:50:30Z",
-        "btime": "2026-10-28T03:50:26Z",
+        "ctime": "2026-10-29T05:19:03Z",
+        "btime": "2026-10-29T05:18:59Z",
         "timestamp_source": "manifest",
         "baseline_status": "new",
         "fim": []
@@ -398,8 +398,8 @@
       "params": {
         "files": "1",
         "actors": "1",
-        "first_at": "2026-10-28T03:50:26+00:00",
-        "last_at": "2026-10-28T03:50:28+00:00"
+        "first_at": "2026-10-29T05:18:59+00:00",
+        "last_at": "2026-10-29T05:19:01+00:00"
       }
     },
     {
@@ -408,7 +408,7 @@
         "vuln_class": "unrestricted_file_upload",
         "method": "POST",
         "path": "/admin/upload.php",
-        "at": "2026-10-28T03:50:26+00:00",
+        "at": "2026-10-29T05:18:59+00:00",
         "confidence": "medium"
       }
     }

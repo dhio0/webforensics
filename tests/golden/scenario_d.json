@@ -1,23 +1,23 @@
 {
   "format": "webforensics-report/1",
   "case": {
-    "case_id": "WF-5D640831B0",
+    "case_id": "WF-72CCDBC9E8",
     "title": "Laporan Insiden Website",
     "analyst": null,
-    "target_host": "b5838e084553"
+    "target_host": "f65084d6792d"
   },
   "scope": {
-    "log_first": "2026-10-28T03:49:31Z",
-    "log_last": "2026-10-28T03:49:52Z",
+    "log_first": "2026-10-29T05:17:52Z",
+    "log_last": "2026-10-29T05:18:12Z",
     "log_events": 32,
     "log_unparsed": 0,
-    "error_events": 2,
+    "error_events": 1,
     "error_unparsed": 0,
     "files": 12,
     "files_rejected": 0,
     "baseline_files": 10,
     "file_adapter": "file",
-    "collected_at": "2026-10-28T03:49:52Z"
+    "collected_at": "2026-10-29T05:18:21Z"
   },
   "run": {
     "tool_version": "0.1.0",
@@ -25,23 +25,23 @@
     "inputs": [
       {
         "path": "access.log",
-        "sha256": "65a9e7f85e7eaa41f16bdb6619a77f388982635ce273b03a73d8ead62d756b52",
+        "sha256": "f0dee937d86e560deba2187cf96014746cdbb6d508279fcd4453f0a48b5b0ac5",
         "size": 4463
       },
       {
         "path": "baseline.tsv",
-        "sha256": "6b9c25cdd13d074aba706b6c74f28a19d5d54ad09575f333e315af988d1cc6dd",
-        "size": 1790
+        "sha256": "288f097edd6219d19138f4c6d95a041d326347d7c110cffae710cad264b78806",
+        "size": 1800
       },
       {
         "path": "error.log",
-        "sha256": "c5c1ba27c651faad6b8bbdca29eaa8361c4030a313b40a14731fc521e35fa616",
-        "size": 337
+        "sha256": "824cd382edd052df726aad18483fbed34fabb0b746d986f6b5cbf0e6d767de6d",
+        "size": 278
       },
       {
         "path": "manifest.tsv",
-        "sha256": "b88b773f5e4bb390e32b9a1d934b3f5d06f2a28d15d7ef25aa2537b02997d9e6",
-        "size": 2124
+        "sha256": "70074d637bf6480c5f269c329bb7552bd5b3acf54f89f37037bc3f3aa5e13269",
+        "size": 2136
       }
     ],
     "config_sha256": "a327ad9cd4b7b387c7dbfe4a49da4ceac364dddc5291bf29aeadbcf8722e1dda",
@@ -139,14 +139,14 @@
           2
         ]
       ],
-      "first": "2026-10-28T03:49:33Z",
-      "last": "2026-10-28T03:49:44Z",
+      "first": "2026-10-29T05:17:54Z",
+      "last": "2026-10-29T05:18:04Z",
       "example": {
         "kind": "log_line",
         "source": "access.log",
         "line_no": 21,
         "sha256": null,
-        "excerpt": "172.30.0.3 - - [28/Oct/2026:03:49:33 +0000] \"GET /product.php?id=1+OR+1%3D1 HTTP/1.0\" 200 212 \"-\" \"webforensics-lab/1.0 scenario-d\" \"192.0.2.21\""
+        "excerpt": "172.30.0.3 - - [29/Oct/2026:05:17:54 +0000] \"GET /product.php?id=1+OR+1%3D1 HTTP/1.0\" 200 212 \"-\" \"webforensics-lab/1.0 scenario-d\" \"192.0.2.21\""
       }
     },
     {
@@ -163,14 +163,14 @@
           1
         ]
       ],
-      "first": "2026-10-28T03:49:37Z",
-      "last": "2026-10-28T03:49:44Z",
+      "first": "2026-10-29T05:17:58Z",
+      "last": "2026-10-29T05:18:04Z",
       "example": {
         "kind": "log_line",
         "source": "access.log",
         "line_no": 23,
         "sha256": null,
-        "excerpt": "172.30.0.3 - - [28/Oct/2026:03:49:37 +0000] \"GET /admin/login.php?username=admin%27+OR+%271%27%3D%271%27+--+&password= HTTP/1.0\" 200 347 \"-\" \"webforensics-lab/1.0 scenario-d\" \"192.0.2.21\""
+        "excerpt": "172.30.0.3 - - [29/Oct/2026:05:17:58 +0000] \"GET /admin/login.php?username=admin%27+OR+%271%27%3D%271%27+--+&password= HTTP/1.0\" 200 347 \"-\" \"webforensics-lab/1.0 scenario-d\" \"192.0.2.21\""
       }
     },
     {
@@ -187,14 +187,14 @@
           1
         ]
       ],
-      "first": "2026-10-28T03:49:37Z",
-      "last": "2026-10-28T03:49:44Z",
+      "first": "2026-10-29T05:17:58Z",
+      "last": "2026-10-29T05:18:04Z",
       "example": {
         "kind": "log_line",
         "source": "access.log",
         "line_no": 23,
         "sha256": null,
-        "excerpt": "172.30.0.3 - - [28/Oct/2026:03:49:37 +0000] \"GET /admin/login.php?username=admin%27+OR+%271%27%3D%271%27+--+&password= HTTP/1.0\" 200 347 \"-\" \"webforensics-lab/1.0 scenario-d\" \"192.0.2.21\""
+        "excerpt": "172.30.0.3 - - [29/Oct/2026:05:17:58 +0000] \"GET /admin/login.php?username=admin%27+OR+%271%27%3D%271%27+--+&password= HTTP/1.0\" 200 347 \"-\" \"webforensics-lab/1.0 scenario-d\" \"192.0.2.21\""
       }
     },
     {
@@ -211,14 +211,14 @@
           1
         ]
       ],
-      "first": "2026-10-28T03:49:35Z",
-      "last": "2026-10-28T03:49:42Z",
+      "first": "2026-10-29T05:17:56Z",
+      "last": "2026-10-29T05:18:02Z",
       "example": {
         "kind": "log_line",
         "source": "access.log",
         "line_no": 22,
         "sha256": null,
-        "excerpt": "172.30.0.3 - - [28/Oct/2026:03:49:35 +0000] \"GET /product.php?id=1+UNION+SELECT+1%2C2 HTTP/1.0\" 200 205 \"-\" \"webforensics-lab/1.0 scenario-d\" \"192.0.2.21\""
+        "excerpt": "172.30.0.3 - - [29/Oct/2026:05:17:56 +0000] \"GET /product.php?id=1+UNION+SELECT+1%2C2 HTTP/1.0\" 200 205 \"-\" \"webforensics-lab/1.0 scenario-d\" \"192.0.2.21\""
       }
     }
   ],

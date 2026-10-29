@@ -64,7 +64,7 @@ def test_every_event_cites_evidence_and_ids_are_stable(name):
     assert first.model_dump(mode="json") == second.model_dump(mode="json")
     for event in first.timeline:
         assert event.citations
-    assert first.iocs.ips == ("172.19.0.1",)
+    assert first.iocs.ips == ("172.30.0.1",)
 
 
 def _shift_tail(logs: LogCollection, from_line: int, drop: set[int] = frozenset()):

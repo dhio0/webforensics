@@ -35,23 +35,23 @@ overflow-x:auto;font-size:.85rem}
 </head>
 <body><main>
 <h1>Laporan Insiden Website</h1>
-<p class="sub">WF-3D07A64B14 · 2026-10-28 09:00:00 WIB</p>
+<p class="sub">WF-E887DEB66B · 2026-10-28 09:00:00 WIB</p>
 <nav><ol><li><a href="#ringkasan">1. Ringkasan</a></li><li><a href="#kasus">2. Informasi Kasus</a></li><li><a href="#kronologi">3. Kronologi Serangan</a></li><li><a href="#akar-masalah">4. Akar Masalah</a></li><li><a href="#file-terdampak">5. File Terdampak</a></li><li><a href="#tinjau">6. Perubahan yang Perlu Ditinjau</a></li><li><a href="#ioc">7. Indikator Kompromi (IOC)</a></li><li><a href="#celah-bukti">8. Celah Bukti</a></li><li><a href="#latar">9. Aktivitas Serangan Lain (Tidak Terkait Insiden)</a></li><li><a href="#tindakan">10. Tindakan yang Disarankan</a></li><li><a href="#keterbatasan">11. Keterbatasan</a></li><li><a href="#bukti">Lampiran A. Rujukan Bukti</a></li><li><a href="#reproduksi">Lampiran B. Reproduksibilitas</a></li></ol></nav>
 <section id="ringkasan">
 <h2>1. Ringkasan</h2>
-<ul><li>Ditemukan 1 file mencurigakan yang terkait dengan 1 alamat IP. Aktivitas pertama aktor pada 2026-10-27 21:16:45 WIB, terakhir pada 2026-10-27 21:16:57 WIB.</li><li>Titik masuk yang paling mungkin: SQL injection pada login (bypass autentikasi) lewat GET /admin/login.php pada 2026-10-27 21:16:53 WIB (keyakinan sedang).</li></ul>
+<ul><li>Ditemukan 1 file mencurigakan yang terkait dengan 1 alamat IP. Aktivitas pertama aktor pada 2026-10-29 12:19:47 WIB, terakhir pada 2026-10-29 12:19:59 WIB.</li><li>Titik masuk yang paling mungkin: SQL injection pada login (bypass autentikasi) lewat GET /admin/login.php pada 2026-10-29 12:19:55 WIB (keyakinan sedang).</li></ul>
 <h3>Alur serangan</h3>
-<ul><li>#3 2026-10-27 21:16:53 WIB: Bypass login dengan SQL injection: GET /admin/login.php → 200.</li><li>#4 2026-10-27 21:16:55 WIB: Request yang menulis uploads/scenario-f-marker.php: POST /admin/auth_upload.php → 200.</li><li>#5 2026-10-27 21:16:55 WIB: File uploads/scenario-f-marker.php dibuat (SHA-256 c2f45202f02a…).</li><li>#6 2026-10-27 21:16:57 WIB: File uploads/scenario-f-marker.php diakses: GET /uploads/scenario-f-marker.php → 200.</li></ul>
+<ul><li>#3 2026-10-29 12:19:55 WIB: Bypass login dengan SQL injection: GET /admin/login.php → 200.</li><li>#4 2026-10-29 12:19:57 WIB: Request yang menulis uploads/scenario-f-marker.php: POST /admin/auth_upload.php → 200.</li><li>#5 2026-10-29 12:19:57 WIB: File uploads/scenario-f-marker.php dibuat (SHA-256 c2f45202f02a…).</li><li>#6 2026-10-29 12:19:59 WIB: File uploads/scenario-f-marker.php diakses: GET /uploads/scenario-f-marker.php → 200.</li></ul>
 </section>
 <section id="kasus">
 <h2>2. Informasi Kasus</h2>
-<dl><dt>ID kasus</dt><dd>WF-3D07A64B14</dd><dt>Analis</dt><dd>-</dd><dt>Host target</dt><dd>be570d176416</dd><dt>Laporan dibuat</dt><dd>2026-10-28 09:00:00 WIB</dd><dt>Zona waktu laporan</dt><dd>WIB (UTC+07:00)</dd></dl>
+<dl><dt>ID kasus</dt><dd>WF-E887DEB66B</dd><dt>Analis</dt><dd>-</dd><dt>Host target</dt><dd>563daf0056be</dd><dt>Laporan dibuat</dt><dd>2026-10-28 09:00:00 WIB</dd><dt>Zona waktu laporan</dt><dd>WIB (UTC+07:00)</dd></dl>
 <h3>Cakupan bukti</h3>
-<dl><dt>Periode access log</dt><dd>2026-10-27 21:16:45 WIB s.d. 2026-10-27 21:16:57 WIB</dd><dt>Access log</dt><dd>7 baris terbaca</dd><dt>Webroot</dt><dd>9 file</dd><dt>Bukti dikumpulkan</dt><dd>2026-10-27 21:17:03 WIB</dd><dt>Baseline</dt><dd>tidak ada</dd></dl>
+<dl><dt>Periode access log</dt><dd>2026-10-29 12:19:47 WIB s.d. 2026-10-29 12:19:59 WIB</dd><dt>Access log</dt><dd>7 baris terbaca</dd><dt>Webroot</dt><dd>11 file</dd><dt>Bukti dikumpulkan</dt><dd>2026-10-29 12:20:10 WIB</dd><dt>Baseline</dt><dd>tidak ada</dd></dl>
 </section>
 <section id="kronologi">
 <h2>3. Kronologi Serangan</h2>
-<div class="tw"><table><thead><tr><th>#</th><th>Waktu</th><th>Dasar waktu</th><th>Fase (ATT&amp;CK)</th><th>Aktor</th><th>Kejadian</th><th>Keyakinan</th><th>Bukti</th></tr></thead><tbody><tr><td>#1</td><td>2026-10-27 21:16:45 WIB</td><td>log</td><td>-</td><td>172.19.0.1</td><td>Request pertama aktor ini di log: GET / → 200.</td><td class="c-high">tinggi</td><td>access.log:1</td></tr><tr><td>#2</td><td>2026-10-27 21:16:51 WIB</td><td>log</td><td>-</td><td>172.19.0.1</td><td>Login gagal: GET /admin/login.php → 401.</td><td class="c-high">tinggi</td><td>access.log:4</td></tr><tr class="root"><td>#3</td><td>2026-10-27 21:16:53 WIB</td><td>log</td><td>Initial Access (akses awal) · T1190</td><td>172.19.0.1</td><td class="root">AKAR MASALAH: Bypass login dengan SQL injection: GET /admin/login.php → 200.</td><td class="c-medium">sedang</td><td>access.log:5</td></tr><tr><td>#4</td><td>2026-10-27 21:16:55 WIB</td><td>log</td><td>Persistence (bertahan) · T1505.003</td><td>172.19.0.1</td><td>Request yang menulis uploads/scenario-f-marker.php: POST /admin/auth_upload.php → 200.</td><td class="c-high">tinggi</td><td>access.log:6, uploads/scenario-f-marker.php @c2f45202f02a</td></tr><tr><td>#5</td><td>2026-10-27 21:16:55 WIB</td><td>btime</td><td>Persistence (bertahan) · T1505.003</td><td>-</td><td>File uploads/scenario-f-marker.php dibuat (SHA-256 c2f45202f02a…).</td><td class="c-high">tinggi</td><td>uploads/scenario-f-marker.php @c2f45202f02a</td></tr><tr><td>#6</td><td>2026-10-27 21:16:57 WIB</td><td>log</td><td>Persistence (bertahan) · T1505.003</td><td>172.19.0.1</td><td>File uploads/scenario-f-marker.php diakses: GET /uploads/scenario-f-marker.php → 200.</td><td class="c-high">tinggi</td><td>access.log:7</td></tr></tbody></table></div>
+<div class="tw"><table><thead><tr><th>#</th><th>Waktu</th><th>Dasar waktu</th><th>Fase (ATT&amp;CK)</th><th>Aktor</th><th>Kejadian</th><th>Keyakinan</th><th>Bukti</th></tr></thead><tbody><tr><td>#1</td><td>2026-10-29 12:19:47 WIB</td><td>log</td><td>-</td><td>172.30.0.1</td><td>Request pertama aktor ini di log: GET / → 200.</td><td class="c-high">tinggi</td><td>access.log:1</td></tr><tr><td>#2</td><td>2026-10-29 12:19:53 WIB</td><td>log</td><td>-</td><td>172.30.0.1</td><td>Login gagal: GET /admin/login.php → 401.</td><td class="c-high">tinggi</td><td>access.log:4</td></tr><tr class="root"><td>#3</td><td>2026-10-29 12:19:55 WIB</td><td>log</td><td>Initial Access (akses awal) · T1190</td><td>172.30.0.1</td><td class="root">AKAR MASALAH: Bypass login dengan SQL injection: GET /admin/login.php → 200.</td><td class="c-medium">sedang</td><td>access.log:5</td></tr><tr><td>#4</td><td>2026-10-29 12:19:57 WIB</td><td>log</td><td>Persistence (bertahan) · T1505.003</td><td>172.30.0.1</td><td>Request yang menulis uploads/scenario-f-marker.php: POST /admin/auth_upload.php → 200.</td><td class="c-high">tinggi</td><td>access.log:6, uploads/scenario-f-marker.php @c2f45202f02a</td></tr><tr><td>#5</td><td>2026-10-29 12:19:57 WIB</td><td>btime</td><td>Persistence (bertahan) · T1505.003</td><td>-</td><td>File uploads/scenario-f-marker.php dibuat (SHA-256 c2f45202f02a…).</td><td class="c-high">tinggi</td><td>uploads/scenario-f-marker.php @c2f45202f02a</td></tr><tr><td>#6</td><td>2026-10-29 12:19:59 WIB</td><td>log</td><td>Persistence (bertahan) · T1505.003</td><td>172.30.0.1</td><td>File uploads/scenario-f-marker.php diakses: GET /uploads/scenario-f-marker.php → 200.</td><td class="c-high">tinggi</td><td>access.log:7</td></tr></tbody></table></div>
 <h3>Catatan keyakinan</h3>
 <ul><li>#2: Server membalas 401.</li><li>#3: Login dengan payload SQL injection berhasil, lalu aktor yang sama menulis file di area yang sama. Respons berbeda dari login yang gagal dan tidak diikuti percobaan ulang. Kaitan login dan upload disimpulkan dari IP dan area yang sama, karena cookie sesi tidak tercatat.</li><li>#4: Hanya satu request penulis yang cocok dengan waktu file dibuat. Aktor yang sama kemudian mengakses file ini. Isi POST tidak tercatat di access log, jadi nama file yang diupload tidak terbukti dari log.</li><li>#5: Waktu dari btime (waktu file lahir), yang tidak bisa diubah dengan touch.</li></ul>
 </section>
@@ -59,14 +59,14 @@ overflow-x:auto;font-size:.85rem}
 <h2>4. Akar Masalah</h2>
 <dl><dt>Kejadian</dt><dd>#3 Bypass login dengan SQL injection: GET /admin/login.php → 200.</dd><dt>Jenis kelemahan</dt><dd>SQL injection pada login (bypass autentikasi)</dd><dt>Keyakinan</dt><dd>sedang</dd><dt>Bukti</dt><dd>access.log:5</dd></dl>
 <h3>Baris log asli</h3>
-<pre>172.19.0.1 - - [27/Oct/2026:14:16:53 +0000] &quot;GET /admin/login.php?username=admin%27+OR+%271%27%3D%271+--+&amp;password= HTTP/1.1&quot; 200 359 &quot;-&quot; &quot;webforensics-lab/1.0 scenario-f&quot;</pre>
+<pre>172.30.0.1 - - [29/Oct/2026:05:19:55 +0000] &quot;GET /admin/login.php?username=admin%27+OR+%271%27%3D%271+--+&amp;password= HTTP/1.1&quot; 200 359 &quot;-&quot; &quot;webforensics-lab/1.0 scenario-f&quot; &quot;-&quot;</pre>
 <h3>Alasan</h3>
 <ul><li>Login dengan payload SQL injection berhasil, lalu aktor yang sama menulis file di area yang sama.</li><li>Respons berbeda dari login yang gagal dan tidak diikuti percobaan ulang.</li><li>Kaitan login dan upload disimpulkan dari IP dan area yang sama, karena cookie sesi tidak tercatat.</li></ul>
 </section>
 <section id="file-terdampak">
 <h2>5. File Terdampak</h2>
 <h3>uploads/scenario-f-marker.php</h3>
-<dl><dt>SHA-256</dt><dd>c2f45202f02ab18a6ad3965db67be368436a3a245819798ad1601464405f838c</dd><dt>Ukuran</dt><dd>26 byte</dd><dt>Status baseline</dt><dd>tidak diketahui (tanpa baseline)</dd><dt>Timestamp</dt><dd>btime 2026-10-27 21:16:55 WIB; ctime 2026-10-27 21:16:55 WIB; mtime 2026-10-27 21:16:55 WIB</dd><dt>Sumber timestamp</dt><dd>manifest collect.sh</dd><dt>URL</dt><dd>/uploads/scenario-f-marker.php</dd></dl>
+<dl><dt>SHA-256</dt><dd>c2f45202f02ab18a6ad3965db67be368436a3a245819798ad1601464405f838c</dd><dt>Ukuran</dt><dd>26 byte</dd><dt>Status baseline</dt><dd>tidak diketahui (tanpa baseline)</dd><dt>Timestamp</dt><dd>btime 2026-10-29 12:19:57 WIB; ctime 2026-10-29 12:19:57 WIB; mtime 2026-10-29 12:19:57 WIB</dd><dt>Sumber timestamp</dt><dd>manifest collect.sh</dd><dt>URL</dt><dd>/uploads/scenario-f-marker.php</dd></dl>
 <p>Temuan</p>
 <ul><li>File skrip di folder yang bisa ditulis: uploads/scenario-f-marker.php (FILE-WEBSHELL-WRITABLE-EXEC, keyakinan sedang)</li></ul>
 </section>
@@ -77,7 +77,7 @@ overflow-x:auto;font-size:.85rem}
 <section id="ioc">
 <h2>7. Indikator Kompromi (IOC)</h2>
 <h3>Alamat IP</h3>
-<pre>172.19.0.1</pre>
+<pre>172.30.0.1</pre>
 <h3>User agent</h3>
 <pre>webforensics-lab/1.0 scenario-f</pre>
 <h3>Hash SHA-256</h3>
@@ -98,7 +98,7 @@ overflow-x:auto;font-size:.85rem}
 <section id="tindakan">
 <h2>10. Tindakan yang Disarankan</h2>
 <h3>Penahanan (containment)</h3>
-<ul><li>Amankan bukti dulu: salin log dan webroot beserta hash-nya sebelum mengubah apa pun di server.</li><li>Batasi akses ke situs (mode maintenance atau firewall) sampai file berbahaya dihapus.</li><li>Blokir sementara IP berikut: 172.19.0.1.</li></ul>
+<ul><li>Amankan bukti dulu: salin log dan webroot beserta hash-nya sebelum mengubah apa pun di server.</li><li>Batasi akses ke situs (mode maintenance atau firewall) sampai file berbahaya dihapus.</li><li>Blokir sementara IP berikut: 172.30.0.1.</li></ul>
 <h3>Pembersihan (eradication)</h3>
 <ul><li>Karantina lalu hapus file berikut setelah disalin sebagai bukti: uploads/scenario-f-marker.php.</li><li>Perbaiki query login di /admin/login.php dengan prepared statement, lalu periksa query lain yang menyusun SQL dari input user.</li><li>Perbaiki endpoint /admin/auth_upload.php: batasi ekstensi dan tipe file, simpan upload di luar webroot, dan matikan eksekusi skrip di folder upload.</li></ul>
 <h3>Pemulihan (recovery)</h3>
@@ -112,13 +112,13 @@ overflow-x:auto;font-size:.85rem}
 </section>
 <section id="bukti">
 <h2>Lampiran A. Rujukan Bukti</h2>
-<div class="tw"><table><thead><tr><th>Rujukan</th><th>Kutipan</th></tr></thead><tbody><tr><td>access.log:1</td><td>172.19.0.1 - - [27/Oct/2026:14:16:45 +0000] &quot;GET / HTTP/1.1&quot; 200 298 &quot;-&quot; &quot;webforensics-lab/1.0 scenario-f&quot;</td></tr><tr><td>access.log:4</td><td>172.19.0.1 - - [27/Oct/2026:14:16:51 +0000] &quot;GET /admin/login.php?username=admin&amp;password=wrong-lab-password HTTP/1.1&quot; 401 355 &quot;-&quot; &quot;webforensics-lab/1.0 scenario-f&quot;</td></tr><tr><td>access.log:5</td><td>172.19.0.1 - - [27/Oct/2026:14:16:53 +0000] &quot;GET /admin/login.php?username=admin%27+OR+%271%27%3D%271+--+&amp;password= HTTP/1.1&quot; 200 359 &quot;-&quot; &quot;webforensics-lab/1.0 scenario-f&quot;</td></tr><tr><td>access.log:6</td><td>172.19.0.1 - - [27/Oct/2026:14:16:55 +0000] &quot;POST /admin/auth_upload.php HTTP/1.1&quot; 200 51 &quot;-&quot; &quot;webforensics-lab/1.0 scenario-f&quot;</td></tr><tr><td>uploads/scenario-f-marker.php @c2f45202f02a</td><td>SHA-256 c2f45202f02ab18a6ad3965db67be368436a3a245819798ad1601464405f838c</td></tr><tr><td>access.log:7</td><td>172.19.0.1 - - [27/Oct/2026:14:16:57 +0000] &quot;GET /uploads/scenario-f-marker.php HTTP/1.1&quot; 200 37 &quot;-&quot; &quot;webforensics-lab/1.0 scenario-f&quot;</td></tr></tbody></table></div>
+<div class="tw"><table><thead><tr><th>Rujukan</th><th>Kutipan</th></tr></thead><tbody><tr><td>access.log:1</td><td>172.30.0.1 - - [29/Oct/2026:05:19:47 +0000] &quot;GET / HTTP/1.1&quot; 200 298 &quot;-&quot; &quot;webforensics-lab/1.0 scenario-f&quot; &quot;-&quot;</td></tr><tr><td>access.log:4</td><td>172.30.0.1 - - [29/Oct/2026:05:19:53 +0000] &quot;GET /admin/login.php?username=admin&amp;password=wrong-lab-password HTTP/1.1&quot; 401 355 &quot;-&quot; &quot;webforensics-lab/1.0 scenario-f&quot; &quot;-&quot;</td></tr><tr><td>access.log:5</td><td>172.30.0.1 - - [29/Oct/2026:05:19:55 +0000] &quot;GET /admin/login.php?username=admin%27+OR+%271%27%3D%271+--+&amp;password= HTTP/1.1&quot; 200 359 &quot;-&quot; &quot;webforensics-lab/1.0 scenario-f&quot; &quot;-&quot;</td></tr><tr><td>access.log:6</td><td>172.30.0.1 - - [29/Oct/2026:05:19:57 +0000] &quot;POST /admin/auth_upload.php HTTP/1.1&quot; 200 51 &quot;-&quot; &quot;webforensics-lab/1.0 scenario-f&quot; &quot;-&quot;</td></tr><tr><td>uploads/scenario-f-marker.php @c2f45202f02a</td><td>SHA-256 c2f45202f02ab18a6ad3965db67be368436a3a245819798ad1601464405f838c</td></tr><tr><td>access.log:7</td><td>172.30.0.1 - - [29/Oct/2026:05:19:59 +0000] &quot;GET /uploads/scenario-f-marker.php HTTP/1.1&quot; 200 37 &quot;-&quot; &quot;webforensics-lab/1.0 scenario-f&quot; &quot;-&quot;</td></tr></tbody></table></div>
 </section>
 <section id="reproduksi">
 <h2>Lampiran B. Reproduksibilitas</h2>
 <dl><dt>Versi alat</dt><dd>0.1.0</dd><dt>Versi ruleset</dt><dd>0.1.0</dd><dt>Hash konfigurasi</dt><dd>c5151d3a2f13b07748750ef54e0aa218107778fc0a16cbf3101325edba953255</dd></dl>
 <h3>File input</h3>
-<div class="tw"><table><thead><tr><th>File</th><th>SHA-256</th><th>Ukuran</th></tr></thead><tbody><tr><td>access.log</td><td>1eec8c6562a28b2c2e1c6521850e268b8b45d828dae450a83ca81b5e81165629</td><td>952 byte</td></tr><tr><td>manifest.tsv</td><td>9b1a82ca16875793f1641aa8939598fa6f283d659fb926e17fbb9567ac09a62e</td><td>1670 byte</td></tr></tbody></table></div>
+<div class="tw"><table><thead><tr><th>File</th><th>SHA-256</th><th>Ukuran</th></tr></thead><tbody><tr><td>access.log</td><td>d790e8e4e30e74b214ba5a76d631e9b48355ba6e2004189ffe7d72d01172bdb4</td><td>980 byte</td></tr><tr><td>manifest.tsv</td><td>dc514b240fa3667f9b7af0ce486c823e96b308dac532485ad6e4c45e91d98d7f</td><td>1987 byte</td></tr></tbody></table></div>
 <p>Input, versi, dan konfigurasi yang sama menghasilkan laporan yang sama persis.</p>
 </section>
 </main></body></html>

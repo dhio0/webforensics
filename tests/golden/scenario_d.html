@@ -35,7 +35,7 @@ overflow-x:auto;font-size:.85rem}
 </head>
 <body><main>
 <h1>Laporan Insiden Website</h1>
-<p class="sub">WF-5D640831B0 · 2026-10-28 09:00:00 WIB</p>
+<p class="sub">WF-72CCDBC9E8 · 2026-10-28 09:00:00 WIB</p>
 <nav><ol><li><a href="#ringkasan">1. Ringkasan</a></li><li><a href="#kasus">2. Informasi Kasus</a></li><li><a href="#kronologi">3. Kronologi Serangan</a></li><li><a href="#akar-masalah">4. Akar Masalah</a></li><li><a href="#file-terdampak">5. File Terdampak</a></li><li><a href="#tinjau">6. Perubahan yang Perlu Ditinjau</a></li><li><a href="#ioc">7. Indikator Kompromi (IOC)</a></li><li><a href="#celah-bukti">8. Celah Bukti</a></li><li><a href="#latar">9. Aktivitas Serangan Lain (Tidak Terkait Insiden)</a></li><li><a href="#tindakan">10. Tindakan yang Disarankan</a></li><li><a href="#keterbatasan">11. Keterbatasan</a></li><li><a href="#bukti">Lampiran A. Rujukan Bukti</a></li><li><a href="#reproduksi">Lampiran B. Reproduksibilitas</a></li></ol></nav>
 <section id="ringkasan">
 <h2>1. Ringkasan</h2>
@@ -43,9 +43,9 @@ overflow-x:auto;font-size:.85rem}
 </section>
 <section id="kasus">
 <h2>2. Informasi Kasus</h2>
-<dl><dt>ID kasus</dt><dd>WF-5D640831B0</dd><dt>Analis</dt><dd>-</dd><dt>Host target</dt><dd>b5838e084553</dd><dt>Laporan dibuat</dt><dd>2026-10-28 09:00:00 WIB</dd><dt>Zona waktu laporan</dt><dd>WIB (UTC+07:00)</dd></dl>
+<dl><dt>ID kasus</dt><dd>WF-72CCDBC9E8</dd><dt>Analis</dt><dd>-</dd><dt>Host target</dt><dd>f65084d6792d</dd><dt>Laporan dibuat</dt><dd>2026-10-28 09:00:00 WIB</dd><dt>Zona waktu laporan</dt><dd>WIB (UTC+07:00)</dd></dl>
 <h3>Cakupan bukti</h3>
-<dl><dt>Periode access log</dt><dd>2026-10-28 10:49:31 WIB s.d. 2026-10-28 10:49:52 WIB</dd><dt>Access log</dt><dd>32 baris terbaca</dd><dt>Error log</dt><dd>2 entri</dd><dt>Webroot</dt><dd>12 file</dd><dt>Bukti dikumpulkan</dt><dd>2026-10-28 10:49:52 WIB</dd><dt>Baseline</dt><dd>10 file</dd></dl>
+<dl><dt>Periode access log</dt><dd>2026-10-29 12:17:52 WIB s.d. 2026-10-29 12:18:12 WIB</dd><dt>Access log</dt><dd>32 baris terbaca</dd><dt>Error log</dt><dd>1 entri</dd><dt>Webroot</dt><dd>12 file</dd><dt>Bukti dikumpulkan</dt><dd>2026-10-29 12:18:21 WIB</dd><dt>Baseline</dt><dd>10 file</dd></dl>
 </section>
 <section id="kronologi">
 <h2>3. Kronologi Serangan</h2>
@@ -75,7 +75,7 @@ overflow-x:auto;font-size:.85rem}
 <section id="latar">
 <h2>9. Aktivitas Serangan Lain (Tidak Terkait Insiden)</h2>
 <p>Request ini cocok dengan pola serangan, tetapi pengirimnya tidak terkait dengan file yang disusupkan. Biasanya bot atau pemindai otomatis.</p>
-<div class="tw"><table><thead><tr><th>Aturan</th><th>Jumlah</th><th>Klien</th><th>Klien terbanyak</th><th>Rentang waktu</th><th>Contoh</th></tr></thead><tbody><tr><td>SQL injection (tautologi) (LOG-SQLI-TAUTOLOGY)</td><td>4</td><td>2</td><td>192.0.2.21 (2), 203.0.113.21 (2)</td><td>2026-10-28 10:49:33 WIB s.d. 2026-10-28 10:49:44 WIB</td><td>access.log:21</td></tr><tr><td>Login bypass SQL injection yang tampaknya berhasil (CORR-SQLI-LOGIN-BYPASS)</td><td>2</td><td>2</td><td>192.0.2.21 (1), 203.0.113.21 (1)</td><td>2026-10-28 10:49:37 WIB s.d. 2026-10-28 10:49:44 WIB</td><td>access.log:23</td></tr><tr><td>SQL injection (kutip + komentar) (LOG-SQLI-QUOTE-COMMENT)</td><td>2</td><td>2</td><td>192.0.2.21 (1), 203.0.113.21 (1)</td><td>2026-10-28 10:49:37 WIB s.d. 2026-10-28 10:49:44 WIB</td><td>access.log:23</td></tr><tr><td>SQL injection (UNION) (LOG-SQLI-UNION)</td><td>2</td><td>2</td><td>192.0.2.21 (1), 203.0.113.21 (1)</td><td>2026-10-28 10:49:35 WIB s.d. 2026-10-28 10:49:42 WIB</td><td>access.log:22</td></tr></tbody></table></div>
+<div class="tw"><table><thead><tr><th>Aturan</th><th>Jumlah</th><th>Klien</th><th>Klien terbanyak</th><th>Rentang waktu</th><th>Contoh</th></tr></thead><tbody><tr><td>SQL injection (tautologi) (LOG-SQLI-TAUTOLOGY)</td><td>4</td><td>2</td><td>192.0.2.21 (2), 203.0.113.21 (2)</td><td>2026-10-29 12:17:54 WIB s.d. 2026-10-29 12:18:04 WIB</td><td>access.log:21</td></tr><tr><td>Login bypass SQL injection yang tampaknya berhasil (CORR-SQLI-LOGIN-BYPASS)</td><td>2</td><td>2</td><td>192.0.2.21 (1), 203.0.113.21 (1)</td><td>2026-10-29 12:17:58 WIB s.d. 2026-10-29 12:18:04 WIB</td><td>access.log:23</td></tr><tr><td>SQL injection (kutip + komentar) (LOG-SQLI-QUOTE-COMMENT)</td><td>2</td><td>2</td><td>192.0.2.21 (1), 203.0.113.21 (1)</td><td>2026-10-29 12:17:58 WIB s.d. 2026-10-29 12:18:04 WIB</td><td>access.log:23</td></tr><tr><td>SQL injection (UNION) (LOG-SQLI-UNION)</td><td>2</td><td>2</td><td>192.0.2.21 (1), 203.0.113.21 (1)</td><td>2026-10-29 12:17:56 WIB s.d. 2026-10-29 12:18:02 WIB</td><td>access.log:22</td></tr></tbody></table></div>
 </section>
 <section id="tindakan">
 <h2>10. Tindakan yang Disarankan</h2>
@@ -94,13 +94,13 @@ overflow-x:auto;font-size:.85rem}
 </section>
 <section id="bukti">
 <h2>Lampiran A. Rujukan Bukti</h2>
-<div class="tw"><table><thead><tr><th>Rujukan</th><th>Kutipan</th></tr></thead><tbody><tr><td>access.log:21</td><td>172.30.0.3 - - [28/Oct/2026:03:49:33 +0000] &quot;GET /product.php?id=1+OR+1%3D1 HTTP/1.0&quot; 200 212 &quot;-&quot; &quot;webforensics-lab/1.0 scenario-d&quot; &quot;192.0.2.21&quot;</td></tr><tr><td>access.log:23</td><td>172.30.0.3 - - [28/Oct/2026:03:49:37 +0000] &quot;GET /admin/login.php?username=admin%27+OR+%271%27%3D%271%27+--+&amp;password= HTTP/1.0&quot; 200 347 &quot;-&quot; &quot;webforensics-lab/1.0 scenario-d&quot; &quot;192.0.2.21&quot;</td></tr><tr><td>access.log:22</td><td>172.30.0.3 - - [28/Oct/2026:03:49:35 +0000] &quot;GET /product.php?id=1+UNION+SELECT+1%2C2 HTTP/1.0&quot; 200 205 &quot;-&quot; &quot;webforensics-lab/1.0 scenario-d&quot; &quot;192.0.2.21&quot;</td></tr></tbody></table></div>
+<div class="tw"><table><thead><tr><th>Rujukan</th><th>Kutipan</th></tr></thead><tbody><tr><td>access.log:21</td><td>172.30.0.3 - - [29/Oct/2026:05:17:54 +0000] &quot;GET /product.php?id=1+OR+1%3D1 HTTP/1.0&quot; 200 212 &quot;-&quot; &quot;webforensics-lab/1.0 scenario-d&quot; &quot;192.0.2.21&quot;</td></tr><tr><td>access.log:23</td><td>172.30.0.3 - - [29/Oct/2026:05:17:58 +0000] &quot;GET /admin/login.php?username=admin%27+OR+%271%27%3D%271%27+--+&amp;password= HTTP/1.0&quot; 200 347 &quot;-&quot; &quot;webforensics-lab/1.0 scenario-d&quot; &quot;192.0.2.21&quot;</td></tr><tr><td>access.log:22</td><td>172.30.0.3 - - [29/Oct/2026:05:17:56 +0000] &quot;GET /product.php?id=1+UNION+SELECT+1%2C2 HTTP/1.0&quot; 200 205 &quot;-&quot; &quot;webforensics-lab/1.0 scenario-d&quot; &quot;192.0.2.21&quot;</td></tr></tbody></table></div>
 </section>
 <section id="reproduksi">
 <h2>Lampiran B. Reproduksibilitas</h2>
 <dl><dt>Versi alat</dt><dd>0.1.0</dd><dt>Versi ruleset</dt><dd>0.1.0</dd><dt>Hash konfigurasi</dt><dd>a327ad9cd4b7b387c7dbfe4a49da4ceac364dddc5291bf29aeadbcf8722e1dda</dd></dl>
 <h3>File input</h3>
-<div class="tw"><table><thead><tr><th>File</th><th>SHA-256</th><th>Ukuran</th></tr></thead><tbody><tr><td>access.log</td><td>65a9e7f85e7eaa41f16bdb6619a77f388982635ce273b03a73d8ead62d756b52</td><td>4463 byte</td></tr><tr><td>baseline.tsv</td><td>6b9c25cdd13d074aba706b6c74f28a19d5d54ad09575f333e315af988d1cc6dd</td><td>1790 byte</td></tr><tr><td>error.log</td><td>c5c1ba27c651faad6b8bbdca29eaa8361c4030a313b40a14731fc521e35fa616</td><td>337 byte</td></tr><tr><td>manifest.tsv</td><td>b88b773f5e4bb390e32b9a1d934b3f5d06f2a28d15d7ef25aa2537b02997d9e6</td><td>2124 byte</td></tr></tbody></table></div>
+<div class="tw"><table><thead><tr><th>File</th><th>SHA-256</th><th>Ukuran</th></tr></thead><tbody><tr><td>access.log</td><td>f0dee937d86e560deba2187cf96014746cdbb6d508279fcd4453f0a48b5b0ac5</td><td>4463 byte</td></tr><tr><td>baseline.tsv</td><td>288f097edd6219d19138f4c6d95a041d326347d7c110cffae710cad264b78806</td><td>1800 byte</td></tr><tr><td>error.log</td><td>824cd382edd052df726aad18483fbed34fabb0b746d986f6b5cbf0e6d767de6d</td><td>278 byte</td></tr><tr><td>manifest.tsv</td><td>70074d637bf6480c5f269c329bb7552bd5b3acf54f89f37037bc3f3aa5e13269</td><td>2136 byte</td></tr></tbody></table></div>
 <p>Input, versi, dan konfigurasi yang sama menghasilkan laporan yang sama persis.</p>
 </section>
 </main></body></html>

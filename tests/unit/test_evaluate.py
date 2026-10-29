@@ -56,10 +56,32 @@ def _case_truth(**changes) -> dict:
 def test_every_benchmark_scenario_is_fully_correct():
     # Regression guard: a rule change that breaks any scenario fails CI. A failing
     # held-out scenario is reported as it is, never fixed by tuning on it (docs/evaluation.md).
-    scores = [evaluate.evaluate_scenario(f) for f in evaluate.scenario_folders(BENCHMARK)]
+    scores = evaluate.evaluate_all(evaluate.scenario_folders(BENCHMARK))
     assert all(s.passed for s in scores), evaluate.details(scores)
-    by_id = {s.scenario_id: s for s in scores}
+    assert {(s.scenario_id, s.adapter) for s in scores} == {
+        (sid, adapter) for sid in "abdef" for adapter in ("file", "wazuh")}
+    by_id = {s.scenario_id: s for s in scores if s.adapter == "file"}
     assert (by_id["a"].steps_expected, by_id["f"].steps_expected) == (3, 4)  # benign not counted
+
+
+def test_recording_citations_are_mapped_to_the_same_runs_log_lines():
+    """Both adapters use one ground truth: every recorded web line maps to the log line
+    with the same text, and without that mapping no step would count."""
+    folder = BENCHMARK / "scenarios" / "b"
+    truth = _truth("b")
+    mapping = evaluate.recording_line_map(folder, truth)
+    access = (folder / "evidence" / "access.log").read_text(encoding="utf-8").splitlines()
+    errors = (folder / "evidence" / "error.log").read_text(encoding="utf-8").splitlines()
+    assert sorted(mapping.values()) == sorted(
+        [("access.log", n) for n in range(1, len(access) + 1)]
+        + [("error.log", n) for n in range(1, len(errors) + 1)])
+    mapped = evaluate.evaluate_scenario(folder, "wazuh")
+    assert mapped.passed
+    inputs, config = evaluate.scenario_inputs(folder, truth)
+    evidence = evaluate.load_evidence(evaluate.EvidenceInputs(
+        wazuh_recording=folder / "evidence" / evaluate.RECORDING, base_dir=inputs.base_dir))
+    unmapped = score(truth, evaluate.correlate(evidence.logs, evidence.files, config=config), 0)
+    assert unmapped.steps_found == 0 and unmapped.root is not RootVerdict.CORRECT
 
 
 def test_correct_case_passes():
@@ -142,8 +164,9 @@ def test_cli_reports_a_disagreeing_ground_truth(tmp_path):
     result = runner.invoke(app, ["eval", str(_copy_benchmark(tmp_path, blame_the_probe)),
                                  "--no-runtime"])
     assert result.exit_code == 0, result.output
-    assert "| A | dev | 3/3 | wrong | 1 | 0 | 0.00 |" in result.output
-    assert "A: root cause: wrong; false IPs: 172.19.0.1" in result.output
+    assert "| A | file | dev | 3/3 | wrong | 1 | 0 | 0.00 |" in result.output
+    assert "| A | wazuh | dev | 3/3 | wrong | 1 | 0 | 0.00 |" in result.output
+    assert "A: root cause: wrong; false IPs: 172.30.0.1" in result.output
 
 
 def test_cli_writes_deterministic_markdown_and_json(tmp_path):
@@ -154,14 +177,23 @@ def test_cli_writes_deterministic_markdown_and_json(tmp_path):
         assert result.exit_code == 0, result.output
     assert md1.read_bytes() == md2.read_bytes()
     data = json.loads(out.read_text(encoding="utf-8"))
-    assert data["totals"]["dev"]["root_cause_correct"] == data["totals"]["dev"]["scenarios"]
+    for adapter in ("file", "wazuh"):
+        dev = data["totals"][adapter]["dev"]
+        assert dev["root_cause_correct"] == dev["scenarios"]
 
 
 def test_cli_held_out_scenarios_are_summarized_apart(tmp_path):
     bench = _copy_benchmark(tmp_path, lambda t: t.update(split="held_out"))
     shutil.copytree(SCENARIOS / "f", bench / "scenarios" / "f")
     result = runner.invoke(app, ["eval", str(bench), "--no-runtime"])
-    assert "**dev**: 1/1" in result.output and "**held_out**: 1/1" in result.output
+    assert "**file, dev**: 1/1" in result.output and "**file, held_out**: 1/1" in result.output
+
+
+def test_cli_can_score_one_adapter(tmp_path):
+    result = runner.invoke(app, ["eval", str(BENCHMARK), "--no-runtime", "--adapter", "file"])
+    assert result.exit_code == 0 and "| wazuh |" not in result.output
+    bad = runner.invoke(app, ["eval", str(BENCHMARK), "--adapter", "splunk"])
+    assert bad.exit_code == 2 and "unknown --adapter" in bad.output
 
 
 @pytest.mark.parametrize("args", [["--scenario", "zz"], ["nowhere"]])
