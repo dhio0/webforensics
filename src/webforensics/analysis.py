@@ -17,7 +17,7 @@ from webforensics.adapters.file_adapter import (
 )
 from webforensics.adapters.wazuh import WazuhRecordingSource
 from webforensics.codeloc.locate import review_code
-from webforensics.correlate import CorrelationConfig, correlate
+from webforensics.correlate import CorrelationConfig, correlate, for_filesystem
 from webforensics.detect import RULESET_VERSION
 from webforensics.models import CaseInfo, FileCollection, LogCollection, Report, RunInfo
 from webforensics.parsers.access_log import AccessLogFormat
@@ -148,6 +148,8 @@ def case_info(evidence: Evidence, run: RunInfo, options: CaseOptions) -> CaseInf
 def analyze(inputs: EvidenceInputs, config: CorrelationConfig, generated_at: datetime,
             options: CaseOptions | None = None) -> Report:
     evidence = load_evidence(inputs)
+    header = evidence.files.header
+    config = for_filesystem(config, header.filesystem if header else None)
     result = correlate(evidence.logs, evidence.files, baseline=evidence.baseline,
                        config=config)
     run = run_info(evidence, config, generated_at)
@@ -155,6 +157,7 @@ def analyze(inputs: EvidenceInputs, config: CorrelationConfig, generated_at: dat
     scope = evidence_scope(evidence.logs, evidence.files, evidence.baseline,
                            file_adapter=evidence.adapter)
     code_findings, code_scope = review_code(result, evidence.files, inputs.webroot,
-                                            inputs.url_prefix)
+                                            inputs.url_prefix,
+                                            case_insensitive=config.case_insensitive_paths)
     return build_report(result, evidence.logs, case, run, scope, config.trusted_proxies,
                         code_findings=code_findings, code_scope=code_scope)

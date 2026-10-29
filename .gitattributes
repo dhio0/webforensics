@@ -4,6 +4,7 @@
 # Evidence fixtures must stay byte-identical: line numbers and hashes depend on it.
 tests/fixtures/** -text
 benchmark/scenarios/** -text
+benchmark/external/** -text
 
 # Lab files are mounted into Linux containers.
 lab/** text eol=lf

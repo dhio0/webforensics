@@ -387,6 +387,10 @@ class ManifestHeader(_Frozen):
     collected_at: UtcDatetime | None = None
     utc_offset: str | None = None
     birth_time_supported: bool = False
+    # Filesystem type of the webroot (`stat -f -c %T`), e.g. ext2/ext3, xfs, ntfs. On
+    # Windows filesystems URLs match file names case-insensitively and every timestamp,
+    # birth time included, can be set by a program (D84).
+    filesystem: str | None = None
     extra: dict[str, str] = Field(default_factory=dict)
 
 
@@ -403,6 +407,9 @@ class FileCollection(_Frozen):
     has_baseline: bool = False
     # Paths the source saw deleted without a known content to trace (FIM `deleted` only).
     deleted_paths: tuple[str, ...] = ()
+    # True when `files` lists the whole webroot (manifest, folder scan), so a URL that no
+    # file serves really had no file. Wazuh FIM lists only changed files (D85).
+    complete_listing: bool = True
 
 
 class Finding(_Frozen):
@@ -449,12 +456,17 @@ class CodeLocation(_Frozen):
     sources: tuple[str, ...] = ()
     # False when the content came from --webroot without an evidence hash to check it against.
     verified: bool = True
+    # Why the file was analyzed: "entry" (root cause or an alternative), "write" (its
+    # endpoint wrote a file), "sqli_target" (an attacker's SQL injection got a 2xx answer
+    # there, D84) or "included" (an implicated file includes it).
+    implicated_by: str = "entry"
 
 
 class CodeScope(_Frozen):
     """Which implicated files the code analysis read, so "nothing found" has a scope."""
 
     analyzed: tuple[str, ...] = ()
+    included: tuple[str, ...] = ()  # analyzed because an implicated file includes them
     unverified: tuple[str, ...] = ()  # analyzed, but content not checked against a hash
     no_content: tuple[str, ...] = ()  # implicated, but no content was available
 
@@ -505,6 +517,8 @@ class CorrelationResult(_Frozen):
     affected_files: tuple[FileEvidence, ...] = ()
     # In the baseline but missing now, or seen only as a FIM `deleted` alert.
     deleted_paths: tuple[str, ...] = ()
+    # Script URLs an attacker used that no file in the evidence serves (D85).
+    log_only_files: tuple[str, ...] = ()
     # Code files changed without an HTTP link strong enough to accuse (a lonely write, or
     # a file of a deploy batch): review by hand.
     unexplained_changes: tuple[str, ...] = ()

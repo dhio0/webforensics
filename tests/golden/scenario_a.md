@@ -67,9 +67,25 @@ _WF-16040EE35A · 2026-10-28 09:00:00 WIB_
 
 ### Baris kode yang rentan
 
-Tidak ditemukan SQL injection di file yang dianalisis (lihat batas analisis di Keterbatasan).
+- **Lokasi:** product.php:4
+- **Kenapa dianalisis:** endpoint yang diserang SQL injection oleh penyerang dan menjawab 2xx (belum tentu titik masuk)
+- **Keyakinan:** tinggi
+- **Input dari:** \$\_GET\['id'\]
+- **Query dijalankan di:** product.php:5 (\$pdo-\>query)
+- **Bukti:** product.php @d80c2c86cba7
 
-- **File yang dianalisis:** admin/upload.php
+```
+$query = "SELECT id, name FROM products WHERE id = $id";
+```
+
+Contoh perbaikan (prepared statement)
+
+```
+$stmt = $pdo->prepare("SELECT id, name FROM products WHERE id = ?");
+$stmt->execute([$id]);
+```
+
+- **File yang dianalisis:** admin/upload.php, product.php
 
 ## 5. File Terdampak
 
@@ -79,7 +95,7 @@ Tidak ditemukan SQL injection di file yang dianalisis (lihat batas analisis di K
 - **Ukuran:** 24 byte
 - **Status baseline:** tidak diketahui (tanpa baseline)
 - **Timestamp:** btime 2026-10-29 12:16:16 WIB; ctime 2026-10-29 12:16:16 WIB; mtime 2026-10-29 12:16:16 WIB
-- **Sumber timestamp:** manifest collect.sh
+- **Sumber timestamp:** manifest webroot
 - **URL:** /uploads/lab-marker.php
 
 Temuan
@@ -144,6 +160,7 @@ Tidak ada.
 
 - Karantina lalu hapus file berikut setelah disalin sebagai bukti: uploads/lab-marker.php.
 - Perbaiki endpoint /admin/upload.php: batasi ekstensi dan tipe file, simpan upload di luar webroot, dan matikan eksekusi skrip di folder upload.
+- Ganti query di product.php baris 4 dengan prepared statement (contoh perbaikan ada di bagian Akar Masalah).
 
 ### Pemulihan (recovery)
 
@@ -164,7 +181,7 @@ Tidak ada.
 - Penyerang dengan akses root bisa memalsukan timestamp file. Alat ini hanya mendeteksi ketidakkonsistenan, tidak bisa membuktikan keaslian.
 - Penyerang dengan akses root bisa menghapus baris log. Yang bisa dideteksi hanya celah waktu yang mencolok.
 - IP yang dipakai bersama (NAT, proxy, CDN tanpa X-Forwarded-For) bisa menggabungkan beberapa orang menjadi satu aktor.
-- Analisis kode hanya mencari SQL injection di file PHP yang terlibat, per file dan per fungsi. Alur lewat fungsi atau file lain, input dari framework, dan ORM tidak dilacak, jadi "tidak ditemukan" bukan berarti aman. Celah upload belum dilokalisasi di kode.
+- Analisis kode hanya mencari SQL injection di file PHP yang terlibat dan file yang di-include-nya (satu tingkat, dari pola path include), per file dan per fungsi. Alur lewat pemanggilan fungsi, input dari framework, dan ORM tidak dilacak, jadi "tidak ditemukan" bukan berarti aman. Celah upload belum dilokalisasi di kode.
 
 ## Lampiran A. Rujukan Bukti
 
@@ -175,12 +192,13 @@ Tidak ada.
 | access.log:5 | 172.30.0.1 - - \[29/Oct/2026:05:16:16 +0000\] "POST /admin/upload.php HTTP/1.1" 200 44 "-" "webforensics-lab/1.0 scenario-a" "-" |
 | uploads/lab-marker.php @52d31ac74301 | SHA-256 52d31ac74301cc8fd601913c9cc75e1bc0b2f2ffd26fe71b9864200eda78865d |
 | access.log:6 | 172.30.0.1 - - \[29/Oct/2026:05:16:18 +0000\] "GET /uploads/lab-marker.php HTTP/1.1" 200 35 "-" "webforensics-lab/1.0 scenario-a" "-" |
+| product.php @d80c2c86cba7 | SHA-256 d80c2c86cba7c17c99b964c776ecc45d92874b73b57d4718b07063d80244d3b5 |
 
 ## Lampiran B. Reproduksibilitas
 
 - **Versi alat:** 0.1.0
 - **Versi ruleset:** 0.1.0
-- **Hash konfigurasi:** c5151d3a2f13b07748750ef54e0aa218107778fc0a16cbf3101325edba953255
+- **Hash konfigurasi:** b76fdac793d85a9200e30e0e7c2e75af681bd760f3e74f5ad782f7af6705a0da
 
 ### File input
 

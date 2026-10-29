@@ -5,9 +5,12 @@ same facts. Every string here is plain text (often attacker-controlled); escapin
 renderer's job and happens in exactly one function per format.
 """
 
+from collections import Counter
 from dataclasses import dataclass, field
+from datetime import timedelta
 from typing import Literal
 
+from webforensics.correlate.confidence import rank
 from webforensics.models import (
     Citation,
     CitationKind,
@@ -118,6 +121,7 @@ _STORY_KINDS = frozenset({
     "timeline.auth_bypass_sqli", "timeline.login_method_unknown", "timeline.upload_exploit",
     "timeline.write_exploit", "timeline.file_write_request", "timeline.file_created",
     "timeline.file_changed", "timeline.file_modified_mtime", "timeline.file_timestomp",
+    "timeline.sqli_file_write", "timeline.log_only_file", "timeline.file_deleted_by_command",
 })
 
 
@@ -143,7 +147,8 @@ def _summary(ctx: _Ctx) -> Section:
     t = ctx.texts
     blocks: list[Block] = [Bullets(tuple(t.message(r) for r in ctx.report.summary))]
     result = ctx.report.result
-    story = attack_story(result.timeline, result.iocs.ips) if result.affected_files else []
+    compromised = result.affected_files or result.log_only_files
+    story = attack_story(result.timeline, result.iocs.ips) if compromised else []
     if story:
         blocks += [Heading(t.label("story")), Bullets(tuple(
             f"{ctx.number(e.event_id)} {t.time(e.ts)}: {t.message(e.description)}"
@@ -210,11 +215,80 @@ def _event_conf(ctx: _Ctx, event: TimelineEvent) -> Cell:
     return cell
 
 
+# Flagged context requests come in bursts (a scanner or sqlmap sends thousands). Each burst
+# from one actor is one row; report.json keeps every event.
+_REPEATABLE = frozenset({"timeline.recon", "timeline.exploit_attempt"})
+MIN_RUN = 3
+RUN_BREAK = timedelta(minutes=5)  # a pause this long starts a new burst
+TOP_ENDPOINTS = 3
+
+
+def timeline_runs(timeline: tuple[TimelineEvent, ...]) -> list[list[TimelineEvent]]:
+    """Consecutive flagged context requests from one actor without a pause longer than
+    RUN_BREAK, grouped when there are MIN_RUN or more; every other event stands alone."""
+    runs: list[list[TimelineEvent]] = []
+    for event in timeline:
+        last = runs[-1][-1] if runs else None
+        if (last is not None and _repeatable(event) and _repeatable(last)
+                and event.actor == last.actor and event.ts - last.ts <= RUN_BREAK):
+            runs[-1].append(event)
+        else:
+            runs.append([event])
+    out: list[list[TimelineEvent]] = []
+    for run in runs:
+        out += [run] if len(run) >= MIN_RUN else [[e] for e in run]
+    return out
+
+
+def _repeatable(event: TimelineEvent) -> bool:
+    return not event.is_root_cause and event.description.key in _REPEATABLE
+
+
+def _counts(values: list[str]) -> str:
+    return ", ".join(f"{value} x{count}" for value, count in
+                     sorted(Counter(values).items(), key=lambda kv: (-kv[1], kv[0])))
+
+
+def _endpoints(t: Texts, run: list[TimelineEvent]) -> str:
+    by_endpoint: dict[str, list[str]] = {}
+    for e in run:
+        p = e.description.params
+        by_endpoint.setdefault(f"{p.get('method', '')} {p.get('path', '')}", []).append(
+            p.get("status", ""))
+    ranked = sorted(by_endpoint.items(), key=lambda kv: (-len(kv[1]), kv[0]))
+    parts = [f"{clean(endpoint)} x{len(statuses)} (status {_counts(statuses)})"
+             for endpoint, statuses in ranked[:TOP_ENDPOINTS]]
+    if len(ranked) > TOP_ENDPOINTS:
+        parts.append(t.label("timeline.run_more").format(count=len(ranked) - TOP_ENDPOINTS))
+    return "; ".join(parts)
+
+
+def _run_row(ctx: _Ctx, run: list[TimelineEvent]) -> tuple[Cell, ...]:
+    t, first, last = ctx.texts, run[0], run[-1]
+    text = t.label("timeline.run").format(
+        count=len(run), endpoints=_endpoints(t, run),
+        rules=_counts([t.rule(e.description.params.get("rule_id", "")) for e in run]))
+    exploit = next((e for e in run if e.description.key == "timeline.exploit_attempt"), first)
+    return (
+        Cell(f"{ctx.number(first.event_id)} s.d. {ctx.number(last.event_id)}"),
+        Cell(f"{t.time(first.ts)} s.d. {t.time(last.ts)}"),
+        Cell(m.TIME_BASIS.get(first.ts_basis.value, "")),
+        Cell(t.tactic(exploit.mitre_tactic, exploit.mitre_technique)),
+        Cell(clean(first.actor) if first.actor else t.label("actor.none")),
+        Cell(text), _event_conf(ctx, max(run, key=lambda e: rank(e.confidence))),
+        Cell(ctx.refs((first.citations[0], last.citations[0]))),
+    )
+
+
 def _timeline(ctx: _Ctx) -> Section:
     t, timeline = ctx.texts, ctx.report.result.timeline
     rows, highlight, notes = [], set(), []
-    for i, event in enumerate(timeline):
+    for run in timeline_runs(timeline):
+        event = run[0]
         n = ctx.number(event.event_id)
+        if len(run) > 1:
+            rows.append(_run_row(ctx, run))
+            continue
         rows.append((
             Cell(n), Cell(t.time(event.ts)), Cell(m.TIME_BASIS.get(event.ts_basis.value, "")),
             Cell(t.tactic(event.mitre_tactic, event.mitre_technique)),
@@ -223,7 +297,7 @@ def _timeline(ctx: _Ctx) -> Section:
             _event_conf(ctx, event), Cell(ctx.refs(event.citations)),
         ))
         if event.is_root_cause:
-            highlight.add(i)
+            highlight.add(len(rows) - 1)
         if event.confidence_reasons:
             reasons = " ".join(t.message(r) for r in event.confidence_reasons)
             notes.append(f"{n}: {reasons}")
@@ -276,6 +350,7 @@ def _code_blocks(ctx: _Ctx) -> list[Block]:
     for finding in report.code_findings:
         pairs = [
             (t.label("code.location"), clean(f"{finding.file}:{finding.line}")),
+            (t.label("code.why"), t.label(f"code.why.{finding.implicated_by}")),
             (t.label("code.confidence"), t.confidence(finding.confidence.value)),
             (t.label("code.sources"), clean(", ".join(finding.sources))),
         ]
@@ -292,7 +367,10 @@ def _code_blocks(ctx: _Ctx) -> list[Block]:
     if scope.analyzed and not report.code_findings:
         blocks.append(Para(t.label("code.none")))
     if scope.analyzed:
-        blocks.append(Fields(((t.label("code.analyzed"), clean(", ".join(scope.analyzed))),)))
+        pairs = [(t.label("code.analyzed"), clean(", ".join(scope.analyzed)))]
+        if scope.included:
+            pairs.append((t.label("code.included"), clean(", ".join(scope.included))))
+        blocks.append(Fields(tuple(pairs)))
     if scope.no_content:
         blocks += [Para(t.label("code.no_content")),
                    Bullets(tuple(clean(p) for p in scope.no_content))]
@@ -345,6 +423,9 @@ def _files(ctx: _Ctx) -> Section:
     blocks: list[Block] = []
     for file in ctx.report.result.affected_files:
         blocks += _file_blocks(ctx, file)
+    if ctx.report.result.log_only_files:
+        blocks += [Heading(t.label("files.log_only")), Para(t.label("files.log_only_note")),
+                   Bullets(tuple(clean(u) for u in ctx.report.result.log_only_files))]
     return Section("file-terdampak", t.label("s.files"),
                    tuple(blocks) or (Para(t.label("review.none")),))
 

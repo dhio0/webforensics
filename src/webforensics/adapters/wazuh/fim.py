@@ -215,4 +215,5 @@ def fim_files(header: RecordingHeader, hits: list[RecordedHit], source: SourceFi
     return FileCollection(
         files=tuple(files), failures=tuple(failures), gaps=gaps, sources=(source,),
         findings=tuple(findings), has_baseline=True, deleted_paths=tuple(deleted),
+        complete_listing=False,
     )

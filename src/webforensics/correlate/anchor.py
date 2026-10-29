@@ -8,6 +8,11 @@ Wazuh FIM gives no btime or ctime (D76). With realtime or whodata FIM, the alert
 write is the anchor: an upper bound seconds after the write, measured by the manager's
 clock rather than the web server's, so it is capped at medium. Scheduled FIM alerts up to
 `frequency` seconds late, so the mtime stays the anchor, capped at low.
+
+On Windows filesystems (D84) a program can set the birth time like any other timestamp,
+and copying or unpacking a file often keeps an old one. Birth time is then used only while
+nothing changed the file afterwards; a later ctime (MFT entry change) is the better date,
+and every anchor is capped at medium.
 """
 
 from datetime import datetime, timedelta
@@ -52,14 +57,17 @@ def choose_anchor(file: FileEvidence, config: CorrelationConfig) -> Anchor | Non
     born_and_untouched = file.btime and (file.ctime is None or file.ctime - file.btime <= skew)
     # If mtime looks forged, a later ctime is probably the `touch` itself, not a content
     # change, so the birth time is the better guess for when the content was written.
-    stomped_with_birth = file.btime and timestomp_signal(file, config) is not None
+    stomped_with_birth = (file.btime and not config.birth_time_settable
+                          and timestomp_signal(file, config) is not None)
+    # On Windows the "cannot be set with touch" argument does not hold (D84).
+    suffix = "_settable" if config.birth_time_settable else ""
     if file.btime and (born_and_untouched or stomped_with_birth):
         ts, basis, best = file.btime, TimestampBasis.BTIME, Confidence.HIGH
-        reasons = [Reason(key="anchor.btime")]
+        reasons = [Reason(key=f"anchor.btime{suffix}")]
     elif file.ctime:
         # Changed after it was born (or no birth time): the last change is what we can date.
         ts, basis, best = file.ctime, TimestampBasis.CTIME, Confidence.HIGH
-        reasons = [Reason(key="anchor.ctime")]
+        reasons = [Reason(key=f"anchor.ctime{suffix}")]
     elif file.mtime:
         ts, basis, best = file.mtime, TimestampBasis.MTIME, Confidence.MEDIUM
         reasons = [Reason(key="anchor.mtime_only")]
@@ -68,6 +76,8 @@ def choose_anchor(file: FileEvidence, config: CorrelationConfig) -> Anchor | Non
     if file.timestamp_source is TimestampSource.COPIED:
         best = Confidence.LOW
         reasons.append(Reason(key="anchor.copied_timestamps"))
+    elif config.birth_time_settable and best is Confidence.HIGH:
+        best = Confidence.MEDIUM
     return Anchor(ts=ts, basis=basis, max_confidence=best, reasons=tuple(reasons))
 
 

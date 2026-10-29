@@ -86,6 +86,7 @@ def _parse_header(lines: list[tuple[int, str]]) -> tuple[ManifestHeader, int]:
         collected_at=_epoch(collected_at) if collected_at else None,
         utc_offset=fields.pop("utc_offset", None),
         birth_time_supported=fields.pop("birth_time_supported", "0") == "1",
+        filesystem=fields.pop("filesystem", None) or None,
         extra=fields,
     )
     return header, index

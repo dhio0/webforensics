@@ -23,12 +23,13 @@ from tests.correlate_helpers import (
 )
 from tests.unit.test_correlate_properties import _random_case
 from tests.unit.test_file_rules import _request_exec, _with_content
+from tests.unit.test_logonly import sqlmap_case
 from tests.unit.test_wazuh_adapter import MARKER_SHA, upload_story
 from tests.wazuh_helpers import DOCROOT, fim_hit, recording
 from webforensics.adapters.file_adapter import DirectoryFileSource
 from webforensics.adapters.wazuh import WazuhRecordingSource
 from webforensics.codeloc.locate import review_code
-from webforensics.correlate import correlate
+from webforensics.correlate import CorrelationConfig, correlate
 from webforensics.detect.log_rules import LOG_RULES
 from webforensics.models import (
     CaseInfo,
@@ -168,6 +169,8 @@ def _crafted(tmp_path):
     yield (numbered((0, outfile)), files(file_ev("uploads/o.php", btime=0, ctime=0, mtime=0)),
            files(file_ev("uploads/o.php", btime=0, ctime=0, mtime=0, content="x"),
                  file_ev("about.php", btime=0, ctime=0, mtime=0)))
+    # scripts seen only in the log: written by INTO OUTFILE, used, then deleted (D85)
+    yield sqlmap_case(), files(), None
     # directory scan without a manifest
     (tmp_path / "web" / "uploads").mkdir(parents=True)
     (tmp_path / "web" / "uploads" / "h.php").write_text("inert")
@@ -207,6 +210,13 @@ def _results(tmp_path):
         result = correlate(logs, evidence)
         webroot = SCENARIOS / name / "evidence" / "webroot"
         yield (result, logs, plain, *review_code(result, evidence, webroot))
+    # The same evidence as if the webroot were on NTFS (D84).
+    logs, evidence = load_scenario("e")
+    windows = CorrelationConfig(case_insensitive_paths=True, birth_time_settable=True)
+    yield correlate(logs, evidence, config=windows), logs, plain, (), None
+    changed = numbered((0, "/admin/upload.php", {"method": "POST"}), (2, "/uploads/c.php"))
+    yield (correlate(changed, files(file_ev("uploads/c.php", ctime=1, mtime=1)), config=windows),
+           changed, plain, (), None)
     for seed in range(100):
         logs, evidence, config = _random_case(seed)
         yield correlate(logs, evidence, config=config), logs, plain, (), None

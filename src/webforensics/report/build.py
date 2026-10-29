@@ -114,7 +114,8 @@ def build_summary(result: CorrelationResult, background_count: int, review: int,
                   background: tuple[BackgroundGroup, ...] = ()) -> list[Reason]:
     lines: list[Reason] = []
     span = _actor_span(result)
-    if result.affected_files and span:
+    compromised = bool(result.affected_files or result.log_only_files)
+    if compromised and span:
         lines.append(_r("summary.compromise_found", files=len(result.affected_files),
                         actors=len(result.iocs.ips), first_at=span[0], last_at=span[1]))
     else:
@@ -128,8 +129,11 @@ def build_summary(result: CorrelationResult, background_count: int, review: int,
         if result.root_cause.alternative_event_ids:
             lines.append(_r("summary.alternatives",
                             count=len(result.root_cause.alternative_event_ids)))
-    elif result.affected_files:
+    elif compromised:
         lines.append(_r("summary.root_cause_unknown"))
+    if result.log_only_files:
+        lines.append(_r("summary.log_only", count=len(result.log_only_files),
+                        paths=", ".join(result.log_only_files)))
     bypass = next((g for g in background if g.rule_id == BYPASS_RULE), None)
     if bypass is not None:
         lines.append(_r("summary.unlinked_bypass", count=bypass.count, clients=bypass.clients,
@@ -179,13 +183,15 @@ def _eradication(result: CorrelationResult) -> list[Reason]:
 def build_recommendations(result: CorrelationResult, review: int,
                           fim_in_use: bool = False,
                           code_findings: tuple[CodeLocation, ...] = ()) -> list[Reason]:
-    compromised = bool(result.affected_files)
+    compromised = bool(result.affected_files or result.log_only_files)
     recs = [_r("rec.containment.preserve")]
     if compromised:
         recs.append(_r("rec.containment.isolate"))
     if result.iocs.ips:
         recs.append(_r("rec.containment.block_ips", ips=", ".join(result.iocs.ips)))
     recs += _eradication(result)
+    if result.log_only_files:
+        recs.append(_r("rec.eradication.check_log_only", paths=", ".join(result.log_only_files)))
     recs += [_r("rec.eradication.fix_code_line", file=f.file, line=f.line)
              for f in code_findings]
     if compromised:

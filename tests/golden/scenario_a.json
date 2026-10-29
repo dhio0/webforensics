@@ -34,7 +34,7 @@
         "size": 1973
       }
     ],
-    "config_sha256": "c5151d3a2f13b07748750ef54e0aa218107778fc0a16cbf3101325edba953255",
+    "config_sha256": "b76fdac793d85a9200e30e0e7c2e75af681bd760f3e74f5ad782f7af6705a0da",
     "generated_at": "2026-10-28T02:00:00Z"
   },
   "result": {
@@ -368,6 +368,7 @@
       }
     ],
     "deleted_paths": [],
+    "log_only_files": [],
     "unexplained_changes": [],
     "gaps": [
       {
@@ -424,11 +425,36 @@
     }
   ],
   "background": [],
-  "code_findings": [],
+  "code_findings": [
+    {
+      "file": "product.php",
+      "line": 4,
+      "snippet": "$query = \"SELECT id, name FROM products WHERE id = $id\";",
+      "vuln_class": "sql_injection",
+      "suggested_fix": "$stmt = $pdo->prepare(\"SELECT id, name FROM products WHERE id = ?\");\n$stmt->execute([$id]);",
+      "confidence": "high",
+      "citation": {
+        "kind": "file",
+        "source": "product.php",
+        "line_no": null,
+        "sha256": "d80c2c86cba7c17c99b964c776ecc45d92874b73b57d4718b07063d80244d3b5",
+        "excerpt": "product.php:4: $query = \"SELECT id, name FROM products WHERE id = $id\";"
+      },
+      "sink_line": 5,
+      "sink": "$pdo->query",
+      "sources": [
+        "$_GET['id']"
+      ],
+      "verified": true,
+      "implicated_by": "sqli_target"
+    }
+  ],
   "code_scope": {
     "analyzed": [
-      "admin/upload.php"
+      "admin/upload.php",
+      "product.php"
     ],
+    "included": [],
     "unverified": [],
     "no_content": []
   },
@@ -457,6 +483,13 @@
       "key": "rec.eradication.fix_upload",
       "params": {
         "path": "/admin/upload.php"
+      }
+    },
+    {
+      "key": "rec.eradication.fix_code_line",
+      "params": {
+        "file": "product.php",
+        "line": "4"
       }
     },
     {

@@ -62,3 +62,9 @@ For webforensics itself: `webforensics eval benchmark/`.
 
 The uploaded "webshells" are inert text markers with PHP-like names. Nothing in the
 evidence is executable. Never run or `include` evidence files.
+
+## External cases
+
+`external/` holds cases built by others, scored against an answer key written before the
+tool ran. The evidence itself is not redistributed; each case's README says where to get
+it and how to reproduce the score. So far: `ashemery-case1` (Ali Hadi's "Web Server Case").

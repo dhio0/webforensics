@@ -1,0 +1,38 @@
+run: run1   timeline rows: 3701
+
+Events
+  MISS G1 command injection  (0 cited lines)
+  HIT  G2 LFI  (16 cited lines)
+  HIT  G3 manual SQLi  (3 cited lines)
+  HIT  G4 sqlmap + tmp shell 09-02  (2209 cited lines)
+  HIT  G5 sqlmap + tmp shell 09-03  (5 cited lines)
+  HIT  G6 phpshell.php  (1 cited lines)
+  HIT  G7 zip / webshell / c99  (7 cited lines)
+  HIT  G8 phpshell2.php  (1 cited lines)
+  event recall 7/8
+
+Files
+  attacker files flagged 5/5  missed: []
+  false accusations 10: ['DVWA/external/phpids/0.6/lib/IDS/Converter.php', 'DVWA/external/phpids/0.6/tests/IDS/MonitorTest.php', 'DVWA/external/phpids/0.6/tests/coverage/Converter.php.html', 'DVWA/vulnerabilities/upload/help/help.php', 'DVWA/vulnerabilities/upload/index.php', 'DVWA/vulnerabilities/upload/source/high.php', 'DVWA/vulnerabilities/upload/source/low.php', 'DVWA/vulnerabilities/upload/source/medium.php', 'dashboard/stylesheets/all-rtl.css', 'dashboard/stylesheets/all.css']
+
+IPs (IOC list)
+  accused: ['192.168.56.102']   other than attacker: []
+  other clients appearing in timeline rows: ['::1']
+
+Root cause
+  POST /dvwa/vulnerabilities/upload/ at 2015-09-03 07:10:15 UTC (access.log:7678, unrestricted_file_upload, confidence medium)
+  strict WRONG   lenient OK
+
+Code
+  findings: []   accepted line hit: False
+  analyzed: ['dvwa/vulnerabilities/upload/index.php']   included: []
+
+Scripts seen only in the logs: []
+Deleted paths reported: []
+Gaps: 13
+
+Inputs (SHA-256):
+  files/xampp/apache/logs/access.log  8b45677ca2c7a1cd6195fc816bb0a53216c3448dbe633144fe3623edc2a979ff
+  files/xampp/apache/logs/error.log  9b249aa17897b763ee8af84745c31d52c4d7c8fcbcf5f7e2955469b8812d5689
+  manifest.tsv  02a9f2e8f5e3bc1cca928d4ccb887a3b02f7ce9e1137fd632747570a563895f9
+Tool: 0.1.0 ruleset 0.1.0 config c5151d3a2f13b077

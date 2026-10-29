@@ -2,7 +2,7 @@
 
 A defensive tool that reconstructs **how a website was compromised**. It correlates evidence from the webroot (suspicious or modified files, their timestamps and hashes) with web server access logs. Like a human analyst, it starts from the file and traces back to the request that created it and the exploit that made that possible. The final output is an incident report in Indonesian.
 
-> **Status: milestone 7 of 7 done; M8 (a realistic benchmark) and M9 (wider coverage) are planned.** Evidence loading (access + error logs, webroot manifest), detection rules, the file-first correlation engine, the Indonesian report (`webforensics analyze`, Markdown + HTML + JSON), the accuracy benchmark (`webforensics eval`, five lab scenarios) and evidence from Wazuh 4.x (`webforensics pull`) work. For SQL injection, it also points at the vulnerable line and suggests a prepared-statement fix. See [docs/plan.md](docs/plan.md).
+> **Status: milestone 7 of 7 done; M8 (a realistic benchmark) is in progress and M9 (wider coverage) is planned.** Evidence loading (access + error logs, webroot manifest), detection rules, the file-first correlation engine, the Indonesian report (`webforensics analyze`, Markdown + HTML + JSON), the accuracy benchmark (`webforensics eval`, five lab scenarios plus one public DFIR case) and evidence from Wazuh 4.x (`webforensics pull`) work. For SQL injection, it also points at the vulnerable line and suggests a prepared-statement fix. See [docs/plan.md](docs/plan.md).
 
 ## Design principles
 - **Deterministic and offline core.** Rules and heuristics only, with no LLM and no network calls in the analysis path. The same inputs always give the same output.
@@ -78,6 +78,25 @@ Step recall in B and E includes the PHP error-log line written by the upload, so
 
 Read these numbers with care. The benchmark is small, synthetic, and made by the same person who wrote the rules. Scenario D failed on its first run: an admin's photo upload was blamed for a CMS cache file. That was fixed (D69), which counts as tuning on a dev scenario. E is held out and passed on its first run, before that fix. Reading D's report also showed that two bots' SQLi login bypass probably worked; the report now says so and recommends fixing the login, without accusing anyone (D71). Runtime is a few hundredths of a second per scenario (machine-dependent, so the table leaves it out). Large logs are measured in [docs/performance.md](docs/performance.md).
 
+## A real case, scored against an answer key written first
+
+The lab is self-made, so the tool was also run on Ali Hadi's public DFIR challenge
+"Web Server Case" (Windows, XAMPP, DVWA, attacked with a browser and sqlmap). The answer
+key came from a public write-up and was fixed before the first run
+([benchmark/external/ashemery-case1](benchmark/external/ashemery-case1/README.md)).
+
+The unchanged tool found all 5 attacker files and the attacker's IP among 15 clients.
+It also accused 10 install files, missed the vulnerable SQL line, never saw the sqlmap
+webshells the attacker had deleted, and wrote a 1.8 MB report. Each problem became a
+general fix with its own test: Windows filesystems, install batches, scripts seen only in
+the logs, following PHP includes, and grouped timelines (D84, D85). Run again, the tool
+gives 0 false files, all 4 deleted scripts, the SQLi line, and a root cause that matches
+the write-up's MFT times to the second, in a 60 KB report.
+
+That second run was measured on the case that drove the fixes, so it is not proof that
+they generalize. The first exploit, a command injection sent in a POST body, cannot be
+seen in an access log at all.
+
 ## Development
 ```bash
 pytest
@@ -92,6 +111,7 @@ ruff check .
 - [docs/evaluation.md](docs/evaluation.md): accuracy metrics, splits, and the limits of a self-made benchmark
 - [docs/wazuh-notes.md](docs/wazuh-notes.md): Wazuh 4.14 behaviour verified against docs, source and the lab
 - [benchmark/README.md](benchmark/README.md): scenario format, and how to score another tool
+- [benchmark/external/ashemery-case1](benchmark/external/ashemery-case1/README.md): the public DFIR case, its answer key and scores
 
 ## License
 MIT, see [LICENSE](LICENSE). Third-party code used as test fixtures keeps its own license; each fixture states its source and license.

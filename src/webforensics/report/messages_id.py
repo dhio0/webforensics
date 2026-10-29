@@ -21,6 +21,15 @@ MESSAGES: dict[str, str] = {
         "Request yang kemungkinan menulis {file} tanpa login sebelumnya: "
         "{method} {path} → {status}."),
     "timeline.file_write_request": "Request yang menulis {file}: {method} {path} → {status}.",
+    "timeline.sqli_file_write": (
+        "SQL injection yang menulis {file} ke webroot (INTO OUTFILE): {method} {path} → "
+        "{status}."),
+    "timeline.log_only_file": (
+        "Skrip {file} dipakai lewat HTTP ({uses} request berhasil), tetapi tidak ada di webroot "
+        "saat bukti dikumpulkan: kemungkinan sudah dihapus. Pertama: {method} {path} → {status}."),
+    "timeline.file_deleted_by_command": (
+        "Perintah penghapusan {file} dijalankan lewat parameter perintah: {method} {path} → "
+        "{status}."),
     "timeline.file_write_candidate": (
         "Kandidat lain penulis {file}: {method} {path} → {status}."),
     "timeline.file_created": "File {path} dibuat (SHA-256 {sha256_short}).",
@@ -28,7 +37,8 @@ MESSAGES: dict[str, str] = {
     "timeline.file_modified_mtime": (
         "File {path} diubah menurut mtime, yang bisa dipalsukan (SHA-256 {sha256_short})."),
     "timeline.file_invoked": "File {file} diakses: {method} {path} → {status}.",
-    "timeline.file_timestomp": "Timestamp {path} kemungkinan dipalsukan (timestomping).",
+    "timeline.file_timestomp": "Timestamp {path} tidak konsisten: dipalsukan (timestomping) "
+                               "atau terbawa dari arsip/salinan, jadi mtime-nya tidak dipakai.",
     "timeline.file_deleted": "File {path} dihapus (terdeteksi Wazuh FIM {mode}).",
     # --- Why a time was chosen ----------------------------------------------------------
     "anchor.btime": "Waktu dari btime (waktu file lahir), yang tidak bisa diubah dengan touch.",
@@ -44,6 +54,13 @@ MESSAGES: dict[str, str] = {
                             "Keyakinan paling tinggi: rendah.",
     "anchor.copied_timestamps": "Timestamp berasal dari salinan file, bukan dari server asli. "
                                 "Keyakinan paling tinggi: rendah.",
+    "anchor.btime_settable": "Waktu dari waktu lahir file. Webroot ada di filesystem Windows, "
+                             "tempat semua timestamp (termasuk waktu lahir) bisa diatur "
+                             "program dan sering terbawa saat file disalin atau diekstrak. "
+                             "Keyakinan paling tinggi: sedang.",
+    "anchor.ctime_settable": "Waktu dari perubahan metadata terakhir (entri MFT). Webroot ada "
+                             "di filesystem Windows, tempat timestamp ini pun bisa diatur "
+                             "program. Keyakinan paling tinggi: sedang.",
     # --- Which request wrote the file ---------------------------------------------------
     "creation.single_candidate": "Hanya satu request penulis yang cocok dengan waktu file dibuat.",
     "creation.multiple_candidates": "Ada {count} request kandidat di sekitar waktu file dibuat.",
@@ -75,6 +92,15 @@ MESSAGES: dict[str, str] = {
     "seed.lonely_write": "File kode ditulis sendirian, di luar batch deploy. Tanpa baseline, "
                          "ini hanya sinyal lemah.",
     # --- Entry point ----------------------------------------------------------------------
+    "root.sqli_file_write": "Request SQL injection ini sendiri menulis skrip ke webroot, dan "
+                            "skrip itu kemudian dipakai. Isi skrip tidak bisa diperiksa karena "
+                            "file-nya sudah tidak ada.",
+    "logonly.not_in_webroot": "Tidak ada file di bukti webroot yang melayani URL ini, jadi isi "
+                              "dan hash-nya tidak diketahui. Kesimpulan hanya dari baris log.",
+    "logonly.outfile_then_served": "Nama file dari INTO OUTFILE kemudian diminta oleh klien yang "
+                                   "sama dan dijawab 2xx, jadi file itu benar tertulis.",
+    "logonly.write_inferred": "Request tulis terdekat dari klien yang sama sebelum skrip ini "
+                              "pertama kali dipakai. Isi POST tidak tercatat, jadi ini dugaan.",
     "root.write_without_prior_login": "Tidak ada login yang terlihat sebelum request penulis, "
                                       "jadi request itu sendiri dianggap titik masuk.",
     "root.sqli_login_then_write_same_area": "Login dengan payload SQL injection berhasil, lalu "
@@ -100,7 +126,9 @@ MESSAGES: dict[str, str] = {
                                           "bocor, atau SQL injection lewat POST).",
     "confidence.gap_overlap": "Celah bukti {gap} tumpang tindih dengan waktu kejadian ini, "
                               "jadi keyakinan diturunkan.",
-    "timestomp.mtime_before_btime": "mtime ({mtime}) lebih awal dari btime ({btime}).",
+    "timestomp.mtime_before_btime": "mtime ({mtime}) lebih awal dari btime ({btime}). Ini "
+                                    "juga terjadi saat file disalin atau diekstrak dengan "
+                                    "mtime aslinya.",
     "timestomp.mtime_older_than_ctime": "mtime ({mtime}) jauh lebih tua dari ctime ({ctime}).",
     "timestomp.mtime_before_fim": "mtime ({mtime}) jauh lebih tua dari saat Wazuh FIM realtime "
                                   "melihat isi file ini muncul ({fim}).",
@@ -162,6 +190,10 @@ MESSAGES: dict[str, str] = {
     "summary.gaps_affect": "{count} celah bukti melemahkan kesimpulan. Lihat bagian Celah Bukti.",
     "summary.unexplained": "{count} perubahan file perlu ditinjau manual.",
     "summary.deleted": "{count} file dari baseline sudah tidak ada.",
+    "rec.eradication.check_log_only": "Pastikan skrip berikut benar-benar sudah tidak ada di "
+                                      "server, termasuk di salinan dan backup: {paths}.",
+    "summary.log_only": "{count} skrip dipakai penyerang tetapi sudah tidak ada di webroot "
+                        "(hanya terlihat di log): {paths}.",
     "summary.unlinked_bypass": "{count} login lewat SQL injection ke {paths} tampaknya "
                                "berhasil (respons seperti login yang sukses), dari {clients} "
                                "klien yang tidak terkait insiden. Tidak ada yang dituduh, tetapi "
@@ -229,8 +261,9 @@ MESSAGES: dict[str, str] = {
                              "masuk ke baseline FIM tanpa alert. Di lab, restart beberapa "
                              "detik sudah cukup untuk melewatkan satu file. Mode terjadwal "
                              "bisa terlambat sampai 12 jam.",
-    "limit.code_scope": "Analisis kode hanya mencari SQL injection di file PHP yang terlibat, "
-                        "per file dan per fungsi. Alur lewat fungsi atau file lain, input dari "
+    "limit.code_scope": "Analisis kode hanya mencari SQL injection di file PHP yang terlibat "
+                        "dan file yang di-include-nya (satu tingkat, dari pola path include), "
+                        "per file dan per fungsi. Alur lewat pemanggilan fungsi, input dari "
                         "framework, dan ORM tidak dilacak, jadi \"tidak ditemukan\" bukan "
                         "berarti aman. Celah upload belum dilokalisasi di kode.",
     "limit.no_code_content": "Kode sumber file yang terlibat tidak dianalisis karena isinya "
@@ -283,7 +316,7 @@ FIM_EVENTS: dict[str, str] = {
 }
 
 TIMESTAMP_SOURCE: dict[str, str] = {
-    "manifest": "manifest collect.sh", "live_stat": "stat langsung di server",
+    "manifest": "manifest webroot", "live_stat": "stat langsung di server",
     "wazuh_fim": "Wazuh FIM", "copied": "salinan (kurang terpercaya)",
 }
 
@@ -324,6 +357,10 @@ LABELS: dict[str, str] = {
     "s.timeline": "3. Kronologi Serangan",
     "s.root": "4. Akar Masalah",
     "s.files": "5. File Terdampak",
+    "files.log_only": "Skrip yang hanya terlihat di log",
+    "files.log_only_note": "Skrip ini dipakai penyerang lewat HTTP tetapi tidak ada di bukti "
+                           "webroot, jadi isi dan hash-nya tidak diketahui. Jejaknya ada di "
+                           "Kronologi Serangan.",
     "s.review": "6. Perubahan yang Perlu Ditinjau",
     "s.iocs": "7. Indikator Kompromi (IOC)",
     "s.gaps": "8. Celah Bukti",
@@ -360,12 +397,22 @@ LABELS: dict[str, str] = {
     "scope.fim_files": "file berubah menurut Wazuh FIM",
     "scope.fim_baseline": "scan awal Wazuh FIM (file yang tidak berubah tidak tercantum)",
     "timeline.notes": "Catatan keyakinan",
+    "timeline.run": "Rentetan {count} request yang ditandai dari aktor ini: {endpoints}. "
+                    "Jenis: {rules}. Daftar lengkapnya ada di report.json.",
+    "timeline.run_more": "dan {count} endpoint lain",
     "root.event": "Kejadian", "root.vuln": "Jenis kelemahan", "root.confidence": "Keyakinan",
     "root.why": "Alasan", "root.alternatives": "Kandidat lain",
     "root.code": "Baris kode yang rentan", "code.location": "Lokasi",
     "code.sink": "Query dijalankan di", "code.sources": "Input dari",
     "code.confidence": "Keyakinan", "code.fix": "Contoh perbaikan (prepared statement)",
     "code.analyzed": "File yang dianalisis",
+    "code.included": "File yang di-include oleh file tersebut (ikut dianalisis)",
+    "code.why": "Kenapa dianalisis",
+    "code.why.entry": "endpoint titik masuk (akar masalah atau kandidatnya)",
+    "code.why.write": "endpoint yang menulis file mencurigakan",
+    "code.why.sqli_target": "endpoint yang diserang SQL injection oleh penyerang dan "
+                            "menjawab 2xx (belum tentu titik masuk)",
+    "code.why.included": "di-include oleh file yang terlibat",
     "code.none": "Tidak ditemukan SQL injection di file yang dianalisis (lihat batas analisis "
                  "di Keterbatasan).",
     "code.no_content": "Isi file berikut tidak tersedia, jadi kodenya tidak dianalisis:",

@@ -15,7 +15,7 @@
 set -euo pipefail
 export LC_ALL=C
 
-COLLECTOR_VERSION="0.1.0"
+COLLECTOR_VERSION="0.2.0"
 
 usage() {
   echo "usage: $0 -w WEBROOT -o OUTDIR [-l LOG_FILE_OR_DIR]..." >&2
@@ -79,6 +79,7 @@ write_rows() {
   echo "#collected_at=$(date -u +%s)"
   echo "#utc_offset=$(date +%z)"
   echo "#birth_time_supported=$birth_supported"
+  echo "#filesystem=$(stat -f -c %T "$webroot" 2>/dev/null || echo unknown)"
   echo "#columns=path_hex,type,size,mode,uid,inode,atime,mtime,ctime,btime,sha256"
   (write_rows)
 } > "$manifest"

@@ -12,7 +12,7 @@ _WF-54BD23F4D5 · 2026-10-28 09:00:00 WIB_
 - \#1 2026-10-29 12:18:59 WIB: Upload yang menulis uploads/scenario-e-marker.php tanpa login sebelumnya: POST /admin/upload.php → 200.
 - \#2 2026-10-29 12:18:59 WIB: File uploads/scenario-e-marker.php dibuat (SHA-256 3a33ab856f7e…).
 - \#3 2026-10-29 12:19:01 WIB: File uploads/scenario-e-marker.php diakses: GET /uploads/scenario-e-marker.php → 200.
-- \#4 2026-10-29 12:19:03 WIB: Timestamp uploads/scenario-e-marker.php kemungkinan dipalsukan (timestomping).
+- \#4 2026-10-29 12:19:03 WIB: Timestamp uploads/scenario-e-marker.php tidak konsisten: dipalsukan (timestomping) atau terbawa dari arsip/salinan, jadi mtime-nya tidak dipakai.
 
 ## 2. Informasi Kasus
 
@@ -38,7 +38,7 @@ _WF-54BD23F4D5 · 2026-10-28 09:00:00 WIB_
 | #1 | 2026-10-29 12:18:59 WIB | log | Initial Access (akses awal) · T1190 | 192.0.2.31 | **AKAR MASALAH: Upload yang menulis uploads/scenario-e-marker.php tanpa login sebelumnya: POST /admin/upload.php → 200.** | tinggi (sebagai titik masuk: sedang) | access.log:4, uploads/scenario-e-marker.php @3a33ab856f7e, error.log:1 |
 | #2 | 2026-10-29 12:18:59 WIB | btime | Persistence (bertahan) · T1505.003 | - | File uploads/scenario-e-marker.php dibuat (SHA-256 3a33ab856f7e…). | tinggi | uploads/scenario-e-marker.php @3a33ab856f7e |
 | #3 | 2026-10-29 12:19:01 WIB | log | Persistence (bertahan) · T1505.003 | 192.0.2.31 | File uploads/scenario-e-marker.php diakses: GET /uploads/scenario-e-marker.php → 200. | tinggi | access.log:5 |
-| #4 | 2026-10-29 12:19:03 WIB | ctime | Defense Evasion (menghindari deteksi) · T1070.006 | - | Timestamp uploads/scenario-e-marker.php kemungkinan dipalsukan (timestomping). | sedang | uploads/scenario-e-marker.php @3a33ab856f7e |
+| #4 | 2026-10-29 12:19:03 WIB | ctime | Defense Evasion (menghindari deteksi) · T1070.006 | - | Timestamp uploads/scenario-e-marker.php tidak konsisten: dipalsukan (timestomping) atau terbawa dari arsip/salinan, jadi mtime-nya tidak dipakai. | sedang | uploads/scenario-e-marker.php @3a33ab856f7e |
 
 ### Catatan keyakinan
 
@@ -81,13 +81,13 @@ Tidak ditemukan SQL injection di file yang dianalisis (lihat batas analisis di K
 - **Ukuran:** 26 byte
 - **Status baseline:** baru
 - **Timestamp:** btime 2026-10-29 12:18:59 WIB; ctime 2026-10-29 12:19:03 WIB; mtime 2024-01-15 10:00:00 WIB
-- **Sumber timestamp:** manifest collect.sh
+- **Sumber timestamp:** manifest webroot
 - **URL:** /uploads/scenario-e-marker.php
 
 Temuan
 
 - File skrip di folder yang bisa ditulis: uploads/scenario-e-marker.php (FILE-WEBSHELL-WRITABLE-EXEC, keyakinan sedang)
-- mtime (2024-01-15 10:00:00 WIB) lebih awal dari btime (2026-10-29 12:18:59 WIB). (FILE-ANTIFORENSICS-TIMESTOMP, keyakinan sedang)
+- mtime (2024-01-15 10:00:00 WIB) lebih awal dari btime (2026-10-29 12:18:59 WIB). Ini juga terjadi saat file disalin atau diekstrak dengan mtime aslinya. (FILE-ANTIFORENSICS-TIMESTOMP, keyakinan sedang)
 
 ## 6. Perubahan yang Perlu Ditinjau
 
@@ -164,7 +164,7 @@ Tidak ada.
 - Penyerang dengan akses root bisa memalsukan timestamp file. Alat ini hanya mendeteksi ketidakkonsistenan, tidak bisa membuktikan keaslian.
 - Penyerang dengan akses root bisa menghapus baris log. Yang bisa dideteksi hanya celah waktu yang mencolok.
 - IP yang dipakai bersama (NAT, proxy, CDN tanpa X-Forwarded-For) bisa menggabungkan beberapa orang menjadi satu aktor.
-- Analisis kode hanya mencari SQL injection di file PHP yang terlibat, per file dan per fungsi. Alur lewat fungsi atau file lain, input dari framework, dan ORM tidak dilacak, jadi "tidak ditemukan" bukan berarti aman. Celah upload belum dilokalisasi di kode.
+- Analisis kode hanya mencari SQL injection di file PHP yang terlibat dan file yang di-include-nya (satu tingkat, dari pola path include), per file dan per fungsi. Alur lewat pemanggilan fungsi, input dari framework, dan ORM tidak dilacak, jadi "tidak ditemukan" bukan berarti aman. Celah upload belum dilokalisasi di kode.
 
 ## Lampiran A. Rujukan Bukti
 
@@ -179,7 +179,7 @@ Tidak ada.
 
 - **Versi alat:** 0.1.0
 - **Versi ruleset:** 0.1.0
-- **Hash konfigurasi:** a327ad9cd4b7b387c7dbfe4a49da4ceac364dddc5291bf29aeadbcf8722e1dda
+- **Hash konfigurasi:** 1d5d353b0c14d74de5458be82560b52b093a4f44782a1fb3113e7b80fcd5fd39
 
 ### File input
 

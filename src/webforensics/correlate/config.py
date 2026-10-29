@@ -1,6 +1,9 @@
 """Tunable thresholds for correlation. Defaults are documented in docs/plan.md §4."""
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
+
+# `stat -f -c %T` names of Windows filesystems (D84).
+WINDOWS_FILESYSTEMS = frozenset({"ntfs", "ntfs3", "exfat", "vfat", "msdos", "fat", "refs"})
 
 
 @dataclass(frozen=True)
@@ -30,3 +33,14 @@ class CorrelationConfig:
     # times in total, is a rarely-hit POST target.
     rare_post_max_clients: int = 2
     rare_hits_max: int = 20
+    # Windows filesystems (D84): URLs match file paths whatever their case, and birth
+    # time is as settable as mtime, so it is not trusted over a later ctime.
+    case_insensitive_paths: bool = False
+    birth_time_settable: bool = False
+
+
+def for_filesystem(config: CorrelationConfig, filesystem: str | None) -> CorrelationConfig:
+    """The config adjusted to the webroot's filesystem, as recorded in the manifest."""
+    if filesystem is None or filesystem.casefold() not in WINDOWS_FILESYSTEMS:
+        return config
+    return replace(config, case_insensitive_paths=True, birth_time_settable=True)

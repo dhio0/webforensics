@@ -26,12 +26,13 @@ from webforensics.correlate.baseline import apply_baseline
 from webforensics.correlate.confidence import cap, lower, rank
 from webforensics.correlate.config import CorrelationConfig
 from webforensics.correlate.gaps import coverage_gap, make_gap, parse_error_gaps, silence_gaps
+from webforensics.correlate.logonly import LogOnlyFile, find_log_only_files
 from webforensics.correlate.seeds import (
+    decisive,
     deploy_writes,
     is_strong_seed,
     lonely_finding,
     lonely_writes,
-    only_status_signals,
     rare_post_finding,
 )
 from webforensics.detect import RULESET_VERSION
@@ -173,7 +174,7 @@ class _Index:
         self.by_url: dict[str, list[LogEvent]] = defaultdict(list)
         for event in self.events:
             self.by_actor[self.actor_of[event.evidence_id]].append(event)
-            self.by_url[_url_key(event.path or "")].append(event)
+            self.by_url[self.url_key(event.path or "")].append(event)
         self.actor_times = {a: [e.ts for e in own] for a, own in self.by_actor.items()}
         self.logins = login_outcomes(self.events, self.actor_of,
                                      frozenset(self.by_subject))
@@ -205,9 +206,17 @@ class _Index:
         # At most one entry can be `path` itself, so this looks at one or two entries.
         return any(self.births[i][1] != path for i in range(lo, hi))
 
+    def url_key(self, path: str) -> str:
+        """Lookup key of a logged request path (percent-decoded)."""
+        return self.fold(_url_key(path))
+
+    def fold(self, url: str) -> str:
+        return url.casefold() if self.config.case_insensitive_paths else url
+
     def hits(self, file: FileEvidence) -> list[LogEvent]:
         """Requests to any URL that serves this file, in log order."""
-        found = [e for url in file.url_paths for e in self.by_url.get(url, [])]
+        urls = dict.fromkeys(self.fold(url) for url in file.url_paths)
+        found = [e for url in urls for e in self.by_url.get(url, [])]
         return sorted(found, key=lambda e: (e.ts, e.log_file, e.line_no))
 
     def of(self, event: LogEvent) -> list[Finding]:
@@ -515,7 +524,9 @@ def _entry_point(chain: _Chain, index: _Index) -> None:
 def _context_draft(event: LogEvent, index: _Index, first: bool) -> _Draft | None:
     findings = index.of(event)
     if findings:
-        top = findings[0]
+        # A scanner user agent carrying an attack payload (sqlmap) is an exploit attempt.
+        top = next((f for f in findings if f.category is not FindingCategory.RECON),
+                   findings[0])
         kind = "recon" if top.category is FindingCategory.RECON else "exploit_attempt"
         confidence = max((f.confidence for f in findings), key=rank)
         return _log_draft(index, kind, event, confidence, top.mitre[0] if top.mitre else None,
@@ -609,6 +620,39 @@ def _unlinked_bypasses(index: _Index, in_timeline: set[str],
     return found
 
 
+# --- Step 7b: scripts seen only in the logs (D85) ------------------------------------
+
+
+def _log_only_drafts(shell: LogOnlyFile, index: _Index) -> tuple[list[_Draft], _Draft | None]:
+    """Timeline events for one log-only script, and its entry point if it shows one."""
+    first, drafts, root = shell.uses[0], [], None
+    seen = _log_draft(index, "log_only_file", first, Confidence.MEDIUM, "T1505.003",
+                      file=shell.url, uses=str(len(shell.uses)))
+    seen.reasons.append(Reason(key="logonly.not_in_webroot"))
+    drafts.append(seen)
+    for event in shell.uses[1: index.config.max_invocations]:
+        drafts.append(_log_draft(index, "file_invoked", event, Confidence.HIGH, "T1505.003",
+                                 file=shell.url))
+    writer = shell.written_by
+    if writer is not None and shell.outfile:
+        root = _log_draft(index, "sqli_file_write", writer, Confidence.HIGH, "T1190",
+                          file=shell.url, vuln_class="sql_injection_file_write")
+        root.reasons.append(Reason(key="logonly.outfile_then_served"))
+        root.root_cap = Confidence.MEDIUM
+        root.root_reasons.append(Reason(key="root.sqli_file_write"))
+        drafts.append(root)
+    elif writer is not None:
+        write = _log_draft(index, "file_write_request", writer, Confidence.MEDIUM,
+                           "T1505.003", file=shell.url)
+        write.reasons.append(Reason(key="logonly.write_inferred"))
+        drafts.append(write)
+    if shell.deleted_by is not None:
+        gone = _log_draft(index, "file_deleted_by_command", shell.deleted_by, Confidence.MEDIUM,
+                          "T1070.004", file=shell.url)
+        drafts.append(gone)
+    return drafts, root
+
+
 # --- Step 8: assemble ---------------------------------------------------------------
 
 
@@ -662,7 +706,7 @@ def _deleted_draft(file: FileEvidence) -> _Draft:
 
 
 def _iocs(chains: list[_Chain], drafts: list[_Draft], actors: set[str],
-          index: _Index) -> Iocs:
+          index: _Index, shells: list[LogOnlyFile] = ()) -> Iocs:
     agents = {
         index.by_id[d.subject].user_agent for d in drafts
         if d.subject in index.by_id and d.actor in actors and index.by_id[d.subject].user_agent
@@ -671,7 +715,8 @@ def _iocs(chains: list[_Chain], drafts: list[_Draft], actors: set[str],
         ips=tuple(sorted(actors)), user_agents=tuple(sorted(a for a in agents if a)),
         sha256s=tuple(sorted({c.file.sha256 for c in chains})),
         paths=tuple(sorted(c.file.path for c in chains)),
-        urls=tuple(sorted({url for c in chains for url in c.file.url_paths})),
+        urls=tuple(sorted({*(url for c in chains for url in c.file.url_paths),
+                           *(s.url for s in shells)})),
     )
 
 
@@ -728,9 +773,10 @@ def _root_cause(roots: list[_Draft], chains: list[_Chain],
         return None
     primary = drafts[roots[0].event_id]  # the copy that is actually in the timeline
     primary.is_root_cause = True
-    primary_chain = next(c for c in chains if c.root is roots[0])
+    # A log-only script's entry point has no chain (D85).
+    primary_chain = next((c for c in chains if c.root is roots[0]), None)
     alternatives = [r.event_id for r in roots[1:] if r.event_id != primary.event_id]
-    if primary_chain.root is primary_chain.creation:
+    if primary_chain is not None and primary_chain.root is primary_chain.creation:
         alternatives += [a.event_id for a in primary_chain.alternatives]
     return RootCause(
         event_id=primary.event_id, vuln_class=primary.params.get("vuln_class") or None,
@@ -761,9 +807,9 @@ def correlate(logs: LogCollection, files: FileCollection, *,
         file_findings = detect_file(file)
         findings.extend(file_findings)
         strong = is_strong_seed(file, file_findings)
-        # New/changed is the only signal, and many files were written with it: a deploy.
-        # Only a request that wrote the file can tie it to the attack (D79).
-        deploy = strong and only_status_signals(file_findings) and file.path in deploys
+        # Written with many other files (a deploy or install) and nothing in its content
+        # proves a webshell: only a request that wrote it can tie it to the attack (D79, D84).
+        deploy = strong and file.path in deploys and not decisive(file_findings)
         lone = not strong and file.path in lonely
         weak = "seed.deploy_batch" if deploy else "seed.lonely_write" if lone else None
         if not strong and not weak:
@@ -793,8 +839,18 @@ def correlate(logs: LogCollection, files: FileCollection, *,
         if missing is not None:
             gaps.append(missing)
 
-    roots = sorted((c.root for c in chains if c.root), key=lambda d: (d.ts, d.order))
-    actors = _implicated_actors(chains, roots)
+    served = {index.fold(url) for f in files.files for url in f.url_paths}
+    # Only a full webroot listing shows that a script was gone (not under Wazuh FIM).
+    shells = find_log_only_files(index, served) if files.complete_listing else []
+    shell_drafts: list[_Draft] = []
+    shell_roots: list[_Draft] = []
+    for shell in shells:
+        made, root = _log_only_drafts(shell, index)
+        shell_drafts += made
+        shell_roots += [root] if root is not None else []
+    roots = sorted([*(c.root for c in chains if c.root), *shell_roots],
+                   key=lambda d: (d.ts, d.order))
+    actors = _implicated_actors(chains, roots) | {s.actor for s in shells}
 
     drafts: dict[str, _Draft] = {}
     for chain in chains:
@@ -802,7 +858,7 @@ def correlate(logs: LogCollection, files: FileCollection, *,
                       *chain.invocations):
             if draft is not None:
                 drafts.setdefault(draft.event_id, draft)
-    for draft in extra:
+    for draft in [*extra, *shell_drafts]:
         drafts.setdefault(draft.event_id, draft)
     taken = {d.subject for d in drafts.values() if d.basis is TimestampBasis.LOG}
     for draft in _context(index, actors, taken, roots):
@@ -820,7 +876,8 @@ def correlate(logs: LogCollection, files: FileCollection, *,
     return CorrelationResult(
         timeline=timeline, root_cause=root_cause, findings=tuple(findings),
         affected_files=tuple(c.file for c in chains), deleted_paths=deleted,
+        log_only_files=tuple(s.url for s in shells),
         unexplained_changes=tuple(unexplained),
-        gaps=tuple(gaps), iocs=_iocs(chains, ordered, actors, index),
+        gaps=tuple(gaps), iocs=_iocs(chains, ordered, actors, index, shells),
         unattributed_finding_ids=tuple(f.finding_id for f in findings if f.finding_id not in used),
     )

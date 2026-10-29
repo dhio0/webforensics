@@ -91,6 +91,40 @@ The 8 misses, by category:
 
 Read with care. "Detected" means a finding in the vulnerable file that the project's own fix removes; it was chosen after a first scoring (exact changed line only) gave 0/13, because fixes often change the line that reads the input rather than the line that builds the query (D83). 13 cases is a small sample, and the selection rule keeps only the brief's scope (superglobals reaching a query in one file), which excluded 162 of 175 real fixes. The localizer was improved on these cases (generic SQL sinks, branch-aware tracking, element-wise escaping), so they are a dev set now; M8 needs fresh cases to measure without that bias.
 
+## First independent case (M8)
+
+Ali Hadi's public "Web Server Case" (Windows, XAMPP, DVWA, browser and sqlmap) is the
+first incident the author did not build. The answer key was written from a public
+write-up before the tool ran, and its hash is recorded
+([benchmark/external/ashemery-case1](../benchmark/external/ashemery-case1/README.md)).
+The image itself is not redistributed.
+
+| | Run 1: committed tool, unchanged | Run 2: after D84, D85 (post-hoc) |
+|---|---|---|
+| Attacker files flagged | 5/5 | 5/5 |
+| Files falsely accused | 10 | 0 |
+| Attacker IP (14 other clients in the log) | correct, no false IP | same |
+| Attack events cited | 7/8 | 7/8 |
+| Root cause: strict / lenient | wrong / correct | wrong / correct |
+| Deleted attacker scripts reported | 0/4 | 4/4 |
+| Vulnerable SQLi line | missed | found (2 accepted lines) |
+| Markdown report | 1.8 MB | 60 KB |
+
+What run 1 taught (each became a general fix with its own synthetic test, D84, D85):
+- **Windows webroots.** URLs and file names differ in case. NTFS birth times are
+  settable and survive unpacking, so an unpacked webshell was dated two years early.
+- **Installs look odd.** App code in a folder named `upload`, encoded test data and old
+  mtimes from unpacking made 10 install files look like webshells.
+- **Deleted webshells.** sqlmap's shells were written by `INTO OUTFILE`, used and
+  deleted. The file-first engine never saw them, so it named a later upload as the way in.
+- **Includes.** The SQL query lives in a file the endpoint includes through a variable path.
+- **Readability.** One timeline row per sqlmap request made the report unusable.
+
+Read with care: one case, and run 2 was measured on the case the fixes came from. The
+lab benchmark scores did not change. The strict root cause (a command injection in a POST
+body) is out of reach for any access-log analysis. A second, untouched case is the next
+step before claiming the fixes generalize.
+
 ## Using the benchmark with another tool
 
 See [benchmark/README.md](../benchmark/README.md). The ground truth format is tool-neutral.

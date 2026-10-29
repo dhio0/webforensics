@@ -70,6 +70,7 @@ _WF-6A5510F7FF · 2026-10-28 09:00:00 WIB_
 ### Baris kode yang rentan
 
 - **Lokasi:** admin/login.php:13
+- **Kenapa dianalisis:** endpoint titik masuk (akar masalah atau kandidatnya)
 - **Keyakinan:** tinggi
 - **Input dari:** \$\_GET, \$\_POST
 - **Query dijalankan di:** admin/login.php:14 (\$pdo-\>query)
@@ -96,7 +97,7 @@ $stmt->execute([$username, $password]);
 - **Ukuran:** 26 byte
 - **Status baseline:** tidak diketahui (tanpa baseline)
 - **Timestamp:** btime 2026-10-29 12:17:13 WIB; ctime 2026-10-29 12:17:13 WIB; mtime 2026-10-29 12:17:13 WIB
-- **Sumber timestamp:** manifest collect.sh
+- **Sumber timestamp:** manifest webroot
 - **URL:** /uploads/scenario-b-marker.php
 
 Temuan
@@ -183,7 +184,7 @@ Tidak ada.
 - Penyerang dengan akses root bisa memalsukan timestamp file. Alat ini hanya mendeteksi ketidakkonsistenan, tidak bisa membuktikan keaslian.
 - Penyerang dengan akses root bisa menghapus baris log. Yang bisa dideteksi hanya celah waktu yang mencolok.
 - IP yang dipakai bersama (NAT, proxy, CDN tanpa X-Forwarded-For) bisa menggabungkan beberapa orang menjadi satu aktor.
-- Analisis kode hanya mencari SQL injection di file PHP yang terlibat, per file dan per fungsi. Alur lewat fungsi atau file lain, input dari framework, dan ORM tidak dilacak, jadi "tidak ditemukan" bukan berarti aman. Celah upload belum dilokalisasi di kode.
+- Analisis kode hanya mencari SQL injection di file PHP yang terlibat dan file yang di-include-nya (satu tingkat, dari pola path include), per file dan per fungsi. Alur lewat pemanggilan fungsi, input dari framework, dan ORM tidak dilacak, jadi "tidak ditemukan" bukan berarti aman. Celah upload belum dilokalisasi di kode.
 
 ## Lampiran A. Rujukan Bukti
 
@@ -201,7 +202,7 @@ Tidak ada.
 
 - **Versi alat:** 0.1.0
 - **Versi ruleset:** 0.1.0
-- **Hash konfigurasi:** a327ad9cd4b7b387c7dbfe4a49da4ceac364dddc5291bf29aeadbcf8722e1dda
+- **Hash konfigurasi:** 1d5d353b0c14d74de5458be82560b52b093a4f44782a1fb3113e7b80fcd5fd39
 
 ### File input
 

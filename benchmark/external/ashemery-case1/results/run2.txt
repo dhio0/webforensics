@@ -1,0 +1,38 @@
+run: run2   timeline rows: 3698
+
+Events
+  MISS G1 command injection  (0 cited lines)
+  HIT  G2 LFI  (16 cited lines)
+  HIT  G3 manual SQLi  (3 cited lines)
+  HIT  G4 sqlmap + tmp shell 09-02  (2213 cited lines)
+  HIT  G5 sqlmap + tmp shell 09-03  (7 cited lines)
+  HIT  G6 phpshell.php  (1 cited lines)
+  HIT  G7 zip / webshell / c99  (27 cited lines)
+  HIT  G8 phpshell2.php  (1 cited lines)
+  event recall 7/8
+
+Files
+  attacker files flagged 5/5  missed: []
+  false accusations 0: []
+
+IPs (IOC list)
+  accused: ['192.168.56.102']   other than attacker: []
+  other clients appearing in timeline rows: []
+
+Root cause
+  GET /dvwa/vulnerabilities/sqli/ at 2015-09-02 11:25:52 UTC (access.log:7600, sql_injection_file_write, confidence medium)
+  strict WRONG   lenient OK
+
+Code
+  findings: [('DVWA/vulnerabilities/sqli/source/low.php', 9), ('DVWA/vulnerabilities/sqli/source/medium.php', 10)]   accepted line hit: True
+  analyzed: ['DVWA/vulnerabilities/sqli/index.php', 'DVWA/vulnerabilities/upload/index.php']   included: ['DVWA/dvwa/includes/dvwaPage.inc.php', 'DVWA/vulnerabilities/sqli/source/high.php', 'DVWA/vulnerabilities/sqli/source/low.php', 'DVWA/vulnerabilities/sqli/source/medium.php', 'DVWA/vulnerabilities/upload/source/high.php', 'DVWA/vulnerabilities/upload/source/low.php', 'DVWA/vulnerabilities/upload/source/medium.php']
+
+Scripts seen only in the logs: ['/tmpukudk.php', '/tmpbiwuc.php', '/tmpudvfh.php', '/tmpbrjvl.php']
+Deleted paths reported: []
+Gaps: 12
+
+Inputs (SHA-256):
+  files/xampp/apache/logs/access.log  8b45677ca2c7a1cd6195fc816bb0a53216c3448dbe633144fe3623edc2a979ff
+  files/xampp/apache/logs/error.log  9b249aa17897b763ee8af84745c31d52c4d7c8fcbcf5f7e2955469b8812d5689
+  manifest.tsv  caec72efda53d8f3a6ccd117773a773c251bbca29b204a2a191e0bd0c9dd1928
+Tool: 0.1.0 ruleset 0.1.0 config c273a9136467a787

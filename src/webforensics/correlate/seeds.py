@@ -6,10 +6,12 @@ written on its own, apart from any deploy batch ("lonely write"). A weak seed on
 the incident if a request plausibly wrote it or it is a rarely-hit POST target;
 otherwise it is listed for manual review (D49).
 
-The same batches catch deploys: a code file whose only signal is being new or changed,
-written together with more than `lonely_cluster_max` other files, is held to the weak-seed
-standard too (D79). Wazuh FIM marks every file a deploy writes as `added`, so without this
-a deploy inside the pull window would be reported as an attack.
+The same batches catch deploys: a file written together with more than
+`lonely_cluster_max` other files is held to the weak-seed standard too, unless its content
+alone shows a webshell (D79, widened in D84). Wazuh FIM marks every file a deploy writes as
+`added`, and an application install brings files whose path or content looks odd on its
+own (code in a folder named `upload`, encoded test data); without this, a deploy or install
+would be reported as an attack.
 """
 
 from datetime import datetime, timedelta
@@ -34,9 +36,9 @@ from webforensics.models import (
 
 LONELY_RULE = "CORR-LONELY-EXEC-WRITE"
 RARE_POST_RULE = "CORR-RARE-POST-TARGET"
-# Rules that fire only because a file is new or changed, so they add nothing to the
-# status itself when deciding whether a deploy wrote the file.
-STATUS_ONLY_RULES = frozenset({"FILE-PERSISTENCE-ENTRYPOINT-CHANGE"})
+# Content that is a webshell wherever it came from: such a file is accused even when it
+# arrived with a deploy batch.
+DECISIVE_RULES = frozenset({"FILE-WEBSHELL-REQUEST-EXEC"})
 
 
 def _code_like(path: str) -> bool:
@@ -90,8 +92,8 @@ def lonely_writes(files: list[FileEvidence], config: CorrelationConfig) -> set[s
     }
 
 
-def only_status_signals(findings: list[Finding]) -> bool:
-    return all(f.rule_id in STATUS_ONLY_RULES for f in findings)
+def decisive(findings: list[Finding]) -> bool:
+    return any(f.rule_id in DECISIVE_RULES for f in findings)
 
 
 def deploy_writes(files: list[FileEvidence], config: CorrelationConfig) -> set[str]:

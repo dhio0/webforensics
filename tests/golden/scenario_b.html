@@ -63,7 +63,7 @@ overflow-x:auto;font-size:.85rem}
 <h3>Alasan</h3>
 <ul><li>Login berhasil, lalu aktor yang sama menulis file di area yang sama.</li><li>Respons berbeda dari login yang gagal dan tidak diikuti percobaan ulang.</li><li>Cara login tidak terlihat (misalnya kredensial bocor, atau SQL injection lewat POST).</li></ul>
 <h3>Baris kode yang rentan</h3>
-<dl><dt>Lokasi</dt><dd>admin/login.php:13</dd><dt>Keyakinan</dt><dd>tinggi</dd><dt>Input dari</dt><dd>$_GET, $_POST</dd><dt>Query dijalankan di</dt><dd>admin/login.php:14 ($pdo-&gt;query)</dd><dt>Bukti</dt><dd>admin/login.php @fa2a9d556bc9</dd></dl>
+<dl><dt>Lokasi</dt><dd>admin/login.php:13</dd><dt>Kenapa dianalisis</dt><dd>endpoint titik masuk (akar masalah atau kandidatnya)</dd><dt>Keyakinan</dt><dd>tinggi</dd><dt>Input dari</dt><dd>$_GET, $_POST</dd><dt>Query dijalankan di</dt><dd>admin/login.php:14 ($pdo-&gt;query)</dd><dt>Bukti</dt><dd>admin/login.php @fa2a9d556bc9</dd></dl>
 <pre>$query = &quot;SELECT id, username FROM users WHERE username = &#x27;$username&#x27; AND password = &#x27;$password&#x27;&quot;;</pre>
 <p>Contoh perbaikan (prepared statement)</p>
 <pre>$stmt = $pdo-&gt;prepare(&quot;SELECT id, username FROM users WHERE username = ? AND password = ?&quot;);
@@ -73,7 +73,7 @@ $stmt-&gt;execute([$username, $password]);</pre>
 <section id="file-terdampak">
 <h2>5. File Terdampak</h2>
 <h3>uploads/scenario-b-marker.php</h3>
-<dl><dt>SHA-256</dt><dd>105ddd6ab59b87c2013943bab1e598aae952be1f7ae85aac56da08beec344bf6</dd><dt>Ukuran</dt><dd>26 byte</dd><dt>Status baseline</dt><dd>tidak diketahui (tanpa baseline)</dd><dt>Timestamp</dt><dd>btime 2026-10-29 12:17:13 WIB; ctime 2026-10-29 12:17:13 WIB; mtime 2026-10-29 12:17:13 WIB</dd><dt>Sumber timestamp</dt><dd>manifest collect.sh</dd><dt>URL</dt><dd>/uploads/scenario-b-marker.php</dd></dl>
+<dl><dt>SHA-256</dt><dd>105ddd6ab59b87c2013943bab1e598aae952be1f7ae85aac56da08beec344bf6</dd><dt>Ukuran</dt><dd>26 byte</dd><dt>Status baseline</dt><dd>tidak diketahui (tanpa baseline)</dd><dt>Timestamp</dt><dd>btime 2026-10-29 12:17:13 WIB; ctime 2026-10-29 12:17:13 WIB; mtime 2026-10-29 12:17:13 WIB</dd><dt>Sumber timestamp</dt><dd>manifest webroot</dd><dt>URL</dt><dd>/uploads/scenario-b-marker.php</dd></dl>
 <p>Temuan</p>
 <ul><li>File skrip di folder yang bisa ditulis: uploads/scenario-b-marker.php (FILE-WEBSHELL-WRITABLE-EXEC, keyakinan sedang)</li></ul>
 </section>
@@ -115,7 +115,7 @@ $stmt-&gt;execute([$username, $password]);</pre>
 </section>
 <section id="keterbatasan">
 <h2>11. Keterbatasan</h2>
-<ul><li>Laporan ini dibuat otomatis dengan aturan deterministik. Kesimpulannya perlu diverifikasi analis.</li><li>Isi request POST tidak tercatat di access log. Payload SQL injection lewat POST dan nama file upload tidak terlihat.</li><li>Penyerang dengan akses root bisa memalsukan timestamp file. Alat ini hanya mendeteksi ketidakkonsistenan, tidak bisa membuktikan keaslian.</li><li>Penyerang dengan akses root bisa menghapus baris log. Yang bisa dideteksi hanya celah waktu yang mencolok.</li><li>IP yang dipakai bersama (NAT, proxy, CDN tanpa X-Forwarded-For) bisa menggabungkan beberapa orang menjadi satu aktor.</li><li>Analisis kode hanya mencari SQL injection di file PHP yang terlibat, per file dan per fungsi. Alur lewat fungsi atau file lain, input dari framework, dan ORM tidak dilacak, jadi &quot;tidak ditemukan&quot; bukan berarti aman. Celah upload belum dilokalisasi di kode.</li></ul>
+<ul><li>Laporan ini dibuat otomatis dengan aturan deterministik. Kesimpulannya perlu diverifikasi analis.</li><li>Isi request POST tidak tercatat di access log. Payload SQL injection lewat POST dan nama file upload tidak terlihat.</li><li>Penyerang dengan akses root bisa memalsukan timestamp file. Alat ini hanya mendeteksi ketidakkonsistenan, tidak bisa membuktikan keaslian.</li><li>Penyerang dengan akses root bisa menghapus baris log. Yang bisa dideteksi hanya celah waktu yang mencolok.</li><li>IP yang dipakai bersama (NAT, proxy, CDN tanpa X-Forwarded-For) bisa menggabungkan beberapa orang menjadi satu aktor.</li><li>Analisis kode hanya mencari SQL injection di file PHP yang terlibat dan file yang di-include-nya (satu tingkat, dari pola path include), per file dan per fungsi. Alur lewat pemanggilan fungsi, input dari framework, dan ORM tidak dilacak, jadi &quot;tidak ditemukan&quot; bukan berarti aman. Celah upload belum dilokalisasi di kode.</li></ul>
 </section>
 <section id="bukti">
 <h2>Lampiran A. Rujukan Bukti</h2>
@@ -123,7 +123,7 @@ $stmt-&gt;execute([$username, $password]);</pre>
 </section>
 <section id="reproduksi">
 <h2>Lampiran B. Reproduksibilitas</h2>
-<dl><dt>Versi alat</dt><dd>0.1.0</dd><dt>Versi ruleset</dt><dd>0.1.0</dd><dt>Hash konfigurasi</dt><dd>a327ad9cd4b7b387c7dbfe4a49da4ceac364dddc5291bf29aeadbcf8722e1dda</dd></dl>
+<dl><dt>Versi alat</dt><dd>0.1.0</dd><dt>Versi ruleset</dt><dd>0.1.0</dd><dt>Hash konfigurasi</dt><dd>1d5d353b0c14d74de5458be82560b52b093a4f44782a1fb3113e7b80fcd5fd39</dd></dl>
 <h3>File input</h3>
 <div class="tw"><table><thead><tr><th>File</th><th>SHA-256</th><th>Ukuran</th></tr></thead><tbody><tr><td>access.log</td><td>102e3a6aad3d5ae5636cb12e64a610bab1bf05c5fa32cfcb3301dfa0ef2b58b4</td><td>822 byte</td></tr><tr><td>error.log</td><td>d0dea3926a1b81cb0f7c940f4fc9d80895d03d24cf206074e617d5ad29f8d9e8</td><td>277 byte</td></tr><tr><td>manifest.tsv</td><td>d17f19e38c24ecb6c13aade8881ba5ec3091a871f76d57d5a417bffd33ae6de4</td><td>1987 byte</td></tr></tbody></table></div>
 <p>Input, versi, dan konfigurasi yang sama menghasilkan laporan yang sama persis.</p>

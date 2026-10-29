@@ -12,6 +12,7 @@ The manifest is written by `scripts/collect.sh` on the server. It records file m
 #collected_at=1793072400                        ← epoch seconds, UTC
 #utc_offset=+0700                               ← server local offset at collection
 #birth_time_supported=0|1
+#filesystem=ext2/ext3                            ← `stat -f -c %T`; optional (collector 0.2.0+)
 #columns=path_hex,type,size,mode,uid,inode,atime,mtime,ctime,btime,sha256
 <one tab-separated row per regular file or symlink>
 ```
@@ -25,6 +26,14 @@ The manifest is written by `scripts/collect.sh` on the server. It records file m
 | `atime`, `mtime`, `ctime` | Epoch seconds (`-` = unknown) |
 | `btime` | Birth time in epoch seconds. `0` or `-` = unknown (filesystem or kernel doesn't report it). |
 | `sha256` | Content hash. For symlinks, the hash of the link target string. `-` if the file was unreadable (the row is then rejected by the parser). |
+
+`#filesystem` matters for Windows webroots (D84). For `ntfs`, `exfat`, `vfat`, `msdos`,
+`fat` and `refs`, URLs are matched to file paths case-insensitively, and birth time is
+treated as settable (on NTFS every `$STANDARD_INFORMATION` time can be set, and unpacking
+keeps old ones), so a later ctime wins and anchors are capped at medium. Evidence from a
+Windows disk image can be prepared with `scripts/extract_e01.py` and
+`scripts/ntfs_listing_to_manifest.py`: ctime is then the MFT entry change time, and mode
+and uid are placeholders (644, 0).
 
 Parser behavior:
 - A wrong magic line or wrong columns makes the whole manifest unusable (fatal error).
