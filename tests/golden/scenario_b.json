@@ -422,7 +422,38 @@
     }
   ],
   "background": [],
-  "code_findings": [],
+  "code_findings": [
+    {
+      "file": "admin/login.php",
+      "line": 13,
+      "snippet": "$query = \"SELECT id, username FROM users WHERE username = '$username' AND password = '$password'\";",
+      "vuln_class": "sql_injection",
+      "suggested_fix": "$stmt = $pdo->prepare(\"SELECT id, username FROM users WHERE username = ? AND password = ?\");\n$stmt->execute([$username, $password]);",
+      "confidence": "high",
+      "citation": {
+        "kind": "file",
+        "source": "admin/login.php",
+        "line_no": null,
+        "sha256": "fa2a9d556bc98ba3751bc6f7eee860d187cd579c6658a6b962c0f32cbac77d45",
+        "excerpt": "admin/login.php:13: $query = \"SELECT id, username FROM users WHERE username = '$username' AND password = '$password'\";"
+      },
+      "sink_line": 14,
+      "sink": "$pdo->query",
+      "sources": [
+        "$_GET",
+        "$_POST"
+      ],
+      "verified": true
+    }
+  ],
+  "code_scope": {
+    "analyzed": [
+      "admin/auth_upload.php",
+      "admin/login.php"
+    ],
+    "unverified": [],
+    "no_content": []
+  },
   "recommendations": [
     {
       "key": "rec.containment.preserve",
@@ -454,6 +485,13 @@
       "key": "rec.eradication.fix_upload",
       "params": {
         "path": "/admin/auth_upload.php"
+      }
+    },
+    {
+      "key": "rec.eradication.fix_code_line",
+      "params": {
+        "file": "admin/login.php",
+        "line": "13"
       }
     },
     {
@@ -505,7 +543,7 @@
       "params": {}
     },
     {
-      "key": "limit.no_code_analysis",
+      "key": "limit.code_scope",
       "params": {}
     }
   ]

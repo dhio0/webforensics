@@ -262,7 +262,41 @@ def _root(ctx: _Ctx) -> Section:
         alts = tuple(f"{ctx.number(i)} {t.message(by_id[i].description)} "
                      f"({ctx.refs(by_id[i].citations)})" for i in cause.alternative_event_ids)
         blocks += [Heading(t.label("root.alternatives")), Bullets(alts)]
+    blocks += _code_blocks(ctx)
     return Section("akar-masalah", t.label("s.root"), tuple(blocks))
+
+
+def _code_blocks(ctx: _Ctx) -> list[Block]:
+    """The vulnerable lines in the implicated files (M7), or what was analyzed without one."""
+    t, report = ctx.texts, ctx.report
+    scope = report.code_scope
+    if scope is None:
+        return []
+    blocks: list[Block] = [Heading(t.label("root.code"))]
+    for finding in report.code_findings:
+        pairs = [
+            (t.label("code.location"), clean(f"{finding.file}:{finding.line}")),
+            (t.label("code.confidence"), t.confidence(finding.confidence.value)),
+            (t.label("code.sources"), clean(", ".join(finding.sources))),
+        ]
+        if finding.sink_line is not None:
+            pairs.append((t.label("code.sink"),
+                          clean(f"{finding.file}:{finding.sink_line} ({finding.sink})")))
+        pairs.append((t.label("col.evidence"), ctx.ref(finding.citation)))
+        blocks += [Fields(tuple(pairs)), Code((clean(finding.snippet),))]
+        if not finding.verified:
+            blocks.append(Para(t.label("code.unverified")))
+        if finding.suggested_fix:
+            blocks += [Para(t.label("code.fix")),
+                       Code(tuple(clean(line) for line in finding.suggested_fix.splitlines()))]
+    if scope.analyzed and not report.code_findings:
+        blocks.append(Para(t.label("code.none")))
+    if scope.analyzed:
+        blocks.append(Fields(((t.label("code.analyzed"), clean(", ".join(scope.analyzed))),)))
+    if scope.no_content:
+        blocks += [Para(t.label("code.no_content")),
+                   Bullets(tuple(clean(p) for p in scope.no_content))]
+    return blocks
 
 
 def _finding_line(t: Texts, finding: Finding) -> str:

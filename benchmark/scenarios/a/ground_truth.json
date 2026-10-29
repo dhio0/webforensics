@@ -61,6 +61,7 @@
   ],
   "root_cause_step": "upload_inert_marker",
   "vulnerable_code": {
+    "vuln_class": "unrestricted_file_upload",
     "file": "lab/app/admin/upload.php",
     "line": 5,
     "sha256": "75f5b1eb5fe26e864bbeb696a01cd75d96d0fb7328ce193c5f8e5ba322e6ee59"

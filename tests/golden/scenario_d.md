@@ -89,7 +89,6 @@ Request ini cocok dengan pola serangan, tetapi pengirimnya tidak terkait dengan 
 - Penyerang dengan akses root bisa memalsukan timestamp file. Alat ini hanya mendeteksi ketidakkonsistenan, tidak bisa membuktikan keaslian.
 - Penyerang dengan akses root bisa menghapus baris log. Yang bisa dideteksi hanya celah waktu yang mencolok.
 - IP yang dipakai bersama (NAT, proxy, CDN tanpa X-Forwarded-For) bisa menggabungkan beberapa orang menjadi satu aktor.
-- Versi ini belum menganalisis kode sumber untuk menunjuk baris yang rentan.
 
 ## Lampiran A. Rujukan Bukti
 

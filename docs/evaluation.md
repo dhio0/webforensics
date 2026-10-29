@@ -70,6 +70,27 @@ Wazuh recording come from the same run. What changed in the evidence, and why:
 - The steps were checked line by line against the new logs (`lab/wazuh/record_benchmark.py`
   prints each step next to its line), including D's concurrent requests.
 
+## Code localization (M7)
+
+The scenario table's **Code line** column scores the vulnerable line for SQL injection scenarios (B, F: correct for both adapters). Upload scenarios (A, E) show `n/a`: the tool does not localize upload flaws yet. Each scenario's `evidence/webroot/` holds the app's code, copied only where it hashes to the manifest.
+
+Because the lab app and the hand-made fixtures come from the rule author, the localizer is also judged on real fixes (tests/fixtures/php_sqli/cve/, D83):
+
+| Set | Cases | Result |
+|---|---|---|
+| Hand-made fixtures | 12 vulnerable, 10 safe | all correct; 1 documented limitation |
+| Real CVE fixes (selection rule fixed before scoring) | 13 | **5 detected**, 2 on the exact line the fix changed; 0 findings in the 13 fixed files |
+
+The 8 misses, by category:
+
+| Category | Cases | Why |
+|---|---|---|
+| Input arrives through calls or object properties | CVE-2026-52770, CVE-2026-33770, CVE-2026-33723 | calls are not followed |
+| Framework or application input API | CVE-2019-11512, CVE-2017-16558 (`\Input::post()`), CVE-2015-10018 (Yii), CVE-2025-62617 (app validator) | only superglobals are sources |
+| Not SQL injection | CVE-2019-10913 | HTTP method override |
+
+Read with care. "Detected" means a finding in the vulnerable file that the project's own fix removes; it was chosen after a first scoring (exact changed line only) gave 0/13, because fixes often change the line that reads the input rather than the line that builds the query (D83). 13 cases is a small sample, and the selection rule keeps only the brief's scope (superglobals reaching a query in one file), which excluded 162 of 175 real fixes. The localizer was improved on these cases (generic SQL sinks, branch-aware tracking, element-wise escaping), so they are a dev set now; M8 needs fresh cases to measure without that bias.
+
 ## Using the benchmark with another tool
 
 See [benchmark/README.md](../benchmark/README.md). The ground truth format is tool-neutral.

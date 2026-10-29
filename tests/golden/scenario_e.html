@@ -62,6 +62,9 @@ overflow-x:auto;font-size:.85rem}
 <pre>172.30.0.3 - - [29/Oct/2026:05:18:59 +0000] &quot;POST /admin/upload.php HTTP/1.0&quot; 200 40 &quot;-&quot; &quot;webforensics-lab/1.0 scenario-e&quot; &quot;192.0.2.31&quot;</pre>
 <h3>Alasan</h3>
 <ul><li>Hanya satu request penulis yang cocok dengan waktu file dibuat.</li><li>Aktor yang sama kemudian mengakses file ini.</li><li>Isi POST tidak tercatat di access log, jadi nama file yang diupload tidak terbukti dari log.</li><li>Didukung error log (error.log baris 1, diasumsikan UTC+0000).</li><li>Tidak ada login yang terlihat sebelum request penulis, jadi request itu sendiri dianggap titik masuk.</li><li>Tidak terlihat login bukan berarti tidak ada login: sesi bisa dibuat sebelum periode log.</li></ul>
+<h3>Baris kode yang rentan</h3>
+<p>Tidak ditemukan SQL injection di file yang dianalisis (lihat batas analisis di Keterbatasan).</p>
+<dl><dt>File yang dianalisis</dt><dd>admin/upload.php</dd></dl>
 </section>
 <section id="file-terdampak">
 <h2>5. File Terdampak</h2>
@@ -108,7 +111,7 @@ overflow-x:auto;font-size:.85rem}
 </section>
 <section id="keterbatasan">
 <h2>11. Keterbatasan</h2>
-<ul><li>Laporan ini dibuat otomatis dengan aturan deterministik. Kesimpulannya perlu diverifikasi analis.</li><li>Isi request POST tidak tercatat di access log. Payload SQL injection lewat POST dan nama file upload tidak terlihat.</li><li>Penyerang dengan akses root bisa memalsukan timestamp file. Alat ini hanya mendeteksi ketidakkonsistenan, tidak bisa membuktikan keaslian.</li><li>Penyerang dengan akses root bisa menghapus baris log. Yang bisa dideteksi hanya celah waktu yang mencolok.</li><li>IP yang dipakai bersama (NAT, proxy, CDN tanpa X-Forwarded-For) bisa menggabungkan beberapa orang menjadi satu aktor.</li><li>Versi ini belum menganalisis kode sumber untuk menunjuk baris yang rentan.</li></ul>
+<ul><li>Laporan ini dibuat otomatis dengan aturan deterministik. Kesimpulannya perlu diverifikasi analis.</li><li>Isi request POST tidak tercatat di access log. Payload SQL injection lewat POST dan nama file upload tidak terlihat.</li><li>Penyerang dengan akses root bisa memalsukan timestamp file. Alat ini hanya mendeteksi ketidakkonsistenan, tidak bisa membuktikan keaslian.</li><li>Penyerang dengan akses root bisa menghapus baris log. Yang bisa dideteksi hanya celah waktu yang mencolok.</li><li>IP yang dipakai bersama (NAT, proxy, CDN tanpa X-Forwarded-For) bisa menggabungkan beberapa orang menjadi satu aktor.</li><li>Analisis kode hanya mencari SQL injection di file PHP yang terlibat, per file dan per fungsi. Alur lewat fungsi atau file lain, input dari framework, dan ORM tidak dilacak, jadi &quot;tidak ditemukan&quot; bukan berarti aman. Celah upload belum dilokalisasi di kode.</li></ul>
 </section>
 <section id="bukti">
 <h2>Lampiran A. Rujukan Bukti</h2>

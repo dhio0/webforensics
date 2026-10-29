@@ -21,3 +21,6 @@ lab/wazuh/.upstream/
 lab/wazuh/certs/
 lab/wazuh/.runtime/
 lab/wazuh/.env
+
+# Third-party CVE fixtures that may not be redistributed (scripts/fetch_cve_fixtures.py).
+tests/fixtures/php_sqli/cve/.cache/

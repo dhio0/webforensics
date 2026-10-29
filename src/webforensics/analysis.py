@@ -16,6 +16,7 @@ from webforensics.adapters.file_adapter import (
     ManifestFileSource,
 )
 from webforensics.adapters.wazuh import WazuhRecordingSource
+from webforensics.codeloc.locate import review_code
 from webforensics.correlate import CorrelationConfig, correlate
 from webforensics.detect import RULESET_VERSION
 from webforensics.models import CaseInfo, FileCollection, LogCollection, Report, RunInfo
@@ -153,4 +154,7 @@ def analyze(inputs: EvidenceInputs, config: CorrelationConfig, generated_at: dat
     case = case_info(evidence, run, options or CaseOptions())
     scope = evidence_scope(evidence.logs, evidence.files, evidence.baseline,
                            file_adapter=evidence.adapter)
-    return build_report(result, evidence.logs, case, run, scope, config.trusted_proxies)
+    code_findings, code_scope = review_code(result, evidence.files, inputs.webroot,
+                                            inputs.url_prefix)
+    return build_report(result, evidence.logs, case, run, scope, config.trusted_proxies,
+                        code_findings=code_findings, code_scope=code_scope)

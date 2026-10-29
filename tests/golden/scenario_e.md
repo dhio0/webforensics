@@ -67,6 +67,12 @@ _WF-54BD23F4D5 · 2026-10-28 09:00:00 WIB_
 - Tidak ada login yang terlihat sebelum request penulis, jadi request itu sendiri dianggap titik masuk.
 - Tidak terlihat login bukan berarti tidak ada login: sesi bisa dibuat sebelum periode log.
 
+### Baris kode yang rentan
+
+Tidak ditemukan SQL injection di file yang dianalisis (lihat batas analisis di Keterbatasan).
+
+- **File yang dianalisis:** admin/upload.php
+
 ## 5. File Terdampak
 
 ### uploads/scenario-e-marker.php
@@ -158,7 +164,7 @@ Tidak ada.
 - Penyerang dengan akses root bisa memalsukan timestamp file. Alat ini hanya mendeteksi ketidakkonsistenan, tidak bisa membuktikan keaslian.
 - Penyerang dengan akses root bisa menghapus baris log. Yang bisa dideteksi hanya celah waktu yang mencolok.
 - IP yang dipakai bersama (NAT, proxy, CDN tanpa X-Forwarded-For) bisa menggabungkan beberapa orang menjadi satu aktor.
-- Versi ini belum menganalisis kode sumber untuk menunjuk baris yang rentan.
+- Analisis kode hanya mencari SQL injection di file PHP yang terlibat, per file dan per fungsi. Alur lewat fungsi atau file lain, input dari framework, dan ORM tidak dilacak, jadi "tidak ditemukan" bukan berarti aman. Celah upload belum dilokalisasi di kode.
 
 ## Lampiran A. Rujukan Bukti
 

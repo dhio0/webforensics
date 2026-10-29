@@ -29,6 +29,7 @@ scenarios/<id>/
     error.log            # optional, nginx error log
     manifest.tsv         # webroot manifest from scripts/collect.sh (see docs/evidence-format.md)
     baseline.tsv         # optional, manifest taken before any traffic
+    webroot/             # optional, the app's code; each file hashes to its manifest entry
     wazuh/recording.jsonl  # optional, Wazuh web events + FIM alerts from the same replay
                            # (format: docs/evidence-format.md, "Wazuh recording v1")
 ```
@@ -47,7 +48,7 @@ can be matched to the ground truth's `log_file`/`line_no` by that text.
 | `expected_rule_ids` | Optional: detections a correct analysis must report. |
 | `split` | `dev` or `held_out` (never tune on held-out). |
 | `analysis` | How to analyze the folder: which logs, error-log UTC offset, trusted proxies, baseline. |
-| `vulnerable_code` | Optional: file and line of the vulnerable code in the lab app, plus the SHA-256 of that file as it was when the evidence was collected. The lab app changed between scenarios (A and F use an older `login.php`), so the line only holds for that hash, which must match the scenario's manifest. |
+| `vulnerable_code` | Optional: file, line and `vuln_class` of the vulnerable code in the lab app, plus the SHA-256 of that file as it was when the evidence was collected (it must match the scenario's manifest). `eval` scores the line only for classes the tool localizes (`sql_injection`). |
 
 ## Scoring your own tool
 

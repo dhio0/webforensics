@@ -30,6 +30,28 @@ def _env(key: str) -> str:
     raise KeyError(key)
 
 
+def copy_webroot(scenario: str) -> list[str]:
+    """Copy the lab app files into evidence/webroot/, each only if its SHA-256 equals the
+    scenario's manifest entry, so code analysis reads exactly what the server served.
+    Uploaded markers are not in lab/app and stay hash-only evidence."""
+    sys.path.insert(0, str(ROOT / "src"))
+    from webforensics.hashing import sha256_file
+    from webforensics.parsers.manifest import parse_manifest
+
+    evidence = ROOT / "benchmark" / "scenarios" / scenario / "evidence"
+    with (evidence / "manifest.tsv").open(encoding="utf-8") as handle:
+        _, entries, _ = parse_manifest(handle, "manifest.tsv")
+    target = evidence / "webroot"
+    copied = []
+    for entry in entries:
+        source = ROOT / "lab" / "app" / entry.path
+        if source.is_file() and sha256_file(source) == entry.sha256:
+            (target / entry.path).parent.mkdir(parents=True, exist_ok=True)
+            (target / entry.path).write_bytes(source.read_bytes())
+            copied.append(entry.path)
+    return copied
+
+
 def record(scenario: str) -> None:
     folder = ROOT / "benchmark" / "scenarios" / scenario
     truth = json.loads((folder / "ground_truth.json").read_text(encoding="utf-8"))
@@ -58,6 +80,7 @@ def record(scenario: str) -> None:
     subprocess.run([sys.executable, "-c", cli, *args], check=True, cwd=ROOT,
                    env={**os.environ, "WF_WAZUH_USER": "webforensics_reader",
                         "WF_WAZUH_PASSWORD": _env("WAZUH_READER_PASSWORD")})
+    print("webroot copy:", ", ".join(copy_webroot(scenario)))
 
     lines = {name: (evidence / name).read_text(encoding="utf-8").splitlines()
              for name in {s["log_file"] for s in truth["steps"]}}
@@ -67,4 +90,7 @@ def record(scenario: str) -> None:
 
 
 if __name__ == "__main__":
-    record(sys.argv[1])
+    if len(sys.argv) > 2 and sys.argv[2] == "--webroot-only":
+        print(", ".join(copy_webroot(sys.argv[1])))
+    else:
+        record(sys.argv[1])

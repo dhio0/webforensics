@@ -180,6 +180,8 @@ MESSAGES: dict[str, str] = {
     "rec.eradication.fix_upload": "Perbaiki endpoint {path}: batasi ekstensi dan tipe file, "
                                   "simpan upload di luar webroot, dan matikan eksekusi skrip "
                                   "di folder upload.",
+    "rec.eradication.fix_code_line": "Ganti query di {file} baris {line} dengan prepared "
+                                     "statement (contoh perbaikan ada di bagian Akar Masalah).",
     "rec.eradication.fix_sqli_login": "Perbaiki query login di {path} dengan prepared "
                                       "statement, lalu periksa query lain yang menyusun SQL "
                                       "dari input user.",
@@ -227,8 +229,12 @@ MESSAGES: dict[str, str] = {
                              "masuk ke baseline FIM tanpa alert. Di lab, restart beberapa "
                              "detik sudah cukup untuk melewatkan satu file. Mode terjadwal "
                              "bisa terlambat sampai 12 jam.",
-    "limit.no_code_analysis": "Versi ini belum menganalisis kode sumber untuk menunjuk baris "
-                              "yang rentan.",
+    "limit.code_scope": "Analisis kode hanya mencari SQL injection di file PHP yang terlibat, "
+                        "per file dan per fungsi. Alur lewat fungsi atau file lain, input dari "
+                        "framework, dan ORM tidak dilacak, jadi \"tidak ditemukan\" bukan "
+                        "berarti aman. Celah upload belum dilokalisasi di kode.",
+    "limit.no_code_content": "Kode sumber file yang terlibat tidak dianalisis karena isinya "
+                             "tidak tersedia. Berikan salinan webroot dengan --webroot.",
 }
 
 RULE_NAMES: dict[str, str] = {
@@ -356,6 +362,15 @@ LABELS: dict[str, str] = {
     "timeline.notes": "Catatan keyakinan",
     "root.event": "Kejadian", "root.vuln": "Jenis kelemahan", "root.confidence": "Keyakinan",
     "root.why": "Alasan", "root.alternatives": "Kandidat lain",
+    "root.code": "Baris kode yang rentan", "code.location": "Lokasi",
+    "code.sink": "Query dijalankan di", "code.sources": "Input dari",
+    "code.confidence": "Keyakinan", "code.fix": "Contoh perbaikan (prepared statement)",
+    "code.analyzed": "File yang dianalisis",
+    "code.none": "Tidak ditemukan SQL injection di file yang dianalisis (lihat batas analisis "
+                 "di Keterbatasan).",
+    "code.no_content": "Isi file berikut tidak tersedia, jadi kodenya tidak dianalisis:",
+    "code.unverified": "Isi file diambil dari --webroot tanpa hash pembanding di bukti, jadi "
+                       "belum terverifikasi sama dengan file di server.",
     "root.none": "Akar masalah tidak dapat ditentukan dari bukti yang ada.",
     "file.sha256": "SHA-256", "file.size": "Ukuran", "file.status": "Status baseline",
     "file.times": "Timestamp", "file.ts_source": "Sumber timestamp", "file.urls": "URL",

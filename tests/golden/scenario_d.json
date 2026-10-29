@@ -223,6 +223,7 @@
     }
   ],
   "code_findings": [],
+  "code_scope": null,
   "recommendations": [
     {
       "key": "rec.containment.preserve",
@@ -270,10 +271,6 @@
     },
     {
       "key": "limit.shared_ip",
-      "params": {}
-    },
-    {
-      "key": "limit.no_code_analysis",
       "params": {}
     }
   ]

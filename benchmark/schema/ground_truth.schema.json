@@ -166,6 +166,10 @@
           "type": "string",
           "pattern": "^[0-9a-f]{64}$",
           "description": "SHA-256 of the file as it was when the evidence was collected; the line refers to that version"
+        },
+        "vuln_class": {
+          "enum": ["sql_injection", "unrestricted_file_upload"],
+          "description": "Weakness at that line. eval scores line localization only for classes the tool localizes (sql_injection since M7)."
         }
       }
     },

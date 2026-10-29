@@ -425,6 +425,13 @@
   ],
   "background": [],
   "code_findings": [],
+  "code_scope": {
+    "analyzed": [
+      "admin/upload.php"
+    ],
+    "unverified": [],
+    "no_content": []
+  },
   "recommendations": [
     {
       "key": "rec.containment.preserve",
@@ -501,7 +508,7 @@
       "params": {}
     },
     {
-      "key": "limit.no_code_analysis",
+      "key": "limit.code_scope",
       "params": {}
     }
   ]

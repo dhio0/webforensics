@@ -47,9 +47,11 @@ def test_report_matches_golden_file(name, ext):
 
 
 def _cli(evidence: Path, out: Path, *extra: str):
+    webroot = ["--webroot", str(evidence / "webroot")] if (evidence / "webroot").is_dir() else []
     return runner.invoke(app, [
         "analyze", "--log", str(evidence / "access.log"), "--manifest",
-        str(evidence / "manifest.tsv"), "--out", str(out), "--generated-at", WHEN_ARG, *extra,
+        str(evidence / "manifest.tsv"), *webroot, "--out", str(out), "--generated-at", WHEN_ARG,
+        *extra,
     ])
 
 

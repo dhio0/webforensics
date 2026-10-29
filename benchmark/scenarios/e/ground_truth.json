@@ -16,7 +16,7 @@
     {"path": "uploads/scenario-e-marker.php", "sha256": "3a33ab856f7e7f89d67a73cb05ae9b4b96d0253b5b225e3d0b911636e7170a25", "change": "created"}
   ],
   "root_cause_step": "unauthenticated_marker_upload",
-  "vulnerable_code": {"file": "lab/app/admin/upload.php", "line": 5, "sha256": "75f5b1eb5fe26e864bbeb696a01cd75d96d0fb7328ce193c5f8e5ba322e6ee59"},
+  "vulnerable_code": {"vuln_class": "unrestricted_file_upload", "file": "lab/app/admin/upload.php", "line": 5, "sha256": "75f5b1eb5fe26e864bbeb696a01cd75d96d0fb7328ce193c5f8e5ba322e6ee59"},
   "split": "held_out",
   "expected_rule_ids": ["FILE-ANTIFORENSICS-TIMESTOMP"],
   "analysis": {

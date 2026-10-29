@@ -12,13 +12,22 @@ from pathlib import Path
 
 import pytest
 
-from tests.correlate_helpers import ATTACKER, at, file_ev, files, load_scenario, numbered
+from tests.correlate_helpers import (
+    ATTACKER,
+    SCENARIOS,
+    at,
+    file_ev,
+    files,
+    load_scenario,
+    numbered,
+)
 from tests.unit.test_correlate_properties import _random_case
 from tests.unit.test_file_rules import _request_exec, _with_content
 from tests.unit.test_wazuh_adapter import MARKER_SHA, upload_story
 from tests.wazuh_helpers import DOCROOT, fim_hit, recording
 from webforensics.adapters.file_adapter import DirectoryFileSource
 from webforensics.adapters.wazuh import WazuhRecordingSource
+from webforensics.codeloc.locate import review_code
 from webforensics.correlate import correlate
 from webforensics.detect.log_rules import LOG_RULES
 from webforensics.models import (
@@ -189,19 +198,24 @@ def _wazuh_cases(tmp_path):
 
 
 def _results(tmp_path):
-    """(result, logs, scope); the scope says which adapter supplied the files."""
+    """(result, logs, scope, code findings, code scope). Scenarios A and F run the code
+    review on their webroot copy (F has a finding, A none); the crafted cases have no
+    content, so their review says so."""
     plain = EvidenceScope()
     for name in ("a", "f"):
         logs, evidence = load_scenario(name)
-        yield correlate(logs, evidence), logs, plain
+        result = correlate(logs, evidence)
+        webroot = SCENARIOS / name / "evidence" / "webroot"
+        yield (result, logs, plain, *review_code(result, evidence, webroot))
     for seed in range(100):
         logs, evidence, config = _random_case(seed)
-        yield correlate(logs, evidence, config=config), logs, plain
+        yield correlate(logs, evidence, config=config), logs, plain, (), None
     for logs, evidence, baseline in _crafted(tmp_path):
-        yield correlate(logs, evidence, baseline=baseline), logs, plain
+        result = correlate(logs, evidence, baseline=baseline)
+        yield (result, logs, plain, *review_code(result, evidence))
     for logs, evidence, baseline in _wazuh_cases(tmp_path):
         yield (correlate(logs, evidence, baseline=baseline), logs,
-               EvidenceScope(file_adapter="wazuh"))
+               EvidenceScope(file_adapter="wazuh"), (), None)
 
 
 def _emitted(result) -> set[str]:
@@ -218,9 +232,10 @@ def _emitted(result) -> set[str]:
 def test_real_results_render_strictly_and_cover_the_catalog(tmp_path):
     run = RunInfo(tool_version="t", ruleset_version="r", generated_at=datetime.now(UTC))
     emitted: set[str] = set()
-    for result, logs, scope in _results(tmp_path):
+    for result, logs, scope, code, code_scope in _results(tmp_path):
         emitted |= _emitted(result)
-        report = build_report(result, logs, CaseInfo(case_id="c", title="t"), run, scope)
+        report = build_report(result, logs, CaseInfo(case_id="c", title="t"), run, scope,
+                              code_findings=code, code_scope=code_scope)
         emitted |= {r.key for r in (*report.summary, *report.recommendations,
                                     *report.limitations)}
         render(report, parse_display_offset("+07:00"), strict=True)

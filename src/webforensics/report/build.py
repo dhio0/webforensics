@@ -12,6 +12,8 @@ from webforensics.models import (
     BackgroundGroup,
     CaseInfo,
     CitationKind,
+    CodeLocation,
+    CodeScope,
     CorrelationResult,
     EvidenceScope,
     FileCollection,
@@ -175,7 +177,8 @@ def _eradication(result: CorrelationResult) -> list[Reason]:
 
 
 def build_recommendations(result: CorrelationResult, review: int,
-                          fim_in_use: bool = False) -> list[Reason]:
+                          fim_in_use: bool = False,
+                          code_findings: tuple[CodeLocation, ...] = ()) -> list[Reason]:
     compromised = bool(result.affected_files)
     recs = [_r("rec.containment.preserve")]
     if compromised:
@@ -183,6 +186,8 @@ def build_recommendations(result: CorrelationResult, review: int,
     if result.iocs.ips:
         recs.append(_r("rec.containment.block_ips", ips=", ".join(result.iocs.ips)))
     recs += _eradication(result)
+    recs += [_r("rec.eradication.fix_code_line", file=f.file, line=f.line)
+             for f in code_findings]
     if compromised:
         recs += [_r("rec.recovery.rotate_credentials"), _r("rec.recovery.restore_clean")]
     bypassed = unlinked_bypass_paths(result)
@@ -237,9 +242,19 @@ def evidence_scope(logs: LogCollection, files: FileCollection,
     )
 
 
+def code_limitations(code_scope: CodeScope | None) -> tuple[str, ...]:
+    if code_scope is None:
+        return ()
+    if code_scope.analyzed:
+        return ("limit.code_scope",)
+    return ("limit.no_code_content",)
+
+
 def build_report(result: CorrelationResult, logs: LogCollection, case: CaseInfo,
                  run: RunInfo, scope: EvidenceScope | None = None,
-                 trusted_proxies: tuple[str, ...] = ()) -> Report:
+                 trusted_proxies: tuple[str, ...] = (),
+                 code_findings: tuple[CodeLocation, ...] = (),
+                 code_scope: CodeScope | None = None) -> Report:
     background = background_groups(result, logs, trusted_proxies)
     review = len(result.unexplained_changes) + len(other_flagged_files(result))
     return Report(
@@ -249,8 +264,10 @@ def build_report(result: CorrelationResult, logs: LogCollection, case: CaseInfo,
                                     tuple(background))),
         background=tuple(background),
         recommendations=tuple(build_recommendations(
-            result, review, fim_in_use=scope is not None and scope.file_adapter == "wazuh")),
+            result, review, fim_in_use=scope is not None and scope.file_adapter == "wazuh",
+            code_findings=code_findings)),
+        code_findings=code_findings, code_scope=code_scope,
         limitations=tuple(_r(key) for key in (
             *LIMITATIONS, *(("limit.fim_blind_spots",) if scope and scope.file_adapter == "wazuh"
-                            else ()), "limit.no_code_analysis")),
+                            else ()), *code_limitations(code_scope))),
     )

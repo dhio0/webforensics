@@ -27,8 +27,9 @@ from pathlib import Path
 
 from webforensics.adapters.wazuh.recording import Stream, read_recording
 from webforensics.analysis import EvidenceInputs, load_evidence
+from webforensics.codeloc.locate import review_code
 from webforensics.correlate import CorrelationConfig, correlate
-from webforensics.models import CitationKind, CorrelationResult
+from webforensics.models import CitationKind, CodeLocation, CorrelationResult
 from webforensics.parsers.error_log import ErrorLogFormat
 
 ADAPTERS = ("file", "wazuh")
@@ -42,6 +43,14 @@ class RootVerdict(StrEnum):
     WRONG = "wrong"
     MISSED = "missed"  # ground truth has a root cause, the tool reported none
     FALSE_ROOT = "false_root"  # no compromise, yet a root cause was reported
+
+
+class CodeVerdict(StrEnum):
+    CORRECT = "correct"  # a finding at the ground-truth file and line
+    WRONG = "wrong"  # findings, none at that line
+    MISSED = "missed"  # no finding in that file
+    NOT_LOCALIZED = "n/a"  # a weakness class the tool does not localize yet
+    NONE = "-"  # the scenario has no vulnerable code (no compromise)
 
 
 @dataclass(frozen=True)
@@ -63,6 +72,7 @@ class ScenarioScore:
     missed_rules: tuple[str, ...]
     runtime_s: float = field(compare=False)
     adapter: str = "file"
+    code_line: CodeVerdict = CodeVerdict.NONE
 
     @property
     def step_recall(self) -> float | None:
@@ -76,7 +86,9 @@ class ScenarioScore:
     def passed(self) -> bool:
         return (self.root is RootVerdict.CORRECT and not self.missed_steps
                 and self.false_accusations == 0 and not self.missed_files
-                and not self.missed_rules)
+                and not self.missed_rules
+                and self.code_line in (CodeVerdict.CORRECT, CodeVerdict.NOT_LOCALIZED,
+                                       CodeVerdict.NONE))
 
 
 def _expected(step: dict) -> bool:
@@ -95,6 +107,8 @@ def scenario_inputs(folder: Path, truth: dict) -> tuple[EvidenceInputs, Correlat
         error_format=ErrorLogFormat(spec.get("error_log_format", "nginx")),
         error_utc_offset=spec.get("error_log_utc_offset", "+0000"),
         base_dir=evidence,
+        # The app's code, copied only where it hashes to the manifest (M7 analyzes it).
+        webroot=evidence / "webroot" if (evidence / "webroot").is_dir() else None,
     )
     config = CorrelationConfig(trusted_proxies=tuple(spec.get("trusted_proxies", ())))
     return inputs, config
@@ -163,8 +177,25 @@ def root_verdict(truth: dict, result: CorrelationResult,
     return RootVerdict.WRONG
 
 
+LOCALIZED = frozenset({"sql_injection"})
+
+
+def code_verdict(truth: dict, findings: tuple[CodeLocation, ...]) -> CodeVerdict:
+    spec = truth.get("vulnerable_code")
+    if not spec:
+        return CodeVerdict.NONE
+    if spec.get("vuln_class") not in LOCALIZED:
+        return CodeVerdict.NOT_LOCALIZED
+    path = Path(spec["file"]).relative_to("lab/app").as_posix()
+    in_file = [f for f in findings if f.file == path]
+    if any(f.line == spec["line"] for f in in_file):
+        return CodeVerdict.CORRECT
+    return CodeVerdict.WRONG if in_file else CodeVerdict.MISSED
+
+
 def score(truth: dict, result: CorrelationResult, runtime_s: float,
-          line_map: LineMap | None = None, adapter: str = "file") -> ScenarioScore:
+          line_map: LineMap | None = None, adapter: str = "file",
+          code: tuple[CodeLocation, ...] = ()) -> ScenarioScore:
     cited = _cited_lines(result, line_map)
     expected = [s for s in truth["steps"] if _expected(s)]
     missed = tuple(s["id"] for s in expected if (s["log_file"], s["line_no"]) not in cited)
@@ -183,7 +214,7 @@ def score(truth: dict, result: CorrelationResult, runtime_s: float,
         false_files=tuple(sorted(reported_files - truth_files)),
         missed_files=tuple(sorted(truth_files - reported_files)),
         rules_expected=rules, missed_rules=tuple(r for r in rules if r not in reported_rules),
-        runtime_s=runtime_s, adapter=adapter,
+        runtime_s=runtime_s, adapter=adapter, code_line=code_verdict(truth, code),
     )
 
 
@@ -199,7 +230,7 @@ def evaluate_scenario(folder: Path, adapter: str = "file") -> ScenarioScore:
         inputs = EvidenceInputs(wazuh_recording=folder / "evidence" / RECORDING,
                                 error_format=inputs.error_format,
                                 error_utc_offset=inputs.error_utc_offset,
-                                base_dir=inputs.base_dir)
+                                base_dir=inputs.base_dir, webroot=inputs.webroot)
         line_map = recording_line_map(folder, truth)
     elif adapter != "file":
         raise ValueError(f"unknown adapter: {adapter}")
@@ -207,7 +238,8 @@ def evaluate_scenario(folder: Path, adapter: str = "file") -> ScenarioScore:
     evidence = load_evidence(inputs)
     result = correlate(evidence.logs, evidence.files, baseline=evidence.baseline,
                        config=config)
-    return score(truth, result, time.perf_counter() - start, line_map, adapter)
+    code, _ = review_code(result, evidence.files, inputs.webroot, inputs.url_prefix)
+    return score(truth, result, time.perf_counter() - start, line_map, adapter, code)
 
 
 def evaluate_all(folders: list[Path], adapters: tuple[str, ...] = ADAPTERS
@@ -270,7 +302,7 @@ def markdown_table(scores: list[ScenarioScore], *, runtime: bool = True) -> str:
                  _precision(s.reported_ips, len(s.false_ips)),
                  _precision(s.reported_files, len(s.false_files)),
                  _ratio(len(s.rules_expected) - len(s.missed_rules), len(s.rules_expected)),
-                 "n/a (M7)"]
+                 s.code_line.value]
         if runtime:
             cells.append(f"{s.runtime_s:.2f} s")
         rows.append("| " + " | ".join(cells) + " |")
@@ -302,7 +334,9 @@ def details(scores: list[ScenarioScore]) -> list[str]:
                     f"false IPs: {', '.join(s.false_ips)}" if s.false_ips else "",
                     f"false files: {', '.join(s.false_files)}" if s.false_files else "",
                     f"missed files: {', '.join(s.missed_files)}" if s.missed_files else "",
-                    f"missed rules: {', '.join(s.missed_rules)}" if s.missed_rules else ""]
+                    f"missed rules: {', '.join(s.missed_rules)}" if s.missed_rules else "",
+                    f"code line: {s.code_line.value}" if s.code_line in (
+                        CodeVerdict.WRONG, CodeVerdict.MISSED) else ""]
         problems = [p for p in problems if p]
         if problems:
             label = s.scenario_id.upper() + ("" if s.adapter == "file" else f" ({s.adapter})")
@@ -319,6 +353,7 @@ def to_json(scores: list[ScenarioScore]) -> dict[str, object]:
             "missed_steps": list(s.missed_steps), "root_cause": s.root.value,
             "false_ips": list(s.false_ips), "false_files": list(s.false_files),
             "missed_files": list(s.missed_files), "missed_rules": list(s.missed_rules),
+            "code_line": s.code_line.value,
             "runtime_s": round(s.runtime_s, 3),
         }
     totals_by: dict[str, dict[str, object]] = defaultdict(dict)

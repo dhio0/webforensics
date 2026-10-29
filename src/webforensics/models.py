@@ -434,6 +434,9 @@ class TimelineEvent(_Frozen):
 
 
 class CodeLocation(_Frozen):
+    """A vulnerable line in an implicated file (M7). `line` is where request input enters
+    the query; `sink_line` is where the query runs."""
+
     file: str
     line: int = Field(ge=1)
     snippet: str
@@ -441,6 +444,19 @@ class CodeLocation(_Frozen):
     suggested_fix: str | None = None
     confidence: Confidence
     citation: Citation
+    sink_line: int | None = Field(default=None, ge=1)
+    sink: str = ""
+    sources: tuple[str, ...] = ()
+    # False when the content came from --webroot without an evidence hash to check it against.
+    verified: bool = True
+
+
+class CodeScope(_Frozen):
+    """Which implicated files the code analysis read, so "nothing found" has a scope."""
+
+    analyzed: tuple[str, ...] = ()
+    unverified: tuple[str, ...] = ()  # analyzed, but content not checked against a hash
+    no_content: tuple[str, ...] = ()  # implicated, but no content was available
 
 
 class RootCause(_Frozen):
@@ -555,5 +571,6 @@ class Report(_Frozen):
     summary: tuple[Reason, ...] = ()
     background: tuple[BackgroundGroup, ...] = ()
     code_findings: tuple[CodeLocation, ...] = ()
+    code_scope: CodeScope | None = None
     recommendations: tuple[Reason, ...] = ()  # keys start with rec.<phase>.
     limitations: tuple[Reason, ...] = ()

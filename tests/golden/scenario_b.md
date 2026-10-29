@@ -67,6 +67,27 @@ _WF-6A5510F7FF · 2026-10-28 09:00:00 WIB_
 - Respons berbeda dari login yang gagal dan tidak diikuti percobaan ulang.
 - Cara login tidak terlihat (misalnya kredensial bocor, atau SQL injection lewat POST).
 
+### Baris kode yang rentan
+
+- **Lokasi:** admin/login.php:13
+- **Keyakinan:** tinggi
+- **Input dari:** \$\_GET, \$\_POST
+- **Query dijalankan di:** admin/login.php:14 (\$pdo-\>query)
+- **Bukti:** admin/login.php @fa2a9d556bc9
+
+```
+$query = "SELECT id, username FROM users WHERE username = '$username' AND password = '$password'";
+```
+
+Contoh perbaikan (prepared statement)
+
+```
+$stmt = $pdo->prepare("SELECT id, username FROM users WHERE username = ? AND password = ?");
+$stmt->execute([$username, $password]);
+```
+
+- **File yang dianalisis:** admin/auth\_upload.php, admin/login.php
+
 ## 5. File Terdampak
 
 ### uploads/scenario-b-marker.php
@@ -141,6 +162,7 @@ Tidak ada.
 - Karantina lalu hapus file berikut setelah disalin sebagai bukti: uploads/scenario-b-marker.php.
 - Periksa cara login di /admin/login.php berhasil: kredensial bocor, password lemah, atau SQL injection lewat POST.
 - Perbaiki endpoint /admin/auth\_upload.php: batasi ekstensi dan tipe file, simpan upload di luar webroot, dan matikan eksekusi skrip di folder upload.
+- Ganti query di admin/login.php baris 13 dengan prepared statement (contoh perbaikan ada di bagian Akar Masalah).
 
 ### Pemulihan (recovery)
 
@@ -161,7 +183,7 @@ Tidak ada.
 - Penyerang dengan akses root bisa memalsukan timestamp file. Alat ini hanya mendeteksi ketidakkonsistenan, tidak bisa membuktikan keaslian.
 - Penyerang dengan akses root bisa menghapus baris log. Yang bisa dideteksi hanya celah waktu yang mencolok.
 - IP yang dipakai bersama (NAT, proxy, CDN tanpa X-Forwarded-For) bisa menggabungkan beberapa orang menjadi satu aktor.
-- Versi ini belum menganalisis kode sumber untuk menunjuk baris yang rentan.
+- Analisis kode hanya mencari SQL injection di file PHP yang terlibat, per file dan per fungsi. Alur lewat fungsi atau file lain, input dari framework, dan ORM tidak dilacak, jadi "tidak ditemukan" bukan berarti aman. Celah upload belum dilokalisasi di kode.
 
 ## Lampiran A. Rujukan Bukti
 
@@ -173,6 +195,7 @@ Tidak ada.
 | uploads/scenario-b-marker.php @105ddd6ab59b | SHA-256 105ddd6ab59b87c2013943bab1e598aae952be1f7ae85aac56da08beec344bf6 |
 | error.log:1 | 2026/10/29 05:17:13 \[error\] 26#26: \*9 FastCGI sent in stderr: "PHP message: lab upload stored" while reading response header from upstream, client: 172.30.0.3, server: \_, request: "POST /admin/auth\_upload.php HTTP/1.0", upstream: "fastcgi://172.21.0.3:9000", host: "127.0.0.1" |
 | access.log:6 | 172.30.0.3 - - \[29/Oct/2026:05:17:15 +0000\] "GET /uploads/scenario-b-marker.php HTTP/1.0" 200 26 "-" "webforensics-lab/1.0 scenario-b" "192.0.2.10" |
+| admin/login.php @fa2a9d556bc9 | SHA-256 fa2a9d556bc98ba3751bc6f7eee860d187cd579c6658a6b962c0f32cbac77d45 |
 
 ## Lampiran B. Reproduksibilitas
 
