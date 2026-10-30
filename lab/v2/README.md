@@ -2,8 +2,8 @@
 
 ## Current state
 
-The round-two evidence-integrity helpers are implemented. Round three is preparing a
-single s01 pilot. Do not treat this checkout as a complete multi-scenario benchmark.
+Round-three fixes and the s01 pilot are recorded. Scenarios s02–s12 have not been
+started. Do not treat this checkout as a complete multi-scenario benchmark.
 
 ## Isolation and setup contract
 

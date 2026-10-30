@@ -17,6 +17,18 @@ def validate(evidence: Path) -> tuple[int, int, int]:
     manifest = ManifestFileSource(
         evidence / "manifest.tsv", evidence / "webroot"
     ).load_files()
+    defanged_paths = {
+        line.split("\t", 1)[0]
+        for line in (evidence / "defanged.tsv").read_text(encoding="utf-8").splitlines()[1:]
+        if line
+    }
+    expected_stub_mismatches = [
+        failure
+        for failure in manifest.failures
+        if failure.reason == "content_hash_mismatch"
+        and failure.excerpt.split(" manifest=", 1)[0] in defanged_paths
+    ]
+    manifest_failures = len(manifest.failures) - len(expected_stub_mismatches)
     error_log = evidence / "error.log"
     error_failures = 0
     if error_log.is_file():
@@ -24,10 +36,11 @@ def validate(evidence: Path) -> tuple[int, int, int]:
         error_failures = len(errors.error_failures)
     print(
         f"{evidence}: access events={len(logs.events)} parse_failures={len(logs.failures)}; "
-        f"manifest files={len(manifest.files)} parse_failures={len(manifest.failures)}; "
+        f"manifest files={len(manifest.files)} parse_failures={manifest_failures}; "
+        f"defanged_hash_mismatches={len(expected_stub_mismatches)} (expected); "
         f"error parse_failures={error_failures}"
     )
-    return len(logs.failures), len(manifest.failures), error_failures
+    return len(logs.failures), manifest_failures, error_failures
 
 
 def main() -> None:

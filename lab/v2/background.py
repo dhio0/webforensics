@@ -65,7 +65,7 @@ class IPMapper:
             source_ip = str(ipaddress.ip_address(source_ip))
         except ValueError:
             source_ip = source_ip.strip().rstrip(".").lower()
-            if not re.fullmatch(r"[a-z0-9](?:[a-z0-9.-]{0,251}[a-z0-9])?", source_ip):
+            if not re.fullmatch(r"[a-z0-9_](?:[a-z0-9_.-]{0,251}[a-z0-9_])?", source_ip):
                 raise ValueError(f"invalid source host identity: {source_ip!r}") from None
         existing = self.mapping.get(source_ip)
         if existing is not None:

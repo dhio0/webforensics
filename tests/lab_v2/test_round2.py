@@ -187,9 +187,14 @@ def test_evidence_validator_prints_adapter_parse_failure_counts(
         f"{hashlib.sha256(content).hexdigest()}\n",
         encoding="ascii",
     )
+    (evidence / "defanged.tsv").write_text(
+        "path\toriginal_sha256\toriginal_size\trole\treason\n", encoding="ascii"
+    )
 
     assert validate_evidence.validate(evidence) == (0, 0, 0)
-    assert "access events=1 parse_failures=0" in capsys.readouterr().out
+    output = capsys.readouterr().out
+    assert "access events=1 parse_failures=0" in output
+    assert "manifest files=1 parse_failures=0" in output
 
 
 def test_project_manifest_parser_reads_full_metadata_for_baseline_diff(tmp_path: Path) -> None:

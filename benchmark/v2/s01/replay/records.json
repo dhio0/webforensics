@@ -1,0 +1,75 @@
+{
+  "scenario_id": "s01",
+  "description": "An unauthenticated request abuses the vulnerable WordPress File Manager upload endpoint, then a Weevely web agent runs a small set of identification commands. Public web requests are replayed concurrently against the same WordPress app.",
+  "attacker_ips": [
+    "192.0.2.131"
+  ],
+  "root_cause_step": "unauthenticated_file_upload",
+  "steps": [
+    {
+      "id": "unauthenticated_file_upload",
+      "category": "unrestricted_upload",
+      "mitre": [
+        "T1190"
+      ],
+      "label_method": "header"
+    },
+    {
+      "id": "agent_identity",
+      "category": "webshell_command",
+      "mitre": [
+        "T1059.004"
+      ],
+      "label_method": "attacker_ip_time_window",
+      "attacker_ip": "192.0.2.131",
+      "started_at": "2026-10-30T15:49:40.479891+00:00",
+      "ended_at": "2026-10-30T15:49:40.509891+00:00",
+      "request": "POST /wp-content/plugins/wp-file-manager/lib/files/maintenance-agent.php HTTP/1.1",
+      "status": 200,
+      "command_started_at": "2026-10-30T15:49:40.089212+00:00",
+      "command_ended_at": "2026-10-30T15:49:40.529891+00:00"
+    },
+    {
+      "id": "agent_working_directory",
+      "category": "webshell_command",
+      "mitre": [
+        "T1059.004"
+      ],
+      "label_method": "attacker_ip_time_window",
+      "attacker_ip": "192.0.2.131",
+      "started_at": "2026-10-30T15:49:40.761025+00:00",
+      "ended_at": "2026-10-30T15:49:40.791025+00:00",
+      "request": "POST /wp-content/plugins/wp-file-manager/lib/files/maintenance-agent.php HTTP/1.1",
+      "status": 200,
+      "command_started_at": "2026-10-30T15:49:40.529906+00:00",
+      "command_ended_at": "2026-10-30T15:49:40.811025+00:00"
+    },
+    {
+      "id": "agent_user",
+      "category": "webshell_command",
+      "mitre": [
+        "T1059.004"
+      ],
+      "label_method": "attacker_ip_time_window",
+      "attacker_ip": "192.0.2.131",
+      "started_at": "2026-10-30T15:49:41.077243+00:00",
+      "ended_at": "2026-10-30T15:49:41.107243+00:00",
+      "request": "POST /wp-content/plugins/wp-file-manager/lib/files/maintenance-agent.php HTTP/1.1",
+      "status": 200,
+      "command_started_at": "2026-10-30T15:49:40.811092+00:00",
+      "command_ended_at": "2026-10-30T15:49:41.127243+00:00"
+    }
+  ],
+  "files": [
+    {
+      "path": "/wp-content/plugins/wp-file-manager/lib/files/maintenance-agent.php",
+      "role": "webshell_agent"
+    },
+    {
+      "path": "/wp-content/uploads/wp-file-manager-pro/fm_backup/index.php",
+      "role": "plugin_upload_artifact"
+    }
+  ],
+  "split": "dev",
+  "expected_rule_ids": []
+}

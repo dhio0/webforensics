@@ -1,4 +1,4 @@
-FROM python@sha256:94a8fee35252d06ab75856f15f12c7bae67b10e8a6da93c7fded82b2610926cd
+FROM python@sha256:70bda1e795ded2a684ef9815955e05829b14ee5bb5c3eb2a940648e88f10fce9
 
 RUN python -m pip install --no-cache-dir requests==2.32.4 \
     && apt-get update \

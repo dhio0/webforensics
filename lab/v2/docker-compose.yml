@@ -27,6 +27,9 @@ services:
       WORDPRESS_DB_NAME: ${MYSQL_DATABASE}
       WORDPRESS_DB_USER: ${MYSQL_USER}
       WORDPRESS_DB_PASSWORD: ${MYSQL_PASSWORD}
+      BENCH_ADMIN_USER: ${BENCH_ADMIN_USER}
+      BENCH_ADMIN_PASSWORD: ${BENCH_ADMIN_PASSWORD}
+      BENCH_ADMIN_EMAIL: ${BENCH_ADMIN_EMAIL}
       WORDPRESS_CONFIG_EXTRA: |
         define('WP_HOME', 'http://edge');
         define('WP_SITEURL', 'http://edge');
@@ -48,9 +51,9 @@ services:
       - "127.0.0.1:8081:80"
     volumes:
       - ./nginx/templates:/etc/nginx/templates:ro
-      - ../../benchmark/v2/s01/evidence/access.log:/var/log/v2/access.log
-      - ../../benchmark/v2/s01/evidence/error.log:/var/log/v2/error.log
-      - ../../benchmark/v2/s01/replay:/var/log/v2/replay
+      - ../../benchmark/v2/${SCENARIO:-s01}/evidence/access.log:/var/log/v2/access.log
+      - ../../benchmark/v2/${SCENARIO:-s01}/evidence/error.log:/var/log/v2/error.log
+      - ../../benchmark/v2/${SCENARIO:-s01}/replay:/var/log/v2/replay
     depends_on:
       - wp
     networks:
@@ -59,14 +62,16 @@ services:
 
   attacker:
     image: m8v2-attacker:pilot
+    environment:
+      BENCH_AGENT_PASSWORD: ${BENCH_AGENT_PASSWORD}
     build:
       context: ../..
       dockerfile: lab/v2/attacker/Dockerfile
     volumes:
       - ./scenarios:/opt/scenarios:ro
       - ./background.py:/opt/v2/background.py:ro
-      - ../../benchmark/v2/s01/replay:/replay
-      - ../../benchmark/v2/s01/replay/background.log.gz:/source/background.log.gz:ro
+      - ../../benchmark/v2/${SCENARIO:-s01}/replay:/replay
+      - ../../benchmark/v2/${SCENARIO:-s01}/replay/background.log.gz:/source/background.log.gz:ro
     depends_on:
       - edge
     networks:
@@ -84,8 +89,8 @@ services:
     volumes:
       - wpdata:/app-webroot:ro
       - collector-work:/collector-work
-      - ../../benchmark/v2/s01/evidence:/capture
-      - ../../benchmark/v2/s01/replay:/replay:ro
+      - ../../benchmark/v2/${SCENARIO:-s01}/evidence:/capture
+      - ../../benchmark/v2/${SCENARIO:-s01}/replay:/replay:ro
       - ${FULL_EVIDENCE_DIR}:/full-evidence
     networks:
       lab:

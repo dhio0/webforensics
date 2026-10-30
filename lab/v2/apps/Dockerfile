@@ -7,3 +7,4 @@ RUN python -c "import io,zipfile; z=zipfile.ZipFile('/tmp/plugin.zip'); p=zipfil
 FROM wordpress@sha256:cf7c7a9c9cc8614a7357dac77d401612c67af5e0ab1ab19e0777f643af3d3a3c
 COPY --from=plugin_unpack /tmp/plugins/wp-file-manager /usr/src/wordpress/wp-content/plugins/wp-file-manager
 COPY scripts/collect.sh /opt/collect.sh
+COPY lab/v2/scenarios/wp_bootstrap.php /opt/wp_bootstrap.php

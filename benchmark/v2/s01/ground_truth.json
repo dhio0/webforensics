@@ -1,0 +1,79 @@
+{
+  "scenario_id": "s01",
+  "description": "An unauthenticated request abuses the vulnerable WordPress File Manager upload endpoint, then a Weevely web agent runs a small set of identification commands. Public web requests are replayed concurrently against the same WordPress app.",
+  "attacker_ips": [
+    "192.0.2.131"
+  ],
+  "steps": [
+    {
+      "id": "unauthenticated_file_upload",
+      "category": "unrestricted_upload",
+      "mitre": [
+        "T1190"
+      ],
+      "log_file": "access.log",
+      "line_no": 28,
+      "is_root_cause": true
+    },
+    {
+      "id": "agent_identity",
+      "category": "webshell_command",
+      "mitre": [
+        "T1059.004"
+      ],
+      "log_file": "access.log",
+      "line_no": 71,
+      "is_root_cause": false
+    },
+    {
+      "id": "agent_working_directory",
+      "category": "webshell_command",
+      "mitre": [
+        "T1059.004"
+      ],
+      "log_file": "access.log",
+      "line_no": 100,
+      "is_root_cause": false
+    },
+    {
+      "id": "agent_user",
+      "category": "webshell_command",
+      "mitre": [
+        "T1059.004"
+      ],
+      "log_file": "access.log",
+      "line_no": 128,
+      "is_root_cause": false
+    }
+  ],
+  "files": [
+    {
+      "path": "wp-content/plugins/wp-file-manager/lib/files/maintenance-agent.php",
+      "sha256": "1d27b818c214fbe7f799ab872d12a78b9e331905e40652728e471a3b64ebab35",
+      "change": "created",
+      "role": "webshell_agent"
+    },
+    {
+      "path": "wp-content/uploads/wp-file-manager-pro/fm_backup/index.php",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "change": "created",
+      "role": "plugin_upload_artifact"
+    }
+  ],
+  "root_cause_step": "unauthenticated_file_upload",
+  "split": "dev",
+  "expected_rule_ids": [],
+  "analysis": {
+    "access_logs": [
+      "access.log"
+    ],
+    "error_logs": [
+      "error.log"
+    ],
+    "error_log_format": "nginx",
+    "error_log_utc_offset": "+0000",
+    "manifest": "manifest.tsv",
+    "baseline": "baseline.tsv",
+    "trusted_proxies": []
+  }
+}
