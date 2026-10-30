@@ -1,0 +1,25 @@
+Run 3 (post-hoc, tool after D89): Organization Y, all 163 access logs in ONE run.
+Same driver and laptop as run 2c. wall 220.9 s, peak working set 5,985 MB; free RAM never
+fell below 2.4 GB. /1514.php (the false file of run 2c) is gone; the writer named for
+/wp-admin/33.php is the same as in the per-site run of sub20.
+
+run: runYD89-full
+  summary lines: ['summary.compromise_found_scripts', 'summary.root_cause_unknown', 'summary.log_only_unverified', 'summary.gaps_affect', 'summary.background']
+  compromise reported: True (expected: no)
+  affected files: 0 (expected 0: no webroot)
+  log-only scripts: ['/wp-admin/33.php']
+  accused attacker IPs: ['71.34.77.255'] (false accusations unless labelled)
+  incident IP 243.23.54.175 flagged as actor: False
+  background attack-pattern lines: 2243 in 11 rule groups
+    LOG-WEBSHELL-UPLOAD-DIR       1984  clients=42
+    LOG-TRAVERSAL-DOTS             105  clients=29
+    LOG-TRAVERSAL-SENSITIVE         82  clients=9
+    LOG-WEBSHELL-CMD-PARAM          34  clients=17
+    LOG-SQLI-BLIND                  10  clients=4
+    LOG-SQLI-UNION                   8  clients=3
+    LOG-RCE-CODE-INJECTION           7  clients=3
+    LOG-SQLI-SCHEMA                  5  clients=3
+    LOG-XSS-PROBE                    4  clients=2
+    LOG-SQLI-QUOTE-COMMENT           3  clients=2
+    LOG-SCANNER-UA                   1  clients=1
+  unexplained changes: 0

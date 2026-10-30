@@ -127,8 +127,8 @@ not fit all 7.4M lines of one server in 16 GB of RAM, and wrote a 51 MB report f
 brute-forced WordPress site. Brute-force runs are now one event, sparse logs show only the
 longest silences, and peak memory fell by 45% on large sites and 85% on the brute-forced
 one, with byte-identical reports (D88). One run over all 7.4M lines now completes (3.7
-min, 6.0 GB), but merging the sites added one false file, since scripts are keyed by path
-alone; large servers are analyzed per site until that is fixed.
+min, 6.0 GB). Merging the sites first added one false file, since scripts were keyed by
+path alone; they are now keyed by site (D89), and the single run matches the per-site runs.
 
 ## Development
 ```bash

@@ -993,7 +993,7 @@ def _correlate(logs: LogCollection, files: FileCollection, *,
     return CorrelationResult(
         timeline=timeline, root_cause=root_cause, findings=tuple(findings),
         affected_files=tuple(c.file for c in chains), deleted_paths=deleted,
-        log_only_files=tuple(s.url for s in shells),
+        log_only_files=tuple(dict.fromkeys(s.url for s in shells)),
         unexplained_changes=tuple(unexplained),
         gaps=tuple(gaps), iocs=_iocs(chains, ordered, actors, index, shells),
         unattributed_finding_ids=tuple(f.finding_id for f in findings if f.finding_id not in used),

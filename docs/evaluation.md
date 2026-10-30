@@ -163,7 +163,7 @@ access-log lines, no webroot ([benchmark/external/id-public-sector-2025](../benc
 | | Run 1: frozen tool (held out) | Run 2: after D88 (post-hoc) |
 |---|---|---|
 | Org X: verdict / false accusations | no compromise (correct) / 0 | same |
-| Org Y: one run over 7.4M lines | did not fit in 16 GB RAM | completed: 3.7 min, 6.0 GB; one false file from merging sites (`/1514.php`) |
+| Org Y: one run over 7.4M lines | did not fit in 16 GB RAM | completed: 3.7 min, 6.0 GB; one false file from merging sites (`/1514.php`), gone after D89 |
 | Org Y: CyberPanel incident | missed (predicted in the answer key) | missed |
 | Org Y: other compromise | a webshell found in the logs of one site (labelled `remote_code` by the dataset) | same |
 | Org Y: true false accusations | 0 | 0 |

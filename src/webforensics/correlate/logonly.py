@@ -16,6 +16,11 @@ write-capable request from the same client just before the first use (e.g. a POS
 stager script). A later command that deletes the file by name is reported as cleanup.
 Nothing here is hashed or read, so these files are listed separately from the affected
 files and every conclusion about them comes from log lines alone.
+
+A script is one URL on one site. Logs from several virtual hosts are often analyzed
+together (a hosting server), and the same probe answered by two hosts is not one script,
+so the site is the folder that holds the log file, and the writer is looked for on that
+site only (D89).
 """
 
 import posixpath
@@ -39,6 +44,7 @@ OUTFILE_FOLLOW = timedelta(minutes=10)
 class LogOnlyFile:
     url: str
     actor: str
+    site: str  # folder of the log file: one virtual host on a hosting server
     uses: list[LogEvent]  # successful requests to the URL by the actor, in log order
     written_by: LogEvent | None = None
     outfile: bool = False  # written_by is a SQL `INTO OUTFILE` request
@@ -54,11 +60,21 @@ def _name(path: str) -> str:
     return posixpath.basename(path.replace("\\", "/"))
 
 
+def site_of(event: LogEvent) -> str:
+    """The folder that holds the event's log file, standing for one virtual host (D89)."""
+    return posixpath.dirname(event.log_file.replace("\\", "/"))
+
+
+def _is_output(event: LogEvent) -> bool:
+    """A 2xx answer carries the script's output; a redirect does not (D89)."""
+    return 200 <= event.status < 300
+
+
 def find_log_only_files(index, served: set[str]) -> list[LogOnlyFile]:
     """`index` is the engine's request index; `served` holds the lookup keys of every URL
     a file in the evidence serves."""
     fold = index.fold
-    found: dict[tuple[str, str], LogOnlyFile] = {}
+    found: dict[tuple[str, str, str], LogOnlyFile] = {}
 
     def record(event: LogEvent) -> LogOnlyFile | None:
         path = event.path or ""
@@ -66,8 +82,9 @@ def find_log_only_files(index, served: set[str]) -> list[LogOnlyFile]:
         if (key in served or not has_executable_extension(path)
                 or not rq.is_success(event)):
             return None
-        actor = index.actor(event)
-        shell = found.setdefault((actor, key), LogOnlyFile(url=path, actor=actor, uses=[]))
+        actor, site = index.actor(event), site_of(event)
+        shell = found.setdefault((site, actor, key),
+                                 LogOnlyFile(url=path, actor=actor, site=site, uses=[]))
         if event not in shell.uses:
             shell.uses.append(event)
         return shell
@@ -95,11 +112,13 @@ def find_log_only_files(index, served: set[str]) -> list[LogOnlyFile]:
             shell.written_by, shell.outfile = event, True
 
     shells = sorted((s for s in found.values()
-                     if s.outfile or len({e.bytes_sent for e in s.commands}) >= 2),
+                     if s.outfile
+                     or len({e.bytes_sent for e in s.commands if _is_output(e)}) >= 2),
                     key=lambda s: (s.uses[0].ts, s.uses[0].line_no))
     for shell in shells:
         everything = index.by_url.get(index.url_key(shell.url), [])
         shell.uses = sorted({*shell.uses, *(e for e in everything if index.actor(e) == shell.actor
+                                            and site_of(e) == shell.site
                                             and rq.is_success(e))},
                             key=lambda e: (e.ts, e.log_file, e.line_no))
         if shell.written_by is None:
@@ -109,13 +128,14 @@ def find_log_only_files(index, served: set[str]) -> list[LogOnlyFile]:
 
 
 def _writer(index, shell: LogOnlyFile) -> LogEvent | None:
-    """The closest write-capable request from the same actor before the first use. A login
-    form is not a writer: on a shared IP a brute-force POST sits seconds before anything
-    (D88)."""
+    """The closest write-capable request from the same actor on the same site before the
+    first use. A login form is not a writer: on a shared IP a brute-force POST sits seconds
+    before anything (D88)."""
     first = shell.uses[0]
     start = first.ts - timedelta(seconds=index.config.creation_window_s)
     candidates = [e for e in index.actor_since(shell.actor, start)
                   if (e.ts, e.line_no) <= (first.ts, first.line_no) and e is not first
+                  and site_of(e) == shell.site
                   and index.url_key(e.path or "") != index.url_key(shell.url)
                   and not rq.is_login_endpoint(e.path)
                   and rq.is_success(e) and rq.write_level(e, index.of(e)) > rq.WriteLevel.NONE]

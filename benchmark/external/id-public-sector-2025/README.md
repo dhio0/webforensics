@@ -16,6 +16,7 @@ out: the answer key was written before the tool ran, and the tool was frozen at 
 | `results/orgy-run1b-sites.txt` | Organization Y, frozen tool, one run per site (a declared deviation). |
 | `results/orgy-run2b-sites.txt`, `results/orgx-run2.txt` | After the fixes in D88 (post-hoc). |
 | `results/orgy-run2-full.txt` | Organization Y, after D88, all 7.4M lines in one run (post-hoc). |
+| `results/orgy-run3-full.txt` | The same after D89 (log-only scripts keyed by site): the false file is gone. |
 | `results/orgy-memory-per-site.txt` | Runtime and peak memory per site, before and after. |
 
 ## What this case can and cannot test
@@ -36,7 +37,7 @@ successful privilege escalation on 2025-04-29.
 
 | | Run 1 / 1b (2ad5d68, held out) | Run 2b (after D88) |
 |---|---|---|
-| One run over all 7.4M lines | **did not fit**: ~12.5 GB projected, 5.4 GB free | completed (run 2c): 3.7 min, 6.0 GB peak; **one false file**, see below |
+| One run over all 7.4M lines | **did not fit**: ~12.5 GB projected, 5.4 GB free | completed (run 2c): 3.7 min, 6.0 GB peak; **one false file**, none after D89 (run 3) |
 | Per-site runs (21) | all completed, 4.3 min, largest 3.0 GB | 3.5 min, largest 1.6 GB |
 | The CyberPanel incident (actor 243.23.54.175) | **missed** (predicted in the ground truth) | missed |
 | Other compromise found | a webshell, `/wp-admin/33.php`, used with `cmd=` on 2025-04-22 to 28 | same |
@@ -64,7 +65,9 @@ probed that path on more than ten virtual hosts; one host's WordPress catch-all 
 answered it (301, then 200 with the same size as dozens of other probes) and another host
 answered 200 once. The tool keys a script by its path alone, since it assumes one site, so
 answers from different hosts merged into what looked like one script in use. Per site this
-does not happen. Keying scripts by site and path is the next fix, not part of D88.
+does not happen. D89 keys such scripts by site (the folder of the log file) and counts
+only 2xx answers as output; after it, one run over all sites (run 3, 221 s, 6.0 GB) finds
+the same webshell, writer and IP as the per-site runs and no false file.
 
 **Read with care.**
 - The web-side incident actor (243.23.54.175) was located by searching the logs for the

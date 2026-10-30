@@ -136,3 +136,39 @@ def test_no_log_file_stays_open_after_correlation(tmp_path):
     result = correlate(logs, files())
     assert result.log_only_files == ("/x.php",)  # its citations were read back
     log.unlink()  # fails on Windows if a handle were still open
+
+
+# --- several virtual hosts in one run (D89) ---------------------------------------------
+
+SITE_A = {"log_file": "home/a.example/logs/access_log"}
+SITE_B = {"log_file": "home/b.example/logs/access_log"}
+
+
+def test_one_probe_answered_by_two_sites_is_not_a_script():
+    logs = numbered((3600, "/1514.php?cmd=a", {"size": 700, **SITE_A}),
+                    (3610, "/1514.php?cmd=a", {"size": 987, **SITE_B}))
+    result = correlate(logs, files(file_ev("index.php", btime=-99, ctime=-99, mtime=-99)))
+    assert result.log_only_files == ()
+
+
+def test_a_redirect_is_not_script_output():
+    logs = numbered((3600, "/1514.php?cmd=a", {"status": 301, "size": 0}),
+                    (3601, "/1514.php?cmd=a", {"size": 987}))
+    result = correlate(logs, files(file_ev("index.php", btime=-99, ctime=-99, mtime=-99)))
+    assert result.log_only_files == ()
+
+
+def test_a_shell_on_one_site_keeps_its_own_uses_and_writer():
+    logs = numbered((3590, "/upload.php", {"method": "POST", **SITE_B}),
+                    (3595, "/upload.php", {"method": "POST", **SITE_A}),
+                    (3600, "/x.php?cmd=a", {"size": 700, **SITE_A}),
+                    (3610, "/x.php?cmd=b", {"size": 987, **SITE_A}),
+                    (3620, "/x.php", {"size": 5, **SITE_B}))
+    result = correlate(logs, files(file_ev("index.php", btime=-99, ctime=-99, mtime=-99)))
+    assert result.log_only_files == ("/x.php",)
+    cited = {(c.source, c.line_no) for e in result.timeline for c in e.citations
+             if e.description.key in ("timeline.log_only_file", "timeline.file_invoked",
+                                      "timeline.file_write_request")}
+    assert (SITE_A["log_file"], 2) in cited  # the writer on the same site
+    assert (SITE_B["log_file"], 1) not in cited
+    assert (SITE_B["log_file"], 5) not in cited
