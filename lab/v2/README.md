@@ -2,19 +2,18 @@
 
 ## Current state
 
-The round-two integrity fixes are implemented and their focused tests pass. The Docker
-Compose stack, app images, attacker image, scenario runners, and scenario evidence have
-not been built. No attack has been run. Do not treat this partial checkout as a usable
-lab or scored benchmark.
+The round-two evidence-integrity helpers are implemented. Round three is preparing a
+single s01 pilot. Do not treat this checkout as a complete multi-scenario benchmark.
 
 ## Isolation and setup contract
 
-The eventual Compose stack must put vulnerable apps and attackers on an `internal: true`
-network, expose only an edge port on `127.0.0.1`, pin every image by digest, and install
-all tools before starting that network. Attack scripts may target only the service
-names listed by the stack. The edge proxy accepts the lab-only client-IP and step
-headers, but forwards a fixed set of ordinary HTTP headers only; `proxy_pass_request_headers
-off` drops every incoming `X-Lab-*` header before a request reaches an app.
+The Compose stack puts vulnerable apps and attackers on an `internal: true` network,
+exposes only the edge on `127.0.0.1`, and selects one app upstream with `APP_UPSTREAM`
+for each run. Each request is served at `/`, so access-log paths match the app's paths.
+The edge accepts lab-only client-IP and step headers, but forwards a fixed set of
+ordinary HTTP headers only; `proxy_pass_request_headers off` drops every incoming
+`X-Lab-*` header before a request reaches an app. Attack tools accept only allowlisted
+lab service names. Images and build inputs are pinned and recorded in `SOURCES.md`.
 
 Copy `.env.example` to `.env`, set local-only credentials, and generate a 32-byte key
 encoded as 64 hex characters. Keep `.env` out of Git. Compose should bind the configured
@@ -23,14 +22,15 @@ the scenario output at `/capture`.
 
 ## Logs and labels
 
-`nginx/edge.conf` writes the evidence access log as nginx combined format with only the
-optional trailing quoted X-Forwarded-For field. It writes a separate JSON sidecar to
+`nginx/templates/default.conf.template` writes the evidence access log as nginx
+combined format with only the optional trailing quoted X-Forwarded-For field. It writes a separate JSON sidecar to
 `benchmark/v2/<id>/replay/labels.log`, outside `evidence/`. The sidecar includes the
-request id and step header. `label.py` joins a sidecar request to `access.log` by exact
-request, status, client IP, and time within 1.1 seconds; it refuses missing or ambiguous
-matches. Header-capable steps use a unique `X-Lab-Step`; Weevely and Hydra steps use the
-scenario script's attacker-IP/time-window record plus a request/status discriminator.
-Labels never enter the evidence access log, and no tool output is consumed.
+request id and step header. `label.py` joins both logs in write order and verifies each
+request, status, client IP, and timestamp within 1.1 seconds. It fails on mismatches or
+different row counts. This supports repeated identical requests in linear time.
+Header-capable steps use a unique `X-Lab-Step`; Weevely and Hydra steps use the scenario
+script's attacker-IP/time-window record plus a request/status discriminator. Labels
+never enter the evidence access log, and no tool output is consumed.
 
 ## Collection and defanging
 
@@ -65,8 +65,10 @@ always receive distinct mapped addresses. POST records replay with empty bodies 
 public access logs do not contain request bodies. NASA traces have no user-agent field;
 the replay labels that field as unavailable.
 
-No scenario runner currently starts this thread. Background source downloads and image
-pulls must finish before the isolated network is started.
+The scenario runner starts this thread concurrently with the attack. `--service` checks
+the allowlisted app selected for the run; Compose configures the edge upstream, and
+background request paths stay rooted at `/` without an app prefix. Background source
+downloads and image pulls finish before the isolated network is started.
 
 After a scenario is captured, run `python lab/v2/validate_evidence.py
 benchmark/v2/s01/evidence` to load its access log and manifest with the existing

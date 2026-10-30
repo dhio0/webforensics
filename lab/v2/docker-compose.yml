@@ -1,0 +1,106 @@
+services:
+  db:
+    image: mariadb:10.5.27@sha256:6a12617127de7ad42895232407abf403ae79f465bb818a8ac7ffbb97b8b18937
+    environment:
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+    volumes:
+      - dbdata:/var/lib/mysql
+    networks:
+      lab:
+        ipv4_address: 192.0.2.133
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 3s
+      timeout: 3s
+      retries: 30
+
+  wp:
+    image: m8v2-wordpress:pilot
+    build:
+      context: ../..
+      dockerfile: lab/v2/apps/Dockerfile
+    environment:
+      WORDPRESS_DB_HOST: db:3306
+      WORDPRESS_DB_NAME: ${MYSQL_DATABASE}
+      WORDPRESS_DB_USER: ${MYSQL_USER}
+      WORDPRESS_DB_PASSWORD: ${MYSQL_PASSWORD}
+      WORDPRESS_CONFIG_EXTRA: |
+        define('WP_HOME', 'http://edge');
+        define('WP_SITEURL', 'http://edge');
+    volumes:
+      - wpdata:/var/www/html
+      - collector-work:/collector-work
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      lab:
+        ipv4_address: 192.0.2.132
+
+  edge:
+    image: nginx:1.27.5-alpine@sha256:65645c7bb6a0661892a8b03b89d0743208a18dd2f3f17a54ef4b76fb8e2f2a10
+    environment:
+      APP_UPSTREAM: ${APP_UPSTREAM:-wp:80}
+    ports:
+      - "127.0.0.1:8081:80"
+    volumes:
+      - ./nginx/templates:/etc/nginx/templates:ro
+      - ../../benchmark/v2/s01/evidence/access.log:/var/log/v2/access.log
+      - ../../benchmark/v2/s01/evidence/error.log:/var/log/v2/error.log
+      - ../../benchmark/v2/s01/replay:/var/log/v2/replay
+    depends_on:
+      - wp
+    networks:
+      lab:
+        ipv4_address: 192.0.2.130
+
+  attacker:
+    image: m8v2-attacker:pilot
+    build:
+      context: ../..
+      dockerfile: lab/v2/attacker/Dockerfile
+    volumes:
+      - ./scenarios:/opt/scenarios:ro
+      - ./background.py:/opt/v2/background.py:ro
+      - ../../benchmark/v2/s01/replay:/replay
+      - ../../benchmark/v2/s01/replay/background.log.gz:/source/background.log.gz:ro
+    depends_on:
+      - edge
+    networks:
+      lab:
+        ipv4_address: 192.0.2.131
+
+  collector:
+    image: m8v2-collector:pilot
+    build:
+      context: ../..
+      dockerfile: lab/v2/collector/Dockerfile
+    environment:
+      BENCHMARK_V2_ENCRYPTION_KEY: ${BENCHMARK_V2_ENCRYPTION_KEY}
+      FULL_EVIDENCE_DIR: /full-evidence
+    volumes:
+      - wpdata:/app-webroot:ro
+      - collector-work:/collector-work
+      - ../../benchmark/v2/s01/evidence:/capture
+      - ../../benchmark/v2/s01/replay:/replay:ro
+      - ${FULL_EVIDENCE_DIR}:/full-evidence
+    networks:
+      lab:
+        ipv4_address: 192.0.2.134
+
+networks:
+  lab:
+    driver: bridge
+    internal: true
+    ipam:
+      config:
+        - subnet: 192.0.2.128/25
+          gateway: 192.0.2.129
+
+volumes:
+  dbdata:
+  wpdata:
+  collector-work:

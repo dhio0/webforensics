@@ -5,8 +5,6 @@ from __future__ import annotations
 import os
 from pathlib import Path
 
-from cryptography.hazmat.primitives.ciphers.aead import AESGCM
-
 MAGIC = b"WFV2GCM1"
 NONCE_SIZE = 12
 KEY_SIZE = 32
@@ -25,6 +23,10 @@ def key_from_hex(value: str) -> bytes:
 def encrypt_file(
     source: Path, destination: Path, key: bytes, *, nonce: bytes | None = None
 ) -> None:
+    try:
+        from cryptography.hazmat.primitives.ciphers.aead import AESGCM
+    except ImportError as exc:
+        raise RuntimeError("install the optional 'lab' extra to encrypt evidence") from exc
     if len(key) != KEY_SIZE:
         raise ValueError("AES-256-GCM requires a 32-byte key")
     nonce = nonce if nonce is not None else os.urandom(NONCE_SIZE)
@@ -37,6 +39,10 @@ def encrypt_file(
 
 
 def decrypt_bytes(encrypted: bytes, key: bytes) -> bytes:
+    try:
+        from cryptography.hazmat.primitives.ciphers.aead import AESGCM
+    except ImportError as exc:
+        raise RuntimeError("install the optional 'lab' extra to decrypt evidence") from exc
     if not encrypted.startswith(MAGIC) or len(encrypted) < len(MAGIC) + NONCE_SIZE + 16:
         raise ValueError("not a valid v2 AES-GCM archive")
     nonce_start = len(MAGIC)

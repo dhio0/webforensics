@@ -13,8 +13,6 @@ import gzip
 import json
 import os
 import shutil
-import subprocess
-import tempfile
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -30,9 +28,6 @@ EXECUTABLE_SUFFIXES = {
 }
 ARCHIVE_SUFFIXES = {".zip", ".phar"}
 PHP_OPENERS = (b"<?", b"<%")
-COLLECTOR = Path(os.environ.get("WEBFORENSICS_COLLECTOR", "/opt/collect.sh"))
-
-
 @dataclass(frozen=True)
 class ManifestRow:
     path: str
@@ -184,23 +179,16 @@ def scan_defanged_snapshot(
             raise RuntimeError(f"live PHP opener remains in changed snapshot file: {rel_path}")
 
 
-def run_collect_sh(webroot: Path, destination: Path) -> None:
-    subprocess.run(
-        ["bash", str(COLLECTOR), "-w", str(webroot), "-o", str(destination)],
-        check=True,
-    )
-
-
-def baseline_capture(webroot: Path, output: Path) -> None:
-    with tempfile.TemporaryDirectory(prefix="v2-baseline-") as temporary:
-        captured = Path(temporary) / "collector"
-        run_collect_sh(webroot, captured)
-        output.mkdir(parents=True, exist_ok=True)
-        shutil.copyfile(captured / "manifest.tsv", output / "baseline.tsv")
+def baseline_capture(captured: Path, output: Path) -> None:
+    if not (captured / "manifest.tsv").is_file():
+        raise FileNotFoundError(f"collect.sh output is missing from {captured}")
+    output.mkdir(parents=True, exist_ok=True)
+    shutil.copyfile(captured / "manifest.tsv", output / "baseline.tsv")
 
 
 def scenario_capture(
     webroot: Path,
+    captured: Path,
     baseline_path: Path,
     output: Path,
     scenario: str,
@@ -208,43 +196,44 @@ def scenario_capture(
 ) -> None:
     key = key_from_hex(os.environ.get("BENCHMARK_V2_ENCRYPTION_KEY", ""))
     baseline = read_manifest(baseline_path)
-    with tempfile.TemporaryDirectory(prefix="v2-capture-") as temporary:
-        captured = Path(temporary) / "collector"
-        run_collect_sh(webroot, captured)
-        current_manifest = captured / "manifest.tsv"
-        current = read_manifest(current_manifest)
-        output.mkdir(parents=True, exist_ok=True)
-        shutil.copyfile(current_manifest, output / "manifest.tsv")
-        replaced = defang_snapshot(
-            webroot, current, baseline, output / "webroot", roles_from_records(records_path)
-        )
-        tar_path = Path(temporary) / "full-evidence.tar.gz"
-        with (captured / "webroot.tar").open("rb") as source, gzip.open(
-            tar_path, "wb", compresslevel=6
-        ) as compressed:
-            shutil.copyfileobj(source, compressed)
-        full_dir = Path(os.environ.get("FULL_EVIDENCE_DIR", "/full-evidence"))
-        encrypt_file(
-            tar_path,
-            full_dir / scenario / "full-evidence.tar.gz.enc",
-            key,
-        )
-        print(f"captured={len(current)} defanged={len(replaced)} scenario={scenario}")
+    current_manifest = captured / "manifest.tsv"
+    raw_tar = captured / "webroot.tar"
+    if not current_manifest.is_file() or not raw_tar.is_file():
+        raise FileNotFoundError(f"collect.sh output is incomplete in {captured}")
+    current = read_manifest(current_manifest)
+    output.mkdir(parents=True, exist_ok=True)
+    shutil.copyfile(current_manifest, output / "manifest.tsv")
+    replaced = defang_snapshot(
+        webroot, current, baseline, output / "webroot", roles_from_records(records_path)
+    )
+    tar_path = captured.parent / f"{scenario}-full-evidence.tar.gz"
+    with raw_tar.open("rb") as source, gzip.open(tar_path, "wb", compresslevel=6) as compressed:
+        shutil.copyfileobj(source, compressed)
+    full_dir = Path(os.environ.get("FULL_EVIDENCE_DIR", "/full-evidence"))
+    encrypt_file(tar_path, full_dir / scenario / "full-evidence.tar.gz.enc", key)
+    tar_path.unlink()
+    print(f"captured={len(current)} defanged={len(replaced)} scenario={scenario}")
 
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--webroot", type=Path, required=True)
+    parser.add_argument("--captured", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--scenario", required=True)
     parser.add_argument("--baseline-manifest", type=Path)
     parser.add_argument("--records", type=Path)
     args = parser.parse_args()
     if args.baseline_manifest is None:
-        baseline_capture(args.webroot, args.output)
+        baseline_capture(args.captured, args.output)
         return
     scenario_capture(
-        args.webroot, args.baseline_manifest, args.output, args.scenario, args.records
+        args.webroot,
+        args.captured,
+        args.baseline_manifest,
+        args.output,
+        args.scenario,
+        args.records,
     )
 
 

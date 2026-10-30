@@ -25,6 +25,7 @@ dev = [
     "pytest>=8",
     "ruff>=0.6",
 ]
+lab = ["cryptography==50.0.2"]
 
 [project.scripts]
 webforensics = "webforensics.cli:app"

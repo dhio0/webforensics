@@ -4,16 +4,24 @@ from __future__ import annotations
 
 import hashlib
 import io
+import sys
 import tarfile
 from datetime import UTC, datetime
 from pathlib import Path
+from time import perf_counter
 from urllib.error import HTTPError, URLError
 
 import pytest
-from cryptography.exceptions import InvalidTag
-from lab.v2 import background, collect, crypto, decrypt, label, validate_evidence
 
-from webforensics.adapters.file_adapter import LogFileSource, ManifestFileSource
+ROOT = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(ROOT))
+
+from lab.v2 import background, collect, crypto, decrypt, label, validate_evidence  # noqa: E402
+
+from webforensics.adapters.file_adapter import (  # noqa: E402
+    LogFileSource,
+    ManifestFileSource,
+)
 
 
 def manifest_row(path: Path, root: Path, inode: int) -> collect.ManifestRow:
@@ -45,10 +53,17 @@ def test_ip_mapping_has_no_collisions_for_50000_sources(tmp_path: Path) -> None:
     assert [ip for ip, _ in first_seen[:3]] == ["198.18.0.1", "198.18.0.2", "198.18.0.3"]
     out = tmp_path / "ip_map.tsv"
     mapper.write_tsv(out)
-    assert out.read_text(encoding="ascii").splitlines()[1] == "source_ip\tmapped_ip"
+    assert (
+        out.read_text(encoding="ascii").splitlines()[1]
+        == "source_address_or_host\tmapped_ip"
+    )
+    assert mapper.assign("nasa.example.edu") != mapper.assign("other.example.edu")
 
 
 def test_gcm_round_trip_authenticates_harmless_file(tmp_path: Path) -> None:
+    pytest.importorskip("cryptography")
+    from cryptography.exceptions import InvalidTag
+
     original = tmp_path / "plain.txt"
     original.write_text("harmless round trip\n", encoding="utf-8")
     encrypted = tmp_path / "capture.enc"
@@ -66,6 +81,8 @@ def test_gcm_round_trip_authenticates_harmless_file(tmp_path: Path) -> None:
 
 
 def test_decrypt_refuses_repository_and_escaping_tar_members(tmp_path: Path) -> None:
+    pytest.importorskip("cryptography")
+
     full_dir = tmp_path / "full"
     scenario_dir = full_dir / "s01"
     scenario_dir.mkdir(parents=True)
@@ -191,48 +208,68 @@ def test_project_manifest_parser_reads_full_metadata_for_baseline_diff(tmp_path:
     assert row["sha256"] == "a" * 64
 
 
-def test_label_join_requires_request_status_client_and_time(tmp_path: Path) -> None:
-    when = datetime(2026, 10, 30, 12, 0, 1, tzinfo=UTC)
-    access = tmp_path / "access.log"
-    access.write_text(
-        '10.0.0.2 - - [30/Oct/2026:12:00:01 +0000] '
-        '"GET /x HTTP/1.1" 200 3 "-" "ua" "198.51.100.1"\n',
-        encoding="ascii",
-    )
-    rows = label.access_index(access)
-    matched = label.join_sidecar_request(
-        {
-            "sidecar_line": 1,
-            "msec": when.timestamp(),
-            "request": "GET /x HTTP/1.1",
-            "status": 200,
-            "client_ip": "198.51.100.1",
-        },
-        rows,
-        set(),
-    )
-    assert matched["line_no"] == 1
-    with pytest.raises(ValueError, match="refusing positional join"):
-        label.join_sidecar_request(
+def _identical_log_rows(count: int) -> tuple[list[dict], list[dict]]:
+    access_rows = []
+    sidecar_rows = []
+    when = datetime(2026, 10, 30, 12, 0, 1, tzinfo=UTC).timestamp()
+    for index in range(1, count + 1):
+        access_rows.append(
             {
-                "sidecar_line": 2,
-                "msec": when.timestamp(),
-                "request": "GET /other HTTP/1.1",
+                "line_no": index,
+                "timestamp": when,
+                "request": "POST /wp-login.php HTTP/1.1",
                 "status": 200,
-                "client_ip": "198.51.100.1",
-            },
-            rows,
-            set(),
+                "client_ip": "192.0.2.130",
+            }
         )
+        sidecar_rows.append(
+            {
+                "sidecar_line": index,
+                "msec": when + 0.5,
+                "request": "POST /wp-login.php HTTP/1.1",
+                "status": 200,
+                "client_ip": "192.0.2.130",
+                "step": f"hydra-{index}",
+            }
+        )
+    return sidecar_rows, access_rows
+
+
+def test_label_join_handles_500_identical_bruteforce_requests() -> None:
+    sidecar, access = _identical_log_rows(500)
+    joined = label.join_log_rows(sidecar, access)
+    assert [row["access_line_no"] for row in joined] == list(range(1, 501))
+
+
+def test_label_join_rejects_dropped_line_and_mismatched_pair() -> None:
+    sidecar, access = _identical_log_rows(4)
+    with pytest.raises(ValueError, match="line-count mismatch: labels=4 access=3"):
+        label.join_log_rows(sidecar, access[:-1])
+
+    access[2]["request"] = "GET /different HTTP/1.1"
+    with pytest.raises(ValueError, match=r"sidecar line 3 .* access line 3"):
+        label.join_log_rows(sidecar, access)
+
+
+def test_label_join_scales_to_30000_rows() -> None:
+    sidecar, access = _identical_log_rows(30_000)
+    started = perf_counter()
+    joined = label.join_log_rows(sidecar, access)
+    elapsed = perf_counter() - started
+    assert len(joined) == 30_000
+    assert elapsed < 5.0
 
 
 def test_edge_plain_log_is_combined_and_drops_custom_headers_upstream() -> None:
-    config = (Path(__file__).parent / "nginx" / "edge.conf").read_text(encoding="utf-8")
+    config = (
+        ROOT / "lab" / "v2" / "nginx" / "templates" / "default.conf.template"
+    ).read_text(encoding="utf-8")
     plain_format = config.split("log_format plain_combined_xff", 1)[1].split(";", 1)[0]
     assert "$http_x_lab_step" not in plain_format
     assert "plain_combined_xff" in config
     assert "replay_labels" in config and "$http_x_lab_step" in config
-    assert config.count("proxy_pass_request_headers off;") == 3
+    assert config.count("proxy_pass_request_headers off;") == 1
+    assert config.count("location /") == 1
 
 
 def test_background_posts_have_empty_body_and_redirects_are_disabled() -> None:
@@ -242,7 +279,7 @@ def test_background_posts_have_empty_body_and_redirects_are_disabled() -> None:
         method="POST",
     )
     assert request.data == b""
-    assert background.target_url("/home", "wp").startswith("http://edge/wp/")
+    assert background.target_url("/wp-login.php", "wp") == "http://edge/wp-login.php"
     with pytest.raises(ValueError):
         background.target_url("https://example.org/", "wp")
     assert (
@@ -276,7 +313,7 @@ def test_background_thread_records_timing_and_network_failure_kinds(
             ]
 
         def open(self, request, timeout):
-            assert request.full_url.startswith("http://edge/wp/")
+            assert request.full_url.startswith("http://edge/")
             assert timeout == 1
             raise self.errors.pop(0)
 

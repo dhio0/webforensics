@@ -33,7 +33,7 @@ def access_index(path: Path) -> list[dict[str, Any]]:
         for line_no, line in enumerate(source, 1):
             match = COMBINED.match(line.rstrip("\r\n"))
             if not match:
-                continue
+                raise ValueError(f"{path}:{line_no}: invalid combined access-log row")
             timestamp = datetime.strptime(match["time"], "%d/%b/%Y:%H:%M:%S %z").astimezone(UTC)
             rows.append(
                 {
@@ -64,25 +64,29 @@ def sidecar_rows(path: Path) -> list[dict[str, Any]]:
     return rows
 
 
-def join_sidecar_request(
-    sidecar: dict[str, Any], access_rows: list[dict[str, Any]], used_lines: set[int]
-) -> dict[str, Any]:
-    candidates = [
-        row
-        for row in access_rows
-        if row["line_no"] not in used_lines
-        and row["request"] == sidecar["request"]
-        and row["status"] == sidecar["status"]
-        and row["client_ip"] == sidecar["client_ip"]
-        and abs(row["timestamp"] - sidecar["msec"]) <= 1.1
-    ]
-    if len(candidates) != 1:
+def join_log_rows(
+    sidecar_rows_: list[dict[str, Any]], access_rows: list[dict[str, Any]]
+) -> list[dict[str, Any]]:
+    """Join same-edge logs in write order, verifying every pair in O(N)."""
+    if len(sidecar_rows_) != len(access_rows):
         raise ValueError(
-            f"sidecar line {sidecar['sidecar_line']} has {len(candidates)} matching access-log "
-            "requests by request/status/client/time; refusing positional join"
+            "sidecar/access log line-count mismatch: "
+            f"labels={len(sidecar_rows_)} access={len(access_rows)}"
         )
-    used_lines.add(candidates[0]["line_no"])
-    return candidates[0]
+    joined = []
+    for sidecar, access in zip(sidecar_rows_, access_rows, strict=True):
+        if (
+            access["request"] != sidecar["request"]
+            or access["status"] != sidecar["status"]
+            or access["client_ip"] != sidecar["client_ip"]
+            or abs(access["timestamp"] - sidecar["msec"]) > 1.1
+        ):
+            raise ValueError(
+                f"sidecar line {sidecar['sidecar_line']} does not match access line "
+                f"{access['line_no']} by request/status/client/time"
+            )
+        joined.append({**sidecar, "access_line_no": access["line_no"]})
+    return joined
 
 
 def parse_manifest(path: Path) -> dict[str, dict[str, str]]:
@@ -153,11 +157,10 @@ def make_ground_truth(
     if scenario_id not in SCENARIOS:
         raise ValueError(f"unexpected scenario id: {scenario_id}")
     access_rows = access_index(evidence / "access.log")
-    label_rows = sidecar_rows(labels_path)
+    label_rows = join_log_rows(sidecar_rows(labels_path), access_rows)
     by_step = {str(row["step"]): row for row in label_rows if row.get("step")}
     if len(by_step) != sum(bool(row.get("step")) for row in label_rows):
         raise ValueError("sidecar contains duplicate nonempty step labels")
-    used_lines: set[int] = set()
     steps = []
     root_cause_step = records.get("root_cause_step")
     step_ids = {item["id"] for item in records["steps"]}
@@ -188,14 +191,13 @@ def make_ground_truth(
             labelled = candidates[0]
         else:
             raise ValueError(f"unsupported label method {method!r} for step {step_id}")
-        joined = join_sidecar_request(labelled, access_rows, used_lines)
         steps.append(
             {
                 "id": step_id,
                 "category": step["category"],
                 "mitre": step.get("mitre", []),
                 "log_file": "access.log",
-                "line_no": joined["line_no"],
+                "line_no": labelled["access_line_no"],
                 "is_root_cause": step_id == root_cause_step,
                 **({"expected_in_timeline": step["expected_in_timeline"]}
                    if "expected_in_timeline" in step else {}),

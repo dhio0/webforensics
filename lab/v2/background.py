@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import gzip
 import ipaddress
 import json
 import re
@@ -22,7 +23,8 @@ COMBINED = re.compile(
     r'"[^\"]*" "(?P<ua>[^\"]*)"'
 )
 NASA = re.compile(
-    r'^(?P<ip>\S+) \[[^]]+\] "(?P<method>[A-Z]+) (?P<target>\S+) HTTP/[^\"]+" '
+    r'^(?P<ip>\S+) (?:\S+ \S+ )?\[[^]]+\] '
+    r'"(?P<method>[A-Z]+) (?P<target>\S+) HTTP/[^\"]+" '
     r'(?P<status>\d{3}) \S+'
 )
 ALLOWED_TARGETS = {"wp", "smallapp", "dvwa"}
@@ -59,7 +61,12 @@ class IPMapper:
         self.seed = seed
 
     def assign(self, source_ip: str) -> str:
-        source_ip = str(ipaddress.ip_address(source_ip))
+        try:
+            source_ip = str(ipaddress.ip_address(source_ip))
+        except ValueError:
+            source_ip = source_ip.strip().rstrip(".").lower()
+            if not re.fullmatch(r"[a-z0-9](?:[a-z0-9.-]{0,251}[a-z0-9])?", source_ip):
+                raise ValueError(f"invalid source host identity: {source_ip!r}") from None
         existing = self.mapping.get(source_ip)
         if existing is not None:
             return existing
@@ -84,7 +91,7 @@ class IPMapper:
         path.parent.mkdir(parents=True, exist_ok=True)
         with path.open("w", encoding="ascii", newline="\n") as output:
             output.write(f"#seed={self.seed}\n")
-            output.write("source_ip\tmapped_ip\n")
+            output.write("source_address_or_host\tmapped_ip\n")
             for source_ip, mapped_ip in self.mapping.items():
                 output.write(f"{source_ip}\t{mapped_ip}\n")
 
@@ -104,7 +111,7 @@ def parse_line(line: str, fallback_user_agent: str) -> dict[str, str] | None:
 
 
 def target_url(target: str, service: str) -> str:
-    """Build an origin-form request URL with a constant allowlisted host."""
+    """Build an origin-form URL at /; one scenario's edge selects the app upstream."""
     if service not in ALLOWED_TARGETS:
         raise ValueError(f"service must be one of {sorted(ALLOWED_TARGETS)}")
     parsed = urlsplit(target)
@@ -113,7 +120,7 @@ def target_url(target: str, service: str) -> str:
     if any(ord(char) < 32 for char in target):
         raise ValueError("control character in request target")
     encoded = quote(target, safe="/%?=&;:@+$,~-._")
-    return f"http://edge/{service}{encoded}"
+    return f"http://edge{encoded}"
 
 
 @dataclass
@@ -189,7 +196,8 @@ class BackgroundReplay:
     def _run(self) -> None:
         opener = build_opener(ProxyHandler({}), NoRedirects())
         self.stats.started_at = datetime.now(UTC).isoformat()
-        with self.source.open(encoding="utf-8", errors="replace") as handle:
+        file_opener = gzip.open if self.source.suffix == ".gz" else Path.open
+        with file_opener(self.source, "rt", encoding="utf-8", errors="replace") as handle:
             for line_number, line in enumerate(handle, 1):
                 if self.stats.attempted >= self.limit:
                     break
