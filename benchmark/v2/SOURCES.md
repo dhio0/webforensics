@@ -38,6 +38,8 @@ invent one.
 | Name | Version / CVE candidate | Status |
 |---|---|---|
 | PHPGurukul Student Record System | 3.20; CVE-2024-44640 (`add-course.php`, SQL injection) | NVD confirms the affected version and endpoint. No redistribution license was found during this check. Do not commit its source snapshot until the license is verified. |
+| PHPGurukul Small CRM | 3.0; CVE-2024-44644 (`manage-tickets.php`, SQL injection) | The published advisory names the endpoint, but no explicit OSI-approved license or source release with that license was verified. Not eligible for redistribution. |
+| phpMyFAQ | 3.2.5; CVE-2024-27299 (`phpmyfaq/src/phpMyFAQ/News.php`) | Explicit MPL-2.0 license and maintainer fix provenance verified, but this is a full FAQ platform; the upstream repository is about 52.8 MB and does not fit the requested small-app scenario. Not selected for s03. |
 | curl | exact package version not yet pinned | Tool and license verification still required. |
 | Docker attacker/app images | final image digests | Build and pin only after tool versions and application set are fixed. |
 
@@ -58,6 +60,12 @@ invent one.
   PHPGurukul Student Record System 3.20 and `add-course.php` parameters `course-short`,
   `course-full`, and `cdate`. It remains a candidate only because the source license
   needs clarification.
+- [CVE-2024-44644](https://github.com/advisories/ghsa-x7rr-7j6w-6hc8): the advisory
+  identifies PHPGurukul Small CRM 3.0 and SQL injection through `frm_id` and `aremark`
+  in `manage-tickets.php`; it provides no verified OSI license or fix commit.
+- The phpMyFAQ 3.2.5 tag's explicit MPL-2.0 license and the maintainer advisory/fix
+  commit verify a PHP SQL injection source, but phpMyFAQ is a full FAQ platform rather
+  than a small PHP application. Its upstream repository size is about 52.8 MB ([repository metadata](https://awesome.ecosyste.ms/projects/github.com%2Fthorsten%2FphpMyFAQ)).
 
 ## s01 verification
 
