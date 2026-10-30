@@ -68,4 +68,5 @@ evidence is executable. Never run or `include` evidence files.
 `external/` holds cases built by others, scored against an answer key written before the
 tool ran. The evidence itself is not redistributed; each case's README says where to get
 it and how to reproduce the score. So far: `ashemery-case1` (Ali Hadi's "Web Server Case", Windows) and `ashemery-linux1` (his
-Linux "Compromised Web Server", scored held out).
+Linux "Compromised Web Server", scored held out) and `bnd-2016` (the BND Forensik-Challenge,
+held out).

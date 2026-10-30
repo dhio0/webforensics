@@ -36,6 +36,13 @@ _REQUEST_INPUT = re.compile(_REQUEST_VAR, re.IGNORECASE)
 _LONG_TOKEN = re.compile(r"(?<![A-Za-z0-9+/=_-])[A-Za-z0-9+/=_-]{100,}(?![A-Za-z0-9+/=_-])")
 _ENCODED_CALL = re.compile(r"\b(?:base64_decode|gzinflate|str_rot13)\s*\(", re.IGNORECASE)
 _PERSISTENCE_NAMES = {".htaccess", "index.php", "index.html", "index.htm", "index.phtml"}
+# Defacement banners (D87): the attacker signs or brags on a public page.
+_PAGE_NAMES = {"index.php", "index.html", "index.htm", "index.phtml", "default.htm",
+               "default.html", "default.aspx", "home.html"}
+_DEFACEMENT = re.compile(
+    r"\b(?:hacked|defaced|owned|pwned)\s+by\b|\b(?:has|have|was)\s+been\s+(?:hacked|defaced|"
+    r"owned|pwned)\b|\bsite\s+hacked\b|\bhacked\s+site\b|\bdi\s*-?\s*hack\s+oleh\b",
+    re.IGNORECASE)
 
 
 def has_executable_extension(path: str) -> bool:
@@ -122,6 +129,14 @@ def detect_file(file: FileEvidence) -> list[Finding]:
                 Severity.LOW, Confidence.LOW, "finding.FILE-WEBSHELL-OBFUSCATION",
                 {"signal": "high_entropy_blob" if entropy_blob else "encoding_function",
                  "length": str(len(evidence))}, ("T1027",),
+            ))
+
+        defaced = _DEFACEMENT.search(content) if parts[-1] in _PAGE_NAMES else None
+        if defaced:
+            findings.append(_finding(
+                file, "FILE-DEFACEMENT-PAGE", FindingCategory.DEFACEMENT,
+                Severity.HIGH, Confidence.MEDIUM, "finding.FILE-DEFACEMENT-PAGE",
+                {"matched": truncate_excerpt(defaced.group(0))}, ("T1491.002",),
             ))
 
     name = parts[-1]

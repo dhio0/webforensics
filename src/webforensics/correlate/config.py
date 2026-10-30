@@ -36,6 +36,9 @@ class CorrelationConfig:
     # Windows filesystems (D84): URLs match file paths whatever their case, and birth
     # time is as settable as mtime, so it is not trusted over a later ctime.
     case_insensitive_paths: bool = False
+    # Webroot changes up to this long before the first log line are an uncovered period
+    # (D87): the log starts after them, so their requests are not in evidence.
+    coverage_lookback_s: int = 30 * 24 * 3600
     birth_time_settable: bool = False
 
 

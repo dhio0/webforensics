@@ -142,6 +142,30 @@ The held-out run is the number to quote, and it was poor: the case-1 fixes did n
 code injection, a shell written from a root shell, or a form POST near an app install.
 Two cases, two different sets of failures: the next case will likely find more.
 
+### Third case, held out
+
+The BND Forensik-Challenge (2016): a defaced Debian web server whose access log the
+attacker cut ([benchmark/external/bnd-2016](../benchmark/external/bnd-2016/README.md)).
+
+| | Run 1: frozen tool (held out) | Run 2: after D87 (post-hoc) |
+|---|---|---|
+| Compromise reported | no | yes |
+| Defaced page flagged | missed | found |
+| Gap over the exploit window | missed | reported |
+| Root cause | none (correct: the exploit line was deleted) | none |
+| False files / IPs | 0 / 0 | 0 / 0 |
+
+### Held-out record so far
+
+| Case | Frozen at | Held-out result |
+|---|---|---|
+| Ali Hadi Linux web server | 3c05308 | webshell found; exploit missed; wrong root cause; 1 false IP, 2 false files |
+| BND 2016 | 7bb44e3 | compromise missed entirely ("nothing suspicious"); no false accusations |
+
+Three real cases, three different sets of failures, each fixed only afterwards. That is
+the state of the tool: careful about false accusations, but not yet able to rely on for
+cases unlike those it has seen.
+
 ## Using the benchmark with another tool
 
 See [benchmark/README.md](../benchmark/README.md). The ground truth format is tool-neutral.

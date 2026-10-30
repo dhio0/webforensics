@@ -176,6 +176,12 @@ def _crafted(tmp_path):
     logs, evidence = rce_case()
     yield logs, files(evidence.files[0].model_copy(update={
         "url_paths": ("/jabc/scripts/update.php",)})), None
+    # a defaced index page, and a log that starts days after it changed (D87)
+    (tmp_path / "d").mkdir()
+    defaced = _with_content(tmp_path / "d", "index.html", "<h1>This site has been hacked</h1>")
+    defaced = defaced.model_copy(update={"btime": at(0), "ctime": at(0), "mtime": at(0)})
+    yield numbered((3 * 86_400, "/index.html"),
+                   (3 * 86_400 + 5, "/s.php?q=%22%3E%3Cx")), files(defaced), None
     # directory scan without a manifest
     (tmp_path / "web" / "uploads").mkdir(parents=True)
     (tmp_path / "web" / "uploads" / "h.php").write_text("inert")

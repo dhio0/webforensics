@@ -202,7 +202,7 @@ Tidak ada.
 
 - **Versi alat:** 0.1.0
 - **Versi ruleset:** 0.1.0
-- **Hash konfigurasi:** 1d5d353b0c14d74de5458be82560b52b093a4f44782a1fb3113e7b80fcd5fd39
+- **Hash konfigurasi:** d9703d7a523d27947f388ea79da3ac52d37b00b7203bd2332f9df7b2279143bf
 
 ### File input
 

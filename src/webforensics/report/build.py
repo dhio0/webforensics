@@ -116,9 +116,12 @@ def build_summary(result: CorrelationResult, background_count: int, review: int,
     lines: list[Reason] = []
     span = _actor_span(result)
     compromised = bool(result.affected_files or result.log_only_files)
-    if compromised and span:
+    if compromised and span and result.iocs.ips:
         lines.append(_r("summary.compromise_found", files=len(result.affected_files),
                         actors=len(result.iocs.ips), first_at=span[0], last_at=span[1]))
+    elif compromised:
+        # No request ties anyone to the files (e.g. the log was cut): say so (D87).
+        lines.append(_r("summary.compromise_found_no_actor", files=len(result.affected_files)))
     else:
         lines.append(_r("summary.no_compromise"))
     root = root_event(result)

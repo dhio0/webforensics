@@ -89,6 +89,12 @@ LOG_RULES: tuple[LogRule, ...] = (
         Confidence.HIGH, ("T1190", "T1083"), Target.REQUEST,
         _rx(r"/etc/(?:passwd|shadow)\b|\bwin\.ini\b|\bboot\.ini\b|/proc/self/environ"),
     ),
+    # Script injection probes (D87): markup breaking out of an attribute or tag.
+    LogRule(
+        "LOG-XSS-PROBE", FindingCategory.EXPLOIT_ATTEMPT, Severity.LOW, Confidence.MEDIUM,
+        ("T1190",), Target.QUERY,
+        _rx(r"<\s*script\b|[\"']\s*>\s*<\s*[a-z/!]|\bjavascript\s*:|\bon(?:error|load|mouseover)\s*="),
+    ),
     # Code injection (D86): PHP code or a code-running callback in the request, e.g.
     # Drupalgeddon2's `name[#post_render][]=passthru&name[#markup]=...`.
     LogRule(

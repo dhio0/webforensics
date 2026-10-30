@@ -1,0 +1,26 @@
+run: run2   timeline rows: 1
+
+Events
+  MISS A1 probes of /index.php in the timeline (0 lines); attacker listed in unrelated-activity groups: True
+
+Files
+  HIT  defaced index.html flagged
+  vulnerable pages flagged as affected (reported, not scored): []
+  false accusations 0: []
+  listed for manual review: ['originalIndex.php']
+
+IPs (IOC list)
+  accused: []   other than attacker: []
+
+Root cause
+  none given (preferred to a wrong one: the exploit line was deleted from the log)
+
+Compromise reported in the summary: True
+Gap over the exploit window: HIT [('no_log_lines', '2016-11-21T14:18:45Z', '2016-11-24T08:28:13Z')]
+Gaps: [('no_baseline', None, None), ('no_log_lines', '2016-11-23T12:14:56Z', '2016-11-24T08:28:13Z'), ('parse_errors', '2016-11-24T08:29:32Z', None), ('no_log_lines', '2016-11-21T14:18:45Z', '2016-11-24T08:28:13Z')]
+
+Inputs (SHA-256):
+  files/var/log/apache2/access.log  95723a59be93a1f8472fb1958c6b04b9e47083ae03ed50457c1591a55b7c6dda
+  files/var/log/apache2/error.log  75cf80f28c24f22819e0a779ee3e9cc99119f382ebd32319e42232b82989a89a
+  manifest.tsv  0f962939dad0f8383e9e3ac18cb776cc78b38df7c6b793b4c507ea5cfcd566dc
+Tool: 0.1.0 ruleset 0.1.0 config 7cabfdcdf016d39c

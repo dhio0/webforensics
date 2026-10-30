@@ -106,3 +106,38 @@ def test_directory_source_does_not_follow_symlinks(tmp_path):
     files = DirectoryFileSource(root).load_files()
     assert [(f.path, f.file_type.value) for f in files.files] == [("link", "symlink")]
     assert files.files[0].content_ref is None
+
+
+def _locked(monkeypatch, name):
+    """An extracted file the analyst's machine refuses to read (an antivirus lock)."""
+    import webforensics.adapters.file_adapter as adapter
+
+    real = adapter.sha256_file
+
+    def sha256_file(path):
+        if path.name == name:
+            raise OSError(22, "Invalid argument")
+        return real(path)
+
+    monkeypatch.setattr(adapter, "sha256_file", sha256_file)
+
+
+def test_an_unreadable_extracted_file_is_kept_without_content(fixtures_dir, tmp_path,
+                                                               monkeypatch):
+    (tmp_path / "uploads").mkdir()
+    (tmp_path / "uploads" / "x.php").write_text("locked")
+    _locked(monkeypatch, "x.php")
+    files = ManifestFileSource(fixtures_dir / "manifests" / "shop.manifest.tsv",
+                               webroot_dir=tmp_path, base_dir=fixtures_dir).load_files()
+    shell = next(f for f in files.files if f.path == "uploads/x.php")
+    assert shell.content_ref is None
+    assert [f.reason for f in files.failures if f.line_no == 14] == ["content_unreadable"]
+
+
+def test_an_unreadable_file_in_a_scanned_folder_is_skipped_and_counted(tmp_path, monkeypatch):
+    (tmp_path / "a.php").write_text("ok")
+    (tmp_path / "b.php").write_text("locked")
+    _locked(monkeypatch, "b.php")
+    files = DirectoryFileSource(tmp_path).load_files()
+    assert [f.path for f in files.files] == ["a.php"]
+    assert [f.reason for f in files.failures] == ["content_unreadable"]

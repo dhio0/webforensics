@@ -145,6 +145,9 @@ MESSAGES: dict[str, str] = {
     "gap.log_silence": "Tidak ada baris log selama {seconds} detik (ambang lokal {threshold} "
                        "detik). Log mungkin dihapus, dirotasi, atau server mati.",
     "gap.no_log_coverage": "Log tidak mencakup waktu penulisan {path}.",
+    "gap.log_starts_after_changes": ("Log baru dimulai {log_start_at}, padahal {count} file "
+                                     "webroot berubah sebelumnya. Request pada periode ini "
+                                     "(mungkin termasuk serangannya) tidak ada di bukti."),
     "gap.parse_errors": ("{count} baris log tidak bisa dibaca "
                          "(baris {first_line} s.d. {last_line})."),
     "gap.no_baseline": "Tidak ada baseline (salinan bersih) untuk pembanding, jadi status file "
@@ -171,6 +174,8 @@ MESSAGES: dict[str, str] = {
     "finding.LOG-SQLI-QUOTE-COMMENT": "Kutip diikuti komentar SQL: {matched}",
     "finding.LOG-TRAVERSAL-DOTS": "Path traversal (../): {matched}",
     "finding.LOG-TRAVERSAL-SENSITIVE": "Upaya membaca file sensitif: {matched}",
+    "finding.LOG-XSS-PROBE": "Markup yang mencoba keluar dari atribut atau tag: {matched}",
+    "finding.FILE-DEFACEMENT-PAGE": "Halaman berisi teks khas deface: \"{matched}\"",
     "finding.LOG-RCE-CODE-INJECTION": "Kode atau callback yang menjalankan kode ada di "
                                       "request: {matched}",
     "finding.LOG-SCANNER-UA": "User agent tool pemindai: {matched}",
@@ -192,6 +197,9 @@ MESSAGES: dict[str, str] = {
     "summary.compromise_found": "Ditemukan {files} file mencurigakan yang terkait dengan "
                                 "{actors} alamat IP. Aktivitas pertama aktor pada {first_at}, "
                                 "terakhir pada {last_at}.",
+    "summary.compromise_found_no_actor": "Ditemukan {files} file mencurigakan, tetapi tidak "
+                                         "ada request di log yang bisa dikaitkan dengannya, "
+                                         "jadi pelakunya tidak bisa ditunjuk dari bukti ini.",
     "summary.root_cause": "Titik masuk yang paling mungkin: {vuln_class} lewat {method} {path} "
                           "pada {at} (keyakinan {confidence}).",
     "summary.root_cause_unknown": "Titik masuk belum bisa ditentukan dari bukti yang ada.",
@@ -294,6 +302,8 @@ RULE_NAMES: dict[str, str] = {
     "LOG-TRAVERSAL-DOTS": "Path traversal",
     "LOG-TRAVERSAL-SENSITIVE": "Path traversal ke file sensitif",
     "LOG-RCE-CODE-INJECTION": "Injeksi kode (RCE)",
+    "LOG-XSS-PROBE": "Percobaan injeksi skrip (XSS)",
+    "FILE-DEFACEMENT-PAGE": "Halaman deface",
     "LOG-SCANNER-UA": "Tool pemindai",
     "LOG-WEBSHELL-UPLOAD-DIR": "Akses skrip di folder upload",
     "LOG-WEBSHELL-CMD-PARAM": "Parameter perintah webshell",
@@ -360,6 +370,7 @@ TACTICS_ID: dict[str, str] = {
     "Execution": "Execution (eksekusi)",
     "Discovery": "Discovery (penjelajahan)",
     "Defense Evasion": "Defense Evasion (menghindari deteksi)",
+    "Impact": "Impact (dampak)",
 }
 
 # Fixed offsets are enough: Indonesia has no daylight saving time.

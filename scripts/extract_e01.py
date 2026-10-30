@@ -1,4 +1,4 @@
-"""Copy folders out of a disk image (E01 or raw) without mounting it, with the original
+"""Copy folders out of a disk image (E01, VMDK or raw) without mounting it, with the original
 NTFS timestamps and a SHA-256 for every file.
 
     python -I scripts/extract_e01.py IMAGE --list
@@ -13,7 +13,8 @@ allocated, created, modified, mft_changed, accessed, inode, sha256; times are NT
 $STANDARD_INFORMATION in UTC). Turn the listing into a webforensics manifest with
 scripts/ntfs_listing_to_manifest.py.
 
-Needs `pip install pytsk3 libewf-python` (not project dependencies: used only to prepare
+Needs `pip install pytsk3 libewf-python` (plus `libvmdk-python` for VMDK; not project
+dependencies: used only to prepare
 evidence from images). The image is only read. Extracted files may be live malware: keep
 them out of the repository and never execute them.
 """
@@ -57,6 +58,15 @@ def open_image(path: str) -> pytsk3.Img_Info:
         handle = pyewf.handle()
         handle.open(pyewf.glob(str(Path(path).resolve())))  # pyewf wants native separators
         return _EwfImage(handle)
+    if path.lower().endswith(".vmdk"):
+        try:
+            import pyvmdk
+        except ImportError:
+            sys.exit("VMDK images need: pip install libvmdk-python")
+        handle = pyvmdk.handle()
+        handle.open(str(Path(path).resolve()))
+        handle.open_extent_data_files()
+        return _EwfImage(handle)  # same seek/read/get_media_size interface
     return pytsk3.Img_Info(path)
 
 

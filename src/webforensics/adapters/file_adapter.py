@@ -150,7 +150,11 @@ def _content_mismatch(file: FileEvidence, source: str, line_no: int) -> ParseFai
     """Extracted content must hash to the manifest value, or static analysis can't trust it."""
     if file.content_ref is None:
         return None
-    actual = sha256_file(Path(file.content_ref))
+    try:
+        actual = sha256_file(Path(file.content_ref))
+    except OSError as exc:  # e.g. an antivirus blocks a webshell in the extracted copy
+        return ParseFailure(source=source, line_no=line_no, reason="content_unreadable",
+                            excerpt=f"{file.path}: {exc.strerror or exc}")
     if actual == file.sha256:
         return None
     return ParseFailure(
@@ -285,7 +289,14 @@ class DirectoryFileSource:
         )
 
     def load_files(self) -> FileCollection:
-        files = sorted(
-            (self._to_evidence(p) for p in self._iter_paths()), key=lambda f: f.path
-        )
-        return FileCollection(files=tuple(files), gaps=self._gaps())
+        files, failures = [], []
+        for path in self._iter_paths():
+            try:
+                files.append(self._to_evidence(path))
+            except OSError as exc:  # unreadable (permissions, an antivirus lock): no hash
+                rel = path.relative_to(self._root).as_posix()
+                failures.append(ParseFailure(source=self._root.name or "webroot", line_no=1,
+                                             reason="content_unreadable",
+                                             excerpt=f"{rel}: {exc.strerror or exc}"))
+        return FileCollection(files=tuple(sorted(files, key=lambda f: f.path)),
+                              failures=tuple(failures), gaps=self._gaps())

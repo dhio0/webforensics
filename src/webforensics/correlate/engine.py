@@ -292,6 +292,7 @@ def _file_draft(file: FileEvidence, anchor: Anchor, findings: list[Finding],
         kind = "file_created" if written.event is FimEventType.ADDED else "file_changed"
     suspicious = any(f.category in (FindingCategory.WEBSHELL, FindingCategory.PERSISTENCE)
                      for f in findings)
+    defaced = any(f.category is FindingCategory.DEFACEMENT for f in findings)
     return _Draft(
         kind=kind, subject=file.evidence_id, ts=anchor.ts, basis=anchor.basis,
         params={"path": file.path, "sha256": file.sha256,
@@ -302,7 +303,7 @@ def _file_draft(file: FileEvidence, anchor: Anchor, findings: list[Finding],
         order=(_LAST, 0, 1),
         window=(anchor.ts - _seconds(config.creation_window_s),
                 anchor.ts + _seconds(config.clock_skew_s)),
-        technique="T1505.003" if suspicious else None,
+        technique="T1505.003" if suspicious else "T1491.002" if defaced else None,
         reasons=list(anchor.reasons), finding_ids=[f.finding_id for f in findings],
     )
 
@@ -763,10 +764,30 @@ def _input_gaps(files: FileCollection, logs: LogCollection, index: _Index,
                              "gap.partial_log_source"))
     if not baseline_used:
         gaps.append(make_gap(GapKind.NO_BASELINE, None, None, None, "gap.no_baseline"))
+    if (late := _log_starts_after_changes(index)) is not None:
+        gaps.append(late)
     return gaps
 
 
-_CONTENT_RULES = ("FILE-WEBSHELL-REQUEST-EXEC", "FILE-WEBSHELL-OBFUSCATION")
+def _log_starts_after_changes(index: _Index) -> EvidenceGap | None:
+    """Webroot files changed shortly before the first log line: the requests of that
+    period, maybe the attack itself, are not in the evidence (D87). A deploy minutes before
+    logging starts stays below `silence_min_s` and is not reported."""
+    if index.span is None:
+        return None
+    first = index.span[0]
+    earliest = first - _seconds(index.config.coverage_lookback_s)
+    before = [ts for ts, _ in index.births
+              if earliest <= ts <= first - _seconds(index.config.silence_min_s)]
+    if not before:
+        return None
+    return make_gap(GapKind.NO_LOG_LINES, None, min(before), first,
+                    "gap.log_starts_after_changes",
+                    {"count": str(len(before)), "log_start_at": first.isoformat()})
+
+
+_CONTENT_RULES = ("FILE-WEBSHELL-REQUEST-EXEC", "FILE-WEBSHELL-OBFUSCATION",
+                  "FILE-DEFACEMENT-PAGE")
 
 
 def _looks_generated(chain: _Chain, file_findings: list[Finding], stomped: bool,

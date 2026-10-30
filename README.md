@@ -108,6 +108,14 @@ accused the VM author's IP. After the fixes in D86 it gets every metric of that 
 but that second run is post-hoc. The honest summary: each new real case has exposed new
 gaps, so expect the next one to as well.
 
+### A third case, held out
+
+On the BND Forensik-Challenge (a defaced Debian server whose access log the attacker cut),
+the frozen tool reported nothing suspicious and did not say that the log covered only one
+minute ([benchmark/external/bnd-2016](benchmark/external/bnd-2016/README.md)). It now flags
+defaced start pages and says when the log starts after the webroot changed (D87). The entry
+point stays unknown, because the exploit request was deleted from the log.
+
 ## Development
 ```bash
 pytest
@@ -124,6 +132,7 @@ ruff check .
 - [benchmark/README.md](benchmark/README.md): scenario format, and how to score another tool
 - [benchmark/external/ashemery-case1](benchmark/external/ashemery-case1/README.md): the public DFIR case, its answer key and scores
 - [benchmark/external/ashemery-linux1](benchmark/external/ashemery-linux1/README.md): the held-out Linux case
+- [benchmark/external/bnd-2016](benchmark/external/bnd-2016/README.md): the held-out BND case (defacement, cut log)
 
 ## License
 MIT, see [LICENSE](LICENSE). Third-party code used as test fixtures keeps its own license; each fixture states its source and license.

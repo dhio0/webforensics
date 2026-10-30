@@ -138,6 +138,7 @@ class FindingCategory(StrEnum):
     WEBSHELL = "webshell"
     PERSISTENCE = "persistence"
     ANTI_FORENSICS = "anti_forensics"
+    DEFACEMENT = "defacement"
 
 
 class GapKind(StrEnum):

@@ -49,6 +49,10 @@ POSITIVE = [
      "LOG-RCE-CODE-INJECTION"),
     ("/x.php?a=php%20-r%20%27phpinfo();%27", "LOG-RCE-CODE-INJECTION"),
     ("/x.php?c=<?php%20echo%201;?>", "LOG-RCE-CODE-INJECTION"),
+    # BND challenge probes (D87)
+    ("/index.php?password=%22%3E%3Cxss&file=hack", "LOG-XSS-PROBE"),
+    ("/s.php?q=%3Cscript%3Ealert(1)%3C/script%3E", "LOG-XSS-PROBE"),
+    ("/s.php?q=x%22%20onerror=alert(1)", "LOG-XSS-PROBE"),
 ]
 
 NEGATIVE = [
@@ -71,6 +75,8 @@ NEGATIVE = [
     "/search.php?q=evaluation+of+assert+statements",
     "/docs/eval.html",
     "/node?q=#markup",  # a fragment-like word, not a render-array key
+    "/index.php?password=%22%3Exss&file=hack",  # a quote and > without a tag
+    "/s.php?q=a+%3E+b+and+c+%3C+d",  # comparisons in a search
 ]
 
 
