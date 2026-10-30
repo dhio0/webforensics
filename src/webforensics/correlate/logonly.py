@@ -109,12 +109,15 @@ def find_log_only_files(index, served: set[str]) -> list[LogOnlyFile]:
 
 
 def _writer(index, shell: LogOnlyFile) -> LogEvent | None:
-    """The closest write-capable request from the same actor before the first use."""
+    """The closest write-capable request from the same actor before the first use. A login
+    form is not a writer: on a shared IP a brute-force POST sits seconds before anything
+    (D88)."""
     first = shell.uses[0]
     start = first.ts - timedelta(seconds=index.config.creation_window_s)
     candidates = [e for e in index.actor_since(shell.actor, start)
                   if (e.ts, e.line_no) <= (first.ts, first.line_no) and e is not first
                   and index.url_key(e.path or "") != index.url_key(shell.url)
+                  and not rq.is_login_endpoint(e.path)
                   and rq.is_success(e) and rq.write_level(e, index.of(e)) > rq.WriteLevel.NONE]
     return max(candidates, key=lambda e: (e.ts, e.line_no), default=None)
 

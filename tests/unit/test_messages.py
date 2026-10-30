@@ -25,6 +25,7 @@ from tests.unit.test_correlate_properties import _random_case
 from tests.unit.test_file_rules import _request_exec, _with_content
 from tests.unit.test_held_out_lessons import rce_case
 from tests.unit.test_logonly import sqlmap_case
+from tests.unit.test_scale_lessons import SHELL, brute_force
 from tests.unit.test_wazuh_adapter import MARKER_SHA, upload_story
 from tests.wazuh_helpers import DOCROOT, fim_hit, recording
 from webforensics.adapters.file_adapter import DirectoryFileSource
@@ -182,6 +183,8 @@ def _crafted(tmp_path):
     defaced = defaced.model_copy(update={"btime": at(0), "ctime": at(0), "mtime": at(0)})
     yield numbered((3 * 86_400, "/index.html"),
                    (3 * 86_400 + 5, "/s.php?q=%22%3E%3Cx")), files(defaced), None
+    # no webroot at all: a shell seen in the log after a brute-force run (D88)
+    yield numbered(*brute_force(20), *SHELL), files(), None
     # directory scan without a manifest
     (tmp_path / "web" / "uploads").mkdir(parents=True)
     (tmp_path / "web" / "uploads" / "h.php").write_text("inert")

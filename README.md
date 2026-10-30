@@ -116,6 +116,20 @@ minute ([benchmark/external/bnd-2016](benchmark/external/bnd-2016/README.md)). I
 defaced start pages and says when the log starts after the webroot changed (D87). The entry
 point stays unknown, because the exploit request was deleted from the log.
 
+### A fourth case, at real scale
+
+Real logs of two Indonesian public-sector servers, 7.6 million access-log lines in all,
+with real bots and a brute-force campaign but no webroot
+([benchmark/external/id-public-sector-2025](benchmark/external/id-public-sector-2025/README.md)).
+The frozen tool accused no one wrongly and found a webshell in one site's logs, but missed
+the dataset's incident (an admin-panel takeover done through the panel's own API), could
+not fit all 7.4M lines of one server in 16 GB of RAM, and wrote a 51 MB report for a
+brute-forced WordPress site. Brute-force runs are now one event, sparse logs show only the
+longest silences, and peak memory fell by 45% on large sites and 85% on the brute-forced
+one, with byte-identical reports (D88). One run over all 7.4M lines now completes (3.7
+min, 6.0 GB), but merging the sites added one false file, since scripts are keyed by path
+alone; large servers are analyzed per site until that is fixed.
+
 ## Development
 ```bash
 pytest
@@ -133,6 +147,7 @@ ruff check .
 - [benchmark/external/ashemery-case1](benchmark/external/ashemery-case1/README.md): the public DFIR case, its answer key and scores
 - [benchmark/external/ashemery-linux1](benchmark/external/ashemery-linux1/README.md): the held-out Linux case
 - [benchmark/external/bnd-2016](benchmark/external/bnd-2016/README.md): the held-out BND case (defacement, cut log)
+- [benchmark/external/id-public-sector-2025](benchmark/external/id-public-sector-2025/README.md): real-scale logs of two Indonesian public-sector servers
 
 ## License
 MIT, see [LICENSE](LICENSE). Third-party code used as test fixtures keeps its own license; each fixture states its source and license.

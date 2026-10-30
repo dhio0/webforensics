@@ -26,6 +26,7 @@ TECHNIQUES: dict[str, Technique] = {
         Technique("T1070.006", "Indicator Removal: Timestomp", "Defense Evasion"),
         Technique("T1070.004", "Indicator Removal: File Deletion", "Defense Evasion"),
         Technique("T1491.002", "Defacement: External Defacement", "Impact"),
+        Technique("T1110", "Brute Force", "Credential Access"),
     )
 }
 

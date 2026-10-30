@@ -155,14 +155,29 @@ attacker cut ([benchmark/external/bnd-2016](../benchmark/external/bnd-2016/READM
 | Root cause | none (correct: the exploit line was deleted) | none |
 | False files / IPs | 0 / 0 | 0 / 0 |
 
+### Fourth case, held out, real scale
+
+Real logs of two Indonesian public-sector servers (Zenodo 20001206): 213,205 and 7,426,129
+access-log lines, no webroot ([benchmark/external/id-public-sector-2025](../benchmark/external/id-public-sector-2025/README.md)).
+
+| | Run 1: frozen tool (held out) | Run 2: after D88 (post-hoc) |
+|---|---|---|
+| Org X: verdict / false accusations | no compromise (correct) / 0 | same |
+| Org Y: one run over 7.4M lines | did not fit in 16 GB RAM | completed: 3.7 min, 6.0 GB; one false file from merging sites (`/1514.php`) |
+| Org Y: CyberPanel incident | missed (predicted in the answer key) | missed |
+| Org Y: other compromise | a webshell found in the logs of one site (labelled `remote_code` by the dataset) | same |
+| Org Y: true false accusations | 0 | 0 |
+| Org Y: report size, all sites | 52 MB | 268 KB |
+
 ### Held-out record so far
 
 | Case | Frozen at | Held-out result |
 |---|---|---|
 | Ali Hadi Linux web server | 3c05308 | webshell found; exploit missed; wrong root cause; 1 false IP, 2 false files |
 | BND 2016 | 7bb44e3 | compromise missed entirely ("nothing suspicious"); no false accusations |
+| Indonesian public sector (real scale) | 2ad5d68 | no false accusations in 7.6M lines; one webshell found; the admin-panel incident missed; one run did not fit in memory; one report 51 MB |
 
-Three real cases, three different sets of failures, each fixed only afterwards. That is
+Four real cases, four different sets of failures, each fixed only afterwards. That is
 the state of the tool: careful about false accusations, but not yet able to rely on for
 cases unlike those it has seen.
 

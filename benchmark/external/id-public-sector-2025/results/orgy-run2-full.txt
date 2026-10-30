@@ -1,0 +1,26 @@
+Run 2c (post-hoc, tool after D88): Organization Y, all 163 access logs in ONE run, as the
+ground truth's protocol asked. In-process driver, same code path as `webforensics analyze`.
+Laptop: 15.7 GB RAM, 7.9 GB free at start; free RAM never fell below 2.6 GB during the run.
+
+- wall 224.8 s, peak working set 5,984 MB (7,426,129 lines; about 0.8 KB per line)
+- summary: compromise_found_scripts, root_cause_unknown, log_only_unverified,
+  gaps_affect, background
+- affected files: 0 (no webroot)
+- log-only scripts: /1514.php, /wp-admin/33.php
+- accused attacker IPs: 71.34.77.255 (shared address; labelled bruteforce_login_web and
+  remote_code by the dataset; same as the per-site runs)
+- incident IP 243.23.54.175 flagged as actor: False (missed, as predicted)
+- background attack-pattern lines: 2,243 in 11 rule groups
+- timeline: 10,084 events; gaps: 5,235 (15 longest silences shown in the Markdown)
+- report.md 1.3 MB, report.json 23.7 MB
+
+New false finding, not in the per-site runs: /1514.php.
+- 71.34.77.255 probed /1514.php on more than ten different virtual hosts; almost all
+  answered 404. On sub9 it answered 301 and then 200 with about 11.7 KB, the same size as
+  dozens of other /NNNN.php/ probes (the WordPress catch-all page). One other host
+  (lab-sub3.sub9) answered 200 once.
+- The tool keys a script by its path alone, because it assumes one site and one webroot.
+  Merged across hosts, these answers looked like one script in use; per site they do not.
+- The dataset does not label /1514.php. Counted as one false file.
+- Not fixed in D88: scripts should be keyed by site and path when logs come from several
+  virtual hosts (or the tool should warn and advise per-site runs).

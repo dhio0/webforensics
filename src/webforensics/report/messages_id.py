@@ -12,6 +12,8 @@ MESSAGES: dict[str, str] = {
     "timeline.recon": "Pemindaian/pengintaian: {method} {path} → {status} ({rule_name}).",
     "timeline.exploit_attempt": "Percobaan eksploitasi: {method} {path} → {status} ({rule_name}).",
     "timeline.login_failed": "Login gagal: {method} {path} → {status}.",
+    "timeline.login_bruteforce": ("Brute force login: {count} percobaan gagal {method} {path} "
+                                  "dari aktor ini sampai {last_at} (status: {statuses})."),
     "timeline.auth_bypass_sqli": "Bypass login dengan SQL injection: {method} {path} → {status}.",
     "timeline.login_method_unknown": (
         "Login berhasil dengan cara yang tidak terlihat di log: {method} {path} → {status}."),
@@ -30,6 +32,10 @@ MESSAGES: dict[str, str] = {
     "timeline.log_only_file": (
         "Skrip {file} dipakai lewat HTTP ({uses} request berhasil), tetapi tidak ada di webroot "
         "saat bukti dikumpulkan: kemungkinan sudah dihapus. Pertama: {method} {path} → {status}."),
+    "timeline.log_only_file_unverified": (
+        "Skrip {file} dipakai seperti webshell lewat HTTP ({uses} request berhasil). Webroot "
+        "tidak diberikan sebagai bukti, jadi tidak bisa dicek apakah file ini masih ada. "
+        "Pertama: {method} {path} → {status}."),
     "timeline.file_deleted_by_command": (
         "Perintah penghapusan {file} dijalankan lewat parameter perintah: {method} {path} → "
         "{status}."),
@@ -106,10 +112,15 @@ MESSAGES: dict[str, str] = {
                             "file-nya sudah tidak ada.",
     "logonly.not_in_webroot": "Tidak ada file di bukti webroot yang melayani URL ini, jadi isi "
                               "dan hash-nya tidak diketahui. Kesimpulan hanya dari baris log.",
+    "logonly.no_webroot_evidence": "Tidak ada bukti webroot sama sekali, jadi keberadaan dan "
+                                   "isi skrip ini tidak bisa diperiksa. Kesimpulan hanya dari "
+                                   "baris log.",
     "logonly.outfile_then_served": "Nama file dari INTO OUTFILE kemudian diminta oleh klien yang "
                                    "sama dan dijawab 2xx, jadi file itu benar tertulis.",
     "logonly.write_inferred": "Request tulis terdekat dari klien yang sama sebelum skrip ini "
                               "pertama kali dipakai. Isi POST tidak tercatat, jadi ini dugaan.",
+    "login.burst": "{count} login gagal berturut-turut dari aktor yang sama dihitung sebagai "
+                   "satu rentetan. Baris-barisnya tetap ada di access log.",
     "root.write_without_prior_login": "Tidak ada login yang terlihat sebelum request penulis, "
                                       "jadi request itu sendiri dianggap titik masuk.",
     "root.sqli_login_then_write_same_area": "Login dengan payload SQL injection berhasil, lalu "
@@ -209,8 +220,21 @@ MESSAGES: dict[str, str] = {
     "summary.gaps_affect": "{count} celah bukti melemahkan kesimpulan. Lihat bagian Celah Bukti.",
     "summary.unexplained": "{count} perubahan file perlu ditinjau manual.",
     "summary.deleted": "{count} file dari baseline sudah tidak ada.",
+    "rec.eradication.check_inferred_writer": "Periksa {path}: request ke sana mendahului skrip "
+                                             "yang hanya terlihat di log. Itu bisa celah upload, "
+                                             "bisa juga skrip penyerang lain.",
+    "rec.eradication.check_log_only_unverified": "Periksa apakah skrip berikut ada di server "
+                                                 "(juga di salinan dan backup); kalau ada, "
+                                                 "karantina sebagai bukti lalu hapus: {paths}.",
     "rec.eradication.check_log_only": "Pastikan skrip berikut benar-benar sudah tidak ada di "
                                       "server, termasuk di salinan dan backup: {paths}.",
+    "summary.log_only_unverified": "{count} skrip dipakai seperti webshell (hanya terlihat di "
+                                   "log; webroot tidak diberikan, jadi keberadaannya tidak bisa "
+                                   "dicek): {paths}.",
+    "summary.compromise_found_scripts": ("Ditemukan {scripts} skrip mencurigakan yang hanya "
+                                         "terlihat di log, terkait dengan {actors} alamat IP. "
+                                         "Aktivitas pertama aktor pada {first_at}, terakhir pada "
+                                         "{last_at}."),
     "summary.log_only": "{count} skrip dipakai penyerang tetapi sudah tidak ada di webroot "
                         "(hanya terlihat di log): {paths}.",
     "summary.unlinked_bypass": "{count} login lewat SQL injection ke {paths} tampaknya "
@@ -371,6 +395,7 @@ TACTICS_ID: dict[str, str] = {
     "Discovery": "Discovery (penjelajahan)",
     "Defense Evasion": "Defense Evasion (menghindari deteksi)",
     "Impact": "Impact (dampak)",
+    "Credential Access": "Credential Access (pencurian kredensial)",
 }
 
 # Fixed offsets are enough: Indonesia has no daylight saving time.
@@ -385,6 +410,10 @@ LABELS: dict[str, str] = {
     "s.root": "4. Akar Masalah",
     "s.files": "5. File Terdampak",
     "files.log_only": "Skrip yang hanya terlihat di log",
+    "files.log_only_note_unverified": "Skrip ini dipakai seperti webshell lewat HTTP. Webroot "
+                                      "tidak diberikan sebagai bukti, jadi keberadaan, isi, dan "
+                                      "hash-nya tidak diketahui. Jejaknya ada di Kronologi "
+                                      "Serangan.",
     "files.log_only_note": "Skrip ini dipakai penyerang lewat HTTP tetapi tidak ada di bukti "
                            "webroot, jadi isi dan hash-nya tidak diketahui. Jejaknya ada di "
                            "Kronologi Serangan.",
@@ -424,6 +453,8 @@ LABELS: dict[str, str] = {
     "scope.fim_files": "file berubah menurut Wazuh FIM",
     "scope.fim_baseline": "scan awal Wazuh FIM (file yang tidak berubah tidak tercantum)",
     "timeline.notes": "Catatan keyakinan",
+    "gap.more_silences": "{count} periode log kosong lain yang lebih pendek tidak ditampilkan; "
+                         "daftar lengkapnya ada di report.json.",
     "timeline.run": "Rentetan {count} request yang ditandai dari aktor ini: {endpoints}. "
                     "Jenis: {rules}. Daftar lengkapnya ada di report.json.",
     "timeline.run_more": "dan {count} endpoint lain",

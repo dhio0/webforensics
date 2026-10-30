@@ -1,0 +1,18 @@
+Peak working set per site directory (one fresh process each), Organization Y.
+Windows 11 laptop, 15.7 GB RAM, Python 3.11. Reports byte-identical between the two
+"after" columns; detection results identical across all runs.
+
+site (access-log MB)            lines      run 1b (2ad5d68)   after D88
+sub17 (383)                 1,766,047           2,976 MB           1,614 MB
+sub3 (327)                  1,482,118           2,487 MB           1,350 MB
+sub1 (201)                  1,029,778           1,568 MB             883 MB
+sub22 (126)                   650,825             986 MB             575 MB
+sub9 (90)                     428,996             642 MB             400 MB
+sub20 (36, brute force)       183,295           1,284 MB             196 MB
+cyberpanel (32)               127,589             176 MB             127 MB
+all 21 directories          7,426,129     ~4.3 min total     ~3.5 min total
+
+Markdown reports, all sites: run 1b 52 MB (largest 51 MB, sub20); after D88 268 KB.
+report.json, all sites:      run 1b 114 MB;                      after D88 3.9 MB.
+Full single run (all 7.4M lines): projected ~12.5 GB at 2ad5d68 and ~6.8 GB after D88
+(about 0.9 KB per line), versus 5.0 GB free; not attempted.

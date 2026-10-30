@@ -6,7 +6,7 @@ inputs are sorted, ties break on log file and line number, and ids are content h
 """
 
 from bisect import bisect_left, bisect_right
-from collections import defaultdict
+from collections import Counter, defaultdict
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from functools import lru_cache
@@ -16,6 +16,7 @@ from webforensics.attack.mitre import tactic_for
 from webforensics.correlate import requests as rq
 from webforensics.correlate.actors import (
     LoginOutcome,
+    as_reason,
     is_trusted_proxy,
     login_outcomes,
     parse_networks,
@@ -58,6 +59,7 @@ from webforensics.models import (
     Severity,
     TimelineEvent,
     TimestampBasis,
+    close_log_files,
     stable_id,
 )
 
@@ -499,7 +501,7 @@ def _entry_point(chain: _Chain, index: _Index) -> None:
                                   Reason(key="confidence.no_login_is_absence_of_evidence")]
         chain.root = creation
         return
-    outcome_reason = index.logins[entry.evidence_id][1]
+    outcome_reason = as_reason(index.logins[entry.evidence_id][1])
     if bypass is not None:
         root = _log_draft(index, "auth_bypass_sqli", bypass,
                           cap(creation.confidence, Confidence.MEDIUM), "T1190",
@@ -534,29 +536,74 @@ def _context_draft(event: LogEvent, index: _Index, first: bool) -> _Draft | None
                           rule_id=top.rule_id)
     if index.login_failed(event):
         draft = _log_draft(index, "login_failed", event, Confidence.HIGH, None)
-        draft.reasons.append(index.logins[event.evidence_id][1])
+        draft.reasons.append(as_reason(index.logins[event.evidence_id][1]))
         return draft
     if first:
         return _log_draft(index, "actor_first_seen", event, Confidence.HIGH, None)
     return None
 
 
+# A run of failed logins from one actor to one endpoint, with no pause longer than
+# LOGIN_BURST_BREAK, is one brute-force event when it has LOGIN_BURST_MIN attempts or
+# more (D88). One event per attempt made a real WordPress site's report 51 MB.
+LOGIN_BURST_MIN = 5
+LOGIN_BURST_BREAK = timedelta(minutes=30)
+
+
+def _burst_draft(run: list[LogEvent], index: _Index) -> _Draft:
+    first, last = run[0], run[-1]
+    statuses = Counter(e.status for e in run)
+    return _Draft(
+        kind="login_bruteforce", subject=first.evidence_id, ts=first.ts,
+        basis=TimestampBasis.LOG,
+        params={"method": first.method or "", "path": first.path or "",
+                "count": str(len(run)), "last_at": last.ts.isoformat(),
+                "statuses": ", ".join(f"{code} x{n}" for code, n in sorted(statuses.items()))},
+        citations=[first.citation(), last.citation()], confidence=Confidence.HIGH,
+        order=(first.log_file, first.line_no, 0), window=(first.ts, last.ts),
+        technique="T1110", actor=index.actor(first),
+        reasons=[Reason(key="login.burst", params={"count": str(len(run))})],
+    )
+
+
+def _login_runs(failed: list[LogEvent]) -> list[list[LogEvent]]:
+    runs: list[list[LogEvent]] = []
+    for event in failed:
+        if runs and event.ts - runs[-1][-1].ts <= LOGIN_BURST_BREAK:
+            runs[-1].append(event)
+        else:
+            runs.append([event])
+    return runs
+
+
 def _context(index: _Index, actors: set[str], taken: set[str],
              roots: list[_Draft]) -> list[_Draft]:
-    """The implicated actors' first request, failed logins, and other flagged requests."""
+    """The implicated actors' first request, failed logins (bursts as one brute-force
+    event), and other flagged requests."""
     drafts: list[_Draft] = []
     first_root = min((r.ts for r in roots), default=None)
     for actor in sorted(actors):
         own = index.by_actor.get(actor, [])
         if first_root is not None:
             own = index.actor_since(actor, first_root - _seconds(index.config.lookback_s))
+        failed: dict[str, list[LogEvent]] = defaultdict(list)
         for position, event in enumerate(own):
             if event.evidence_id in taken:
+                continue
+            if not index.of(event) and index.login_failed(event):
+                failed[event.path or ""].append(event)
                 continue
             draft = _context_draft(event, index, first=position == 0)
             if draft is not None:
                 drafts.append(draft)
                 taken.add(event.evidence_id)
+        for path in sorted(failed):
+            for run in _login_runs(failed[path]):
+                if len(run) >= LOGIN_BURST_MIN:
+                    drafts.append(_burst_draft(run, index))
+                else:
+                    drafts += [d for e in run if (d := _context_draft(e, index, False))]
+                taken.update(e.evidence_id for e in run)
     return drafts
 
 
@@ -615,7 +662,7 @@ def _unlinked_bypasses(index: _Index, in_timeline: set[str],
             rule_version=RULESET_VERSION, category=FindingCategory.EXPLOIT_SUCCESS,
             subject=event.evidence_id, severity=Severity.HIGH, confidence=Confidence.MEDIUM,
             reasons=(Reason(key=f"finding.{BYPASS_RULE}", params={"path": event.path or ""}),
-                     index.logins[event.evidence_id][1]),
+                     as_reason(index.logins[event.evidence_id][1])),
             citations=(event.citation(),), mitre=("T1190",),
         ))
     return found
@@ -653,12 +700,16 @@ def _entry_by_code_execution(chain: _Chain, anchor: Anchor, index: _Index) -> No
     chain.root = root
 
 
-def _log_only_drafts(shell: LogOnlyFile, index: _Index) -> tuple[list[_Draft], _Draft | None]:
+def _log_only_drafts(shell: LogOnlyFile, index: _Index,
+                     webroot_seen: bool = True) -> tuple[list[_Draft], _Draft | None]:
     """Timeline events for one log-only script, and its entry point if it shows one."""
     first, drafts, root = shell.uses[0], [], None
-    seen = _log_draft(index, "log_only_file", first, Confidence.MEDIUM, "T1505.003",
+    # Without any webroot evidence, "gone from the webroot" cannot be claimed (D88).
+    kind = "log_only_file" if webroot_seen else "log_only_file_unverified"
+    seen = _log_draft(index, kind, first, Confidence.MEDIUM, "T1505.003",
                       file=shell.url, uses=str(len(shell.uses)))
-    seen.reasons.append(Reason(key="logonly.not_in_webroot"))
+    seen.reasons.append(Reason(key="logonly.not_in_webroot" if webroot_seen
+                               else "logonly.no_webroot_evidence"))
     drafts.append(seen)
     for event in shell.uses[1: index.config.max_invocations]:
         drafts.append(_log_draft(index, "file_invoked", event, Confidence.HIGH, "T1505.003",
@@ -841,6 +892,17 @@ def _root_cause(roots: list[_Draft], chains: list[_Chain],
 def correlate(logs: LogCollection, files: FileCollection, *,
               baseline: FileCollection | None = None,
               config: CorrelationConfig | None = None) -> CorrelationResult:
+    try:
+        return _correlate(logs, files, baseline=baseline, config=config)
+    finally:
+        # Citations read log lines back from their files; leave no file open (Windows
+        # cannot delete an open file, e.g. a temporary log) (D88).
+        close_log_files()
+
+
+def _correlate(logs: LogCollection, files: FileCollection, *,
+               baseline: FileCollection | None,
+               config: CorrelationConfig | None) -> CorrelationResult:
     config = config or CorrelationConfig()
     deleted: tuple[str, ...] = ()
     if baseline is not None:
@@ -900,7 +962,7 @@ def correlate(logs: LogCollection, files: FileCollection, *,
     shell_drafts: list[_Draft] = []
     shell_roots: list[_Draft] = []
     for shell in shells:
-        made, root = _log_only_drafts(shell, index)
+        made, root = _log_only_drafts(shell, index, webroot_seen=bool(files.files))
         shell_drafts += made
         shell_roots += [root] if root is not None else []
     roots = sorted([*(c.root for c in chains if c.root), *shell_roots],

@@ -1,0 +1,7 @@
+Run 1 (protocol: all 163 access logs in one run) on Organization Y, frozen tool 2ad5d68:
+- Not completed. A first attempt was stopped by Claude Code under system memory pressure.
+- Measured on one site (sub3, 1,482,118 lines): wall 48.1 s, peak working set 2,495 MB
+  (about 1.7 KB per line). Projected for 7,426,129 lines: about 12.5 GB peak, versus
+  5.4 GB free on the 15.7 GB laptop. The full run was not attempted again.
+Run 1b (deviation: one run per directory, 21 runs, fresh process each): all completed,
+  total about 4.3 min, largest peak 2,976 MB (sub17, 1,766,047 lines).

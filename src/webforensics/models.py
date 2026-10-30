@@ -8,7 +8,7 @@ import hashlib
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 from enum import StrEnum
-from typing import Annotated
+from typing import Annotated, BinaryIO
 
 from pydantic import (
     AfterValidator,
@@ -250,12 +250,16 @@ class FileEvidence(Evidence):
 
 @dataclass(frozen=True, slots=True, kw_only=True)
 class LogEvent:
-    """One parsed access-log line. `raw` is kept verbatim for citations.
+    """One parsed access-log line. `raw` is the verbatim line, for citations.
 
     A slotted dataclass, not a pydantic model: there is one per log line, and a pydantic
     instance costs ~1.3 KB of overhead versus ~80 B here (D52). Only our own parsers
     build these, so the checks in `__post_init__` are enough. Change one with
     `dataclasses.replace`.
+
+    The line text is kept in `raw_inline`, or, for a plain (not gzip) log file, read back
+    from `raw_file` at byte `raw_offset` when a citation needs it: only a few thousand of
+    millions of lines are ever cited, and the text was a quarter of the memory (D88).
     """
 
     evidence_id: str
@@ -264,12 +268,13 @@ class LogEvent:
     collected_at: datetime | None = None
     log_file: str
     line_no: int
-    raw: str
+    raw_inline: str | None = None
+    raw_file: str | None = None
+    raw_offset: int = -1
     ts: datetime
     ts_semantics: TsSemantics
     client_ip: str
     remote_user: str | None = None
-    request_raw: str
     method: str | None = None
     path: str | None = None
     query: str | None = None
@@ -289,6 +294,14 @@ class LogEvent:
             raise ValueError("log event timestamp must be timezone-aware")
         if self.ts.utcoffset() != timedelta(0):
             object.__setattr__(self, "ts", self.ts.astimezone(UTC))
+        if self.raw_inline is None and self.raw_file is None:
+            raise ValueError("log event needs its line text or where to read it")
+
+    @property
+    def raw(self) -> str:
+        if self.raw_inline is not None:
+            return self.raw_inline
+        return read_log_line(self.raw_file or "", self.raw_offset)
 
     def citation(self) -> Citation:
         return Citation(
@@ -297,6 +310,24 @@ class LogEvent:
             line_no=self.line_no,
             excerpt=self.raw,
         )
+
+
+_LINE_FILES: dict[str, "BinaryIO"] = {}
+
+
+def read_log_line(path: str, offset: int) -> str:
+    """The line starting at byte `offset` of a plain log file, decoded exactly as the parser
+    decodes it. Handles stay open (read-only) until `close_log_files()`."""
+    handle = _LINE_FILES.get(path)
+    if handle is None:
+        handle = _LINE_FILES[path] = open(path, "rb")  # noqa: SIM115
+    handle.seek(offset)
+    return handle.readline().rstrip(b"\r\n").decode("utf-8", "backslashreplace")
+
+
+def close_log_files() -> None:
+    while _LINE_FILES:
+        _LINE_FILES.popitem()[1].close()
 
 
 class ParseFailure(_Frozen):

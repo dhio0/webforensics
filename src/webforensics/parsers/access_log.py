@@ -14,6 +14,7 @@ import re
 from collections.abc import Iterator
 from datetime import UTC, datetime, timedelta, timezone
 from enum import StrEnum
+from functools import lru_cache
 from pathlib import Path
 from sys import intern
 from typing import BinaryIO
@@ -57,8 +58,11 @@ _ESCAPE_RE = re.compile(r"\\x([0-9A-Fa-f]{2})|\\(.)")
 _SIMPLE_ESCAPES = {'"': '"', "\\": "\\", "n": "\n", "r": "\r", "t": "\t"}
 
 
+@lru_cache(maxsize=4096)
 def parse_clf_time(value: str) -> datetime:
-    """Parse `27/Oct/2026:10:00:01 +0700` into a UTC datetime, independent of locale."""
+    """Parse `27/Oct/2026:10:00:01 +0700` into a UTC datetime, independent of locale.
+
+    Cached: lines logged in the same second share one immutable datetime (D88)."""
     match = _TIME_RE.match(value)
     if match is None or match.group(2) not in MONTHS:
         raise ValueError(f"bad timestamp: {value!r}")
@@ -105,7 +109,10 @@ def parse_access_line(
     line_no: int,
     fmt: AccessLogFormat,
     adapter: str = "file",
+    raw_file: str | None = None,
+    raw_offset: int = -1,
 ) -> LogEvent | ParseFailure:
+    """With `raw_file`, the event keeps where the line is instead of its text (D88)."""
     match = _COMBINED_RE.match(raw)
     if match is None:
         return ParseFailure(source=source, line_no=line_no, reason="format_mismatch", excerpt=raw)
@@ -130,12 +137,13 @@ def parse_access_line(
         source=source,
         log_file=source,
         line_no=line_no,
-        raw=raw,
+        raw_inline=raw if raw_file is None else None,
+        raw_file=raw_file,
+        raw_offset=raw_offset,
         ts=ts,
         ts_semantics=_TS_SEMANTICS[fmt],
         client_ip=intern(match["client_ip"]),
         remote_user=_shared(_dash_to_none(match["remote_user"])),
-        request_raw=intern(request_raw),
         method=method,
         path=path,
         query=query or None,
@@ -165,8 +173,14 @@ def iter_access_log(
     For .gz files, line numbers refer to the decompressed content.
     Invalid UTF-8 bytes are kept as \\xHH, matching nginx's own escaping.
     """
+    # Plain files can be read back by byte offset, so their line text is not kept; gzip
+    # cannot be seeked cheaply, so its text stays in memory (D88).
+    seekable = path.suffix != ".gz"
+    location = intern(str(path.resolve())) if seekable else None
+    offset = 0
     with open_log(path) as handle:
         for line_no, raw_bytes in enumerate(handle, start=1):
+            start, offset = offset, offset + len(raw_bytes)
             line = raw_bytes.rstrip(b"\r\n")
             if not line.strip():
                 continue
@@ -177,4 +191,5 @@ def iter_access_log(
                 )
                 continue
             raw = line.decode("utf-8", "backslashreplace")
-            yield parse_access_line(raw, source, line_no, fmt, adapter)
+            yield parse_access_line(raw, source, line_no, fmt, adapter,
+                                    raw_file=location, raw_offset=start if seekable else -1)

@@ -4,6 +4,7 @@ A gap only lowers confidence when it overlaps the time window a conclusion depen
 (see `engine._apply_gaps`); otherwise it is listed so the reader knows about it.
 """
 
+from array import array
 from collections import defaultdict
 from datetime import datetime, timedelta
 from itertools import pairwise
@@ -56,12 +57,20 @@ def silence_gaps(events: list[LogEvent], config: CorrelationConfig) -> list[Evid
     rotation boundary is exactly where lines tend to go missing.
     """
     ordered = sorted(events, key=lambda e: (e.ts, e.log_file, e.line_no))
-    pairs = list(pairwise(ordered))
-    deltas = [(after.ts - before.ts).total_seconds() for before, after in pairs]
+    # A compact array, and a median only for intervals above the floor: with millions of
+    # lines, a list of pairs and of floats cost ~100 bytes per line (D88). Same result as
+    # local_thresholds().
+    deltas = array("d", ((after.ts - before.ts).total_seconds()
+                         for before, after in pairwise(ordered)))
+    k, floor = config.silence_neighbors, float(config.silence_min_s)
     gaps = []
-    for (before, after), silence, threshold in zip(
-            pairs, deltas, local_thresholds(deltas, config), strict=True):
+    for i, silence in enumerate(deltas):
+        if silence <= floor:
+            continue
+        nearby = deltas[max(0, i - k):i] + deltas[i + 1:i + 1 + k]
+        threshold = max(floor, config.silence_factor * (median(nearby) if nearby else 0.0))
         if silence > threshold:
+            before, after = ordered[i], ordered[i + 1]
             gaps.append(make_gap(
                 GapKind.NO_LOG_LINES, before.log_file, before.ts, after.ts, "gap.log_silence",
                 {"seconds": str(int(silence)), "threshold": str(int(threshold))},

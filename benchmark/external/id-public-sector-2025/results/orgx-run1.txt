@@ -1,0 +1,20 @@
+run: runX1
+  summary lines: ['summary.no_compromise', 'summary.background']
+  compromise reported: False (expected: no)
+  affected files: 0 (expected 0: no webroot)
+  log-only scripts: []
+  accused attacker IPs: [] (false accusations unless labelled)
+  background attack-pattern lines: 676 in 11 rule groups
+    LOG-TRAVERSAL-SENSITIVE        191  clients=1
+    LOG-TRAVERSAL-DOTS             149  clients=1
+    LOG-SQLI-BLIND                 112  clients=1
+    LOG-WEBSHELL-CMD-PARAM          62  clients=1
+    LOG-SQLI-UNION                  57  clients=1
+    LOG-WEBSHELL-UPLOAD-DIR         55  clients=1
+    LOG-XSS-PROBE                   23  clients=1
+    LOG-RCE-CODE-INJECTION          17  clients=1
+    LOG-SQLI-QUOTE-COMMENT           5  clients=1
+    LOG-SQLI-TAUTOLOGY               3  clients=1
+    LOG-SQLI-SCHEMA                  2  clients=1
+  gaps: ['no_baseline', 'untrusted_file_timestamps', 'no_manifest']
+  unexplained changes: 0

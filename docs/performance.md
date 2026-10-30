@@ -6,8 +6,11 @@ payload; 300 deployed files plus N suspicious files). Machine: Windows 11 laptop
 
 | Lines | Suspicious files | Parse | Correlate | Total | Peak memory |
 |---:|---:|---:|---:|---:|---:|
-| 200,000 | 10 | 3.2 s | 1.9 s | 5.1 s | — |
-| 1,000,000 | 50 | 17.6 s | 9.8 s | 27.4 s | 1.13 GB |
+| 200,000 | 10 | 2.6 s | 1.2 s | 3.9 s | — |
+| 1,000,000 | 50 | 13.3 s | 6.8 s | 20.1 s | 0.98 GB |
+
+Measured after D88. Before it the same runs took 5.1 s and 27.4 s, with 1.13 GB peak at
+1M lines; the synthetic log has short lines, so it gains less than real logs (below).
 
 Before the M3 optimizations the same 1M-line run was projected at roughly 2 minutes for a
 single suspicious file and about 4 GB of memory, and every extra suspicious file re-scanned
@@ -24,10 +27,29 @@ the whole log.
 - **Login outcomes** look up the next attempt per path and page views by bisection, so a
   brute-force run is O(N log N).
 
+## Real logs (D88)
+
+Real access logs of a hosting server (Zenodo 20001206, Organization Y, OpenLiteSpeed), one
+run per site, no webroot. Peak working set measured in-process.
+
+| Site | Lines | Peak at 2ad5d68 | Peak after D88 | Time |
+|---|---:|---:|---:|---:|
+| sub17 | 1,766,047 | 2,976 MB | 1,614 MB | 48 s |
+| sub3 | 1,482,118 | 2,487 MB | 1,350 MB | 38 s |
+| sub1 | 1,029,778 | 1,568 MB | 883 MB | 32 s |
+| sub20 (wp-login brute force) | 183,295 | 1,284 MB | 196 MB | 5 s |
+
+About 0.9 KB per line after D88. Before it, real logs cost more than the synthetic
+benchmark because of longer user agents, one pydantic object per failed login, and the
+line text of every request kept for citations (now read back from the file only for cited
+lines). All 7.4M lines in one run took 224.8 s and peaked at 5,984 MB (about 0.8 KB per
+line), with 7.9 GB free at the start. It fits on a 16 GB laptop with few other programs
+open; per-site runs stay the recommended unit for hosting servers (D88).
+
 ## Known limits
-- Memory is dominated by the raw line text kept for citations and by one pydantic `Finding`
-  per attack-pattern line. A log where most lines are bot payloads uses more memory than the
-  table suggests. Streaming the logs (only keeping lines that end up cited) would fix this,
-  but needs a second pass over the files. That is deferred until real cases need it.
+- Line text is kept in memory only for gzip-compressed logs (they cannot be seeked
+  cheaply); plain logs are read back by byte offset when a line is cited (D88). Memory is
+  now dominated by the per-request objects and the indexes, plus one pydantic `Finding` per
+  attack-pattern line, so a log where most lines are bot payloads uses more.
 - `tests/unit/test_performance.py` guards against quadratic regressions with a generous time
   bound (40k events, 31 seeds, < 10 s; about 0.6 s locally). It is not a benchmark.

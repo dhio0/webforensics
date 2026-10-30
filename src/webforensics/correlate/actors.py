@@ -15,6 +15,7 @@ from collections import defaultdict
 from collections.abc import Sequence
 from enum import StrEnum
 from ipaddress import IPv4Network, IPv6Network, ip_address, ip_network
+from typing import NamedTuple
 
 from webforensics.correlate import requests as rq
 from webforensics.models import LogEvent, Reason
@@ -57,6 +58,19 @@ class LoginOutcome(StrEnum):
     SUCCEEDED = "succeeded"
 
 
+class Why(NamedTuple):
+    """Why a login got its outcome. A plain tuple, not a pydantic Reason: a brute-force run
+    has one per attempt, and only the few that reach the timeline become a Reason
+    (`as_reason`). With 100,000 wp-login attempts this saved over a gigabyte (D88)."""
+
+    key: str
+    params: tuple[tuple[str, str], ...] = ()
+
+
+def as_reason(why: Why) -> Reason:
+    return Reason(key=why.key, params=dict(why.params))
+
+
 def _is_page_view(event: LogEvent) -> bool:
     """A successful non-login, non-static request: evidence the actor got in."""
     return (rq.is_success(event) and not rq.is_login_endpoint(event.path)
@@ -71,36 +85,38 @@ def _used_area_between(own: list[LogEvent], views: list[int], start: int, end: i
     return any(rq.shares_area(login_path, own[i].path) for i in views[first:last])
 
 
-def _first_pass(own: list[LogEvent], outcomes: dict[str, tuple[LoginOutcome, Reason]],
+def _first_pass(own: list[LogEvent], outcomes: dict[str, tuple[LoginOutcome, Why]],
                 pending: list[LogEvent]) -> None:
     """Explicit failures and retries for one actor's time-sorted requests.
 
     Each attempt's next attempt is looked up per path, and page views by bisection, so a
     brute-force run of N attempts costs O(N log N), not O(N^2).
     """
-    views = [i for i, e in enumerate(own) if _is_page_view(e)]
     attempts: dict[str | None, list[int]] = defaultdict(list)
     for i, event in enumerate(own):
         if rq.is_login_attempt(event):
             attempts[event.path].append(i)
+    if not attempts:
+        return  # most actors never log in: skip indexing their page views (D88)
+    views = [i for i, e in enumerate(own) if _is_page_view(e)]
     for path, positions in attempts.items():
         for k, i in enumerate(positions):
             event = own[i]
             if event.status in _EXPLICIT_FAILURE:
-                outcomes[event.evidence_id] = (LoginOutcome.FAILED, Reason(
-                    key="login.failed_status", params={"status": str(event.status)}))
+                outcomes[event.evidence_id] = (LoginOutcome.FAILED, Why(
+                    "login.failed_status", (("status", str(event.status)),)))
                 continue
             retry = positions[k + 1] if k + 1 < len(positions) else None
             if retry is not None and not _used_area_between(own, views, i, retry, path or "/"):
-                outcomes[event.evidence_id] = (LoginOutcome.FAILED, Reason(
-                    key="login.retried", params={"retry_line": str(own[retry].line_no)}))
+                outcomes[event.evidence_id] = (LoginOutcome.FAILED, Why(
+                    "login.retried", (("retry_line", str(own[retry].line_no)),)))
                 continue
             pending.append(event)
 
 
 def login_outcomes(events: list[LogEvent], actor_of: dict[str, str],
                    flagged: frozenset[str] = frozenset()
-                   ) -> dict[str, tuple[LoginOutcome, Reason]]:
+                   ) -> dict[str, tuple[LoginOutcome, Why]]:
     """Outcome of every login attempt, keyed by evidence id. `events` must be time-sorted.
 
     `flagged` holds ids of requests that carry an attack pattern. Bots replay the same
@@ -111,7 +127,7 @@ def login_outcomes(events: list[LogEvent], actor_of: dict[str, str],
     for event in events:
         by_actor[actor_of[event.evidence_id]].append(event)
 
-    outcomes: dict[str, tuple[LoginOutcome, Reason]] = {}
+    outcomes: dict[str, tuple[LoginOutcome, Why]] = {}
     pending: list[LogEvent] = []
     for own in by_actor.values():
         _first_pass(own, outcomes, pending)
@@ -121,12 +137,12 @@ def login_outcomes(events: list[LogEvent], actor_of: dict[str, str],
                 and e.evidence_id not in flagged}
     for event in pending:
         if (event.path, event.status, event.bytes_sent) in failures:
-            outcomes[event.evidence_id] = (LoginOutcome.FAILED, Reason(
-                key="login.same_response_as_failure"))
+            outcomes[event.evidence_id] = (LoginOutcome.FAILED, Why(
+                "login.same_response_as_failure"))
         elif rq.is_success(event):
-            outcomes[event.evidence_id] = (LoginOutcome.SUCCEEDED, Reason(
-                key="login.success_unlike_failures"))
+            outcomes[event.evidence_id] = (LoginOutcome.SUCCEEDED, Why(
+                "login.success_unlike_failures"))
         else:
-            outcomes[event.evidence_id] = (LoginOutcome.FAILED, Reason(
-                key="login.failed_status", params={"status": str(event.status)}))
+            outcomes[event.evidence_id] = (LoginOutcome.FAILED, Why(
+                "login.failed_status", (("status", str(event.status)),)))
     return outcomes

@@ -24,6 +24,7 @@ from webforensics.models import (
     Report,
     RunInfo,
     TimelineEvent,
+    close_log_files,
 )
 
 TOP_CLIENTS = 5
@@ -42,6 +43,12 @@ LIMITATIONS = ("limit.automated", "limit.post_body", "limit.timestamps",
 
 def _r(key: str, **params: object) -> Reason:
     return Reason(key=key, params={k: str(v) for k, v in params.items()})
+
+
+def _webroot_seen(result: CorrelationResult) -> bool:
+    """False when the log-only scripts were found with no webroot evidence at all (D88)."""
+    return not any(e.description.key == "timeline.log_only_file_unverified"
+                   for e in result.timeline)
 
 
 def root_event(result: CorrelationResult) -> TimelineEvent | None:
@@ -117,8 +124,13 @@ def build_summary(result: CorrelationResult, background_count: int, review: int,
     span = _actor_span(result)
     compromised = bool(result.affected_files or result.log_only_files)
     if compromised and span and result.iocs.ips:
-        lines.append(_r("summary.compromise_found", files=len(result.affected_files),
-                        actors=len(result.iocs.ips), first_at=span[0], last_at=span[1]))
+        if result.affected_files:
+            lines.append(_r("summary.compromise_found", files=len(result.affected_files),
+                            actors=len(result.iocs.ips), first_at=span[0], last_at=span[1]))
+        else:  # only scripts seen in the logs (D88)
+            lines.append(_r("summary.compromise_found_scripts",
+                            scripts=len(result.log_only_files), actors=len(result.iocs.ips),
+                            first_at=span[0], last_at=span[1]))
     elif compromised:
         # No request ties anyone to the files (e.g. the log was cut): say so (D87).
         lines.append(_r("summary.compromise_found_no_actor", files=len(result.affected_files)))
@@ -136,7 +148,8 @@ def build_summary(result: CorrelationResult, background_count: int, review: int,
     elif compromised:
         lines.append(_r("summary.root_cause_unknown"))
     if result.log_only_files:
-        lines.append(_r("summary.log_only", count=len(result.log_only_files),
+        lines.append(_r("summary.log_only" if _webroot_seen(result)
+                        else "summary.log_only_unverified", count=len(result.log_only_files),
                         paths=", ".join(result.log_only_files)))
     bypass = next((g for g in background if g.rule_id == BYPASS_RULE), None)
     if bypass is not None:
@@ -180,7 +193,11 @@ def _eradication(result: CorrelationResult) -> list[Reason]:
     for event in result.timeline:
         if event.description.key in _WRITE_KINDS and event.description.params.get(
                 "method") in ("POST", "PUT"):
-            fix("rec.eradication.fix_upload", event.description.params.get("path", ""))
+            # A writer only inferred for a log-only script may itself be the attacker's
+            # script, not a weak upload form (D88).
+            inferred = any(r.key == "logonly.write_inferred" for r in event.confidence_reasons)
+            fix("rec.eradication.check_inferred_writer" if inferred
+                else "rec.eradication.fix_upload", event.description.params.get("path", ""))
     return recs
 
 
@@ -195,7 +212,9 @@ def build_recommendations(result: CorrelationResult, review: int,
         recs.append(_r("rec.containment.block_ips", ips=", ".join(result.iocs.ips)))
     recs += _eradication(result)
     if result.log_only_files:
-        recs.append(_r("rec.eradication.check_log_only", paths=", ".join(result.log_only_files)))
+        key = ("rec.eradication.check_log_only" if _webroot_seen(result)
+               else "rec.eradication.check_log_only_unverified")
+        recs.append(_r(key, paths=", ".join(result.log_only_files)))
     recs += [_r("rec.eradication.fix_code_line", file=f.file, line=f.line)
              for f in code_findings]
     if compromised:
@@ -265,6 +284,17 @@ def build_report(result: CorrelationResult, logs: LogCollection, case: CaseInfo,
                  trusted_proxies: tuple[str, ...] = (),
                  code_findings: tuple[CodeLocation, ...] = (),
                  code_scope: CodeScope | None = None) -> Report:
+    try:
+        return _build_report(result, logs, case, run, scope, trusted_proxies,
+                             code_findings, code_scope)
+    finally:
+        close_log_files()  # background examples read log lines back (D88)
+
+
+def _build_report(result: CorrelationResult, logs: LogCollection, case: CaseInfo,
+                  run: RunInfo, scope: EvidenceScope | None,
+                  trusted_proxies: tuple[str, ...], code_findings: tuple[CodeLocation, ...],
+                  code_scope: CodeScope | None) -> Report:
     background = background_groups(result, logs, trusted_proxies)
     review = len(result.unexplained_changes) + len(other_flagged_files(result))
     return Report(

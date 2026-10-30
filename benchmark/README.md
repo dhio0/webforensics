@@ -69,4 +69,5 @@ evidence is executable. Never run or `include` evidence files.
 tool ran. The evidence itself is not redistributed; each case's README says where to get
 it and how to reproduce the score. So far: `ashemery-case1` (Ali Hadi's "Web Server Case", Windows) and `ashemery-linux1` (his
 Linux "Compromised Web Server", scored held out) and `bnd-2016` (the BND Forensik-Challenge,
-held out).
+held out) and `id-public-sector-2025` (real-scale logs of two Indonesian public-sector
+servers, held out).

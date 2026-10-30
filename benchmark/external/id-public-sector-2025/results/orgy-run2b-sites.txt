@@ -1,0 +1,22 @@
+sites analyzed: 21
+sites with a compromise reported: 1
+  home__sub20.domain1.com__logs: summary.compromise_found_scripts files=0 ips=['71.34.77.255'] log_only=['/wp-admin/33.php'] root_cause=False
+affected files total: 0 (expected 0: no webroot)
+accused attacker IPs: ['71.34.77.255']
+incident IP 243.23.54.175 accused: False; in background top clients: False
+log-only scripts: [('home__sub20.domain1.com__logs', '/wp-admin/33.php')]
+background attack-pattern lines: 11232
+  LOG-WEBSHELL-UPLOAD-DIR         10872
+  LOG-TRAVERSAL-DOTS                148
+  LOG-TRAVERSAL-SENSITIVE           103
+  LOG-WEBSHELL-CMD-PARAM             70
+  LOG-SQLI-BLIND                     10
+  LOG-SQLI-UNION                      8
+  LOG-RCE-CODE-INJECTION              7
+  LOG-SQLI-SCHEMA                     5
+  LOG-XSS-PROBE                       4
+  LOG-SQLI-QUOTE-COMMENT              3
+  LOG-SQLI-TAUTOLOGY                  1
+  LOG-SCANNER-UA                      1
+top background clients: [('71.34.77.255', 8989), ('71.237.203.193', 846), ('215.41.68.76', 322), ('128.186.239.31', 160), ('77.136.88.15', 154)]
+gap kinds over all sites: {'no_baseline': 21, 'untrusted_file_timestamps': 21, 'no_manifest': 21, 'parse_errors': 5, 'no_log_lines': 6519}

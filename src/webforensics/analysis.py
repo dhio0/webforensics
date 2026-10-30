@@ -19,7 +19,14 @@ from webforensics.adapters.wazuh import WazuhRecordingSource
 from webforensics.codeloc.locate import review_code
 from webforensics.correlate import CorrelationConfig, correlate, for_filesystem
 from webforensics.detect import RULESET_VERSION
-from webforensics.models import CaseInfo, FileCollection, LogCollection, Report, RunInfo
+from webforensics.models import (
+    CaseInfo,
+    FileCollection,
+    LogCollection,
+    Report,
+    RunInfo,
+    close_log_files,
+)
 from webforensics.parsers.access_log import AccessLogFormat
 from webforensics.parsers.error_log import ErrorLogFormat
 from webforensics.report import build_report
@@ -159,5 +166,8 @@ def analyze(inputs: EvidenceInputs, config: CorrelationConfig, generated_at: dat
     code_findings, code_scope = review_code(result, evidence.files, inputs.webroot,
                                             inputs.url_prefix,
                                             case_insensitive=config.case_insensitive_paths)
-    return build_report(result, evidence.logs, case, run, scope, config.trusted_proxies,
-                        code_findings=code_findings, code_scope=code_scope)
+    try:
+        return build_report(result, evidence.logs, case, run, scope, config.trusted_proxies,
+                            code_findings=code_findings, code_scope=code_scope)
+    finally:
+        close_log_files()  # every cited line has been read back by now (D88)

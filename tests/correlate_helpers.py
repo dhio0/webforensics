@@ -38,8 +38,8 @@ def request(line_no: int, seconds: float, target: str, *, method: str = "GET",
           f'{status} {size} "-" "{ua}"'
     return LogEvent(
         evidence_id=stable_id("file", log_file, str(line_no)), adapter="file", source=log_file,
-        log_file=log_file, line_no=line_no, raw=raw, ts=at(seconds),
-        ts_semantics=TsSemantics.REQUEST_END, client_ip=ip, request_raw=f"{method} {target}",
+        log_file=log_file, line_no=line_no, raw_inline=raw, ts=at(seconds),
+        ts_semantics=TsSemantics.REQUEST_END, client_ip=ip,
         method=method, path=path, query=query or None, protocol="HTTP/1.1", status=status,
         bytes_sent=size, user_agent=ua, xff=xff,
     )

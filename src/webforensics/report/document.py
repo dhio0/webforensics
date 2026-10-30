@@ -122,6 +122,7 @@ _STORY_KINDS = frozenset({
     "timeline.write_exploit", "timeline.file_write_request", "timeline.file_created",
     "timeline.file_changed", "timeline.file_modified_mtime", "timeline.file_timestomp",
     "timeline.sqli_file_write", "timeline.log_only_file", "timeline.file_deleted_by_command",
+    "timeline.log_only_file_unverified",
 })
 
 
@@ -424,7 +425,10 @@ def _files(ctx: _Ctx) -> Section:
     for file in ctx.report.result.affected_files:
         blocks += _file_blocks(ctx, file)
     if ctx.report.result.log_only_files:
-        blocks += [Heading(t.label("files.log_only")), Para(t.label("files.log_only_note")),
+        unverified = any(e.description.key == "timeline.log_only_file_unverified"
+                         for e in ctx.report.result.timeline)
+        note = "files.log_only_note_unverified" if unverified else "files.log_only_note"
+        blocks += [Heading(t.label("files.log_only")), Para(t.label(note)),
                    Bullets(tuple(clean(u) for u in ctx.report.result.log_only_files))]
     return Section("file-terdampak", t.label("s.files"),
                    tuple(blocks) or (Para(t.label("review.none")),))
@@ -459,8 +463,11 @@ def _gaps(ctx: _Ctx) -> Section:
     if not gaps:
         return Section("celah-bukti", t.label("s.gaps"), (Para(t.label("gap.none")),))
     labels = t.gap_labels
+    shown = set(_shown_gaps(gaps, ctx))
     rows = []
     for gap in sorted(gaps, key=lambda g: int(labels[g.gap_id][1:])):
+        if gap.gap_id not in shown:
+            continue
         when = (f"{t.time(gap.start)} s.d. {t.time(gap.end)}" if gap.start or gap.end
                 else t.label("not_set"))
         detail = t.message(gap.detail) if gap.detail else ""
@@ -471,7 +478,26 @@ def _gaps(ctx: _Ctx) -> Section:
                      Cell(when), Cell(detail), Cell(affects or t.label("gap.affects_none"))))
     headers = (t.label("gap.id"), t.label("gap.kind"), t.label("gap.when"),
                t.label("gap.detail"), t.label("gap.affects"))
-    return Section("celah-bukti", t.label("s.gaps"), (Table(headers, tuple(rows)),))
+    blocks: list[Block] = [Table(headers, tuple(rows))]
+    if len(gaps) > len(shown):
+        blocks.append(Para(t.label("gap.more_silences").format(count=len(gaps) - len(shown))))
+    return Section("celah-bukti", t.label("s.gaps"), tuple(blocks))
+
+
+# A sparse log (an admin panel opened now and then) has thousands of quiet periods; one row
+# each made a 1 MB report (D88). Shown: gaps that touch a timeline event, every gap that is
+# not plain silence, and the longest silences. report.json keeps all of them.
+MAX_SILENCE_ROWS = 15
+
+
+def _shown_gaps(gaps: tuple[EvidenceGap, ...], ctx: _Ctx) -> list[str]:
+    def silence(g: EvidenceGap) -> bool:
+        return g.detail is not None and g.detail.key == "gap.log_silence" and not g.affects
+
+    keep = [g.gap_id for g in gaps if not silence(g)]
+    quiet = sorted((g for g in gaps if silence(g) and g.start and g.end),
+                   key=lambda g: (-(g.end - g.start).total_seconds(), g.gap_id))
+    return keep + [g.gap_id for g in quiet[:MAX_SILENCE_ROWS]]
 
 
 def _background(ctx: _Ctx) -> Section:
