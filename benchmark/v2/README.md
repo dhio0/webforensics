@@ -21,3 +21,9 @@ are stubbed if their extension is executable, if they contain script openers, or
 are ZIP/PHAR archives. This also stubs benign PHP files created by plugins; the encrypted
 full capture retains their originals. Public POST log entries replay with empty bodies
 because the source logs do not contain request bodies.
+
+Only changed or new webroot files are stored in each scenario. Before scoring, restore the
+complete webroot outside this repository with `python lab/v2/restore_webroot.py SCENARIO
+DEST`; the command extracts unchanged files from the scenario's pinned app image, overlays
+the committed changed files, and verifies each manifest hash. It refuses destinations
+inside the repository.

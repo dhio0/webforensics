@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import gzip
 import hashlib
 import json
 import os
@@ -12,9 +13,8 @@ from pathlib import Path
 from typing import Any
 
 COMBINED = re.compile(
-    r'^(?P<remote>\S+) \S+ \S+ \[(?P<time>[^]]+)\] "(?P<request>(?:[^"\\]|\\.)*)" '
-    r'(?P<status>\d{3}) (?P<bytes>\d+|-) "(?:[^"\\]|\\.)*" "(?:[^"\\]|\\.)*"'
-    r'(?: "(?P<xff>(?:[^"\\]|\\.)*)")?$'
+    r'^(?P<client>\S+) \S+ \S+ \[(?P<time>[^]]+)\] "(?P<request>(?:[^"\\]|\\.)*)" '
+    r'(?P<status>\d{3}) (?P<bytes>\d+|-) "(?:[^"\\]|\\.)*" "(?:[^"\\]|\\.)*"$'
 )
 SCENARIOS = {f"s{number:02}" for number in range(1, 13)}
 
@@ -29,7 +29,8 @@ def unescape_nginx(value: str) -> str:
 
 def access_index(path: Path) -> list[dict[str, Any]]:
     rows = []
-    with path.open(encoding="utf-8", errors="replace") as source:
+    opener = gzip.open if path.suffix == ".gz" else Path.open
+    with opener(path, "rt", encoding="utf-8", errors="replace") as source:
         for line_no, line in enumerate(source, 1):
             match = COMBINED.match(line.rstrip("\r\n"))
             if not match:
@@ -41,7 +42,7 @@ def access_index(path: Path) -> list[dict[str, Any]]:
                     "timestamp": timestamp.timestamp(),
                     "request": unescape_nginx(match["request"]),
                     "status": int(match["status"]),
-                    "client_ip": unescape_nginx(match["xff"] or match["remote"]),
+                    "client_ip": unescape_nginx(match["client"]),
                 }
             )
     return rows
@@ -49,7 +50,8 @@ def access_index(path: Path) -> list[dict[str, Any]]:
 
 def sidecar_rows(path: Path) -> list[dict[str, Any]]:
     rows = []
-    with path.open(encoding="utf-8", errors="strict") as source:
+    opener = gzip.open if path.suffix == ".gz" else Path.open
+    with opener(path, "rt", encoding="utf-8", errors="strict") as source:
         for line_no, line in enumerate(source, 1):
             if not line.strip():
                 continue
@@ -107,7 +109,16 @@ def parse_manifest(path: Path) -> dict[str, dict[str, str]]:
                 raise ValueError(f"{path}:{line_number}: expected 11 manifest fields")
             rel = os.fsdecode(bytes.fromhex(fields[0]))
             names = (
-                "type", "size", "mode", "uid", "inode", "atime", "mtime", "ctime", "btime", "sha256"
+                "type",
+                "size",
+                "mode",
+                "uid",
+                "inode",
+                "atime",
+                "mtime",
+                "ctime",
+                "btime",
+                "sha256",
             )
             rows[rel] = {"path_hex": fields[0], **dict(zip(names, fields[1:], strict=True))}
     if not columns_seen:
@@ -118,10 +129,7 @@ def parse_manifest(path: Path) -> dict[str, dict[str, str]]:
 def changed_files(
     records: dict[str, Any], baseline: dict[str, dict[str, str]], current: dict[str, dict[str, str]]
 ) -> list[dict[str, str]]:
-    roles = {
-        item["path"].lstrip("/"): item.get("role", "unknown")
-        for item in records.get("files", [])
-    }
+    file_metadata = {item["path"].lstrip("/"): item for item in records.get("files", [])}
     result = []
     for rel_path in sorted(set(baseline) | set(current)):
         old = baseline.get(rel_path)
@@ -130,9 +138,23 @@ def changed_files(
             change = "created"
         elif old is not None and new is None:
             change = "deleted"
-        elif old is not None and new is not None and any(
-            old[key] != new[key]
-            for key in ("type", "size", "mode", "uid", "inode", "mtime", "ctime", "btime", "sha256")
+        elif (
+            old is not None
+            and new is not None
+            and any(
+                old[key] != new[key]
+                for key in (
+                    "type",
+                    "size",
+                    "mode",
+                    "uid",
+                    "inode",
+                    "mtime",
+                    "ctime",
+                    "btime",
+                    "sha256",
+                )
+            )
         ):
             change = "modified"
         else:
@@ -142,7 +164,12 @@ def changed_files(
                 "path": rel_path,
                 "sha256": (old if change == "deleted" else new)["sha256"],
                 "change": change,
-                "role": roles.get(rel_path, "unclassified_change"),
+                "role": file_metadata.get(rel_path, {}).get("role", "unclassified_change"),
+                **(
+                    {"expected_in_report": file_metadata[rel_path]["expected_in_report"]}
+                    if "expected_in_report" in file_metadata.get(rel_path, {})
+                    else {}
+                ),
             }
         )
     return result
@@ -156,7 +183,8 @@ def make_ground_truth(
 ) -> dict[str, Any]:
     if scenario_id not in SCENARIOS:
         raise ValueError(f"unexpected scenario id: {scenario_id}")
-    access_rows = access_index(evidence / "access.log")
+    access_name = records.get("analysis", {}).get("access_logs", ["access.log"])[0]
+    access_rows = access_index(evidence / access_name)
     label_rows = join_log_rows(sidecar_rows(labels_path), access_rows)
     by_step = {str(row["step"]): row for row in label_rows if row.get("step")}
     if len(by_step) != sum(bool(row.get("step")) for row in label_rows):
@@ -177,7 +205,8 @@ def make_ground_truth(
             start = datetime.fromisoformat(step["started_at"]).timestamp()
             end = datetime.fromisoformat(step["ended_at"]).timestamp()
             candidates = [
-                row for row in label_rows
+                row
+                for row in label_rows
                 if row["client_ip"] == step["attacker_ip"]
                 and start <= row["msec"] <= end
                 and ("request" not in step or row["request"] == step["request"])
@@ -196,11 +225,14 @@ def make_ground_truth(
                 "id": step_id,
                 "category": step["category"],
                 "mitre": step.get("mitre", []),
-                "log_file": "access.log",
+                "log_file": records.get("analysis", {}).get("access_logs", ["access.log"])[0],
                 "line_no": labelled["access_line_no"],
                 "is_root_cause": step_id == root_cause_step,
-                **({"expected_in_timeline": step["expected_in_timeline"]}
-                   if "expected_in_timeline" in step else {}),
+                **(
+                    {"expected_in_timeline": step["expected_in_timeline"]}
+                    if "expected_in_timeline" in step
+                    else {}
+                ),
             }
         )
     current = parse_manifest(evidence / "manifest.tsv")
@@ -232,9 +264,7 @@ def make_ground_truth(
     return result
 
 
-def write_ground_truth(
-    records_path: Path, evidence: Path, labels_path: Path, output: Path
-) -> None:
+def write_ground_truth(records_path: Path, evidence: Path, labels_path: Path, output: Path) -> None:
     records = json.loads(records_path.read_text(encoding="utf-8"))
     scenario_id = records["scenario_id"]
     truth = make_ground_truth(records, evidence, labels_path, scenario_id)

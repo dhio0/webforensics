@@ -147,6 +147,11 @@
         "role": {
           "type": "string",
           "minLength": 1
+        },
+        "expected_in_report": {
+          "type": "boolean",
+          "default": true,
+          "description": "Whether a correct report is expected to include this file; defaults to true."
         }
       }
     },

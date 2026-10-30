@@ -1,12 +1,112 @@
 {
-  "source": "background.log.gz",
-  "seed": 101,
-  "pace_seconds": 0.002,
-  "attempted": 5000,
-  "parsed": 5000,
-  "failures": {
-    "http_error": 4927
+  "source": "source-background.log.gz",
+  "seed": 5031,
+  "classification_rule": "scanner UA patterns or any source-side 404; all other lines are visitors",
+  "visitor_remap": "source paths ranked by descending frequency then path, then mapped to the pre-attack app crawl URL list in that order",
+  "app_urls": [
+    "/",
+    "/2026/10/",
+    "/2026/10/30/hello-world/",
+    "/2026/10/30/hello-world/?replytocom=1",
+    "/2026/10/30/hello-world/feed/",
+    "/?p=1",
+    "/?p=2",
+    "/?s=forensics",
+    "/?s=incident",
+    "/?s=report",
+    "/?s=security",
+    "/?s=wordpress",
+    "/author/benchadmin/",
+    "/author/benchadmin/feed/",
+    "/category/uncategorized/",
+    "/comments/feed/",
+    "/feed/",
+    "/sample-page/",
+    "/sample-page/feed/",
+    "/search/forensics/feed/rss2/",
+    "/search/incident/feed/rss2/",
+    "/search/report/feed/rss2/",
+    "/search/security/feed/rss2/",
+    "/search/wordpress/feed/rss2/",
+    "/wp-admin/",
+    "/wp-admin/css/forms.min.css?ver=5.5.3",
+    "/wp-admin/css/l10n.min.css?ver=5.5.3",
+    "/wp-admin/css/login.min.css?ver=5.5.3",
+    "/wp-admin/js/password-strength-meter.min.js?ver=5.5.3",
+    "/wp-admin/js/user-profile.min.js?ver=5.5.3",
+    "/wp-content/themes/twentytwenty/assets/js/index.js?ver=1.5",
+    "/wp-content/themes/twentytwenty/print.css?ver=1.5",
+    "/wp-content/themes/twentytwenty/style.css?ver=1.5",
+    "/wp-includes/css/buttons.min.css?ver=5.5.3",
+    "/wp-includes/css/dashicons.min.css?ver=5.5.3",
+    "/wp-includes/css/dist/block-library/style.min.css?ver=5.5.3",
+    "/wp-includes/js/comment-reply.min.js?ver=5.5.3",
+    "/wp-includes/js/dist/i18n.min.js?ver=bb7c3c45d012206bfcd73d6a31f84d9e",
+    "/wp-includes/js/dist/vendor/wp-polyfill.min.js?ver=7.4.4",
+    "/wp-includes/js/jquery/jquery.js?ver=1.12.4-wp",
+    "/wp-includes/js/underscore.min.js?ver=1.8.3",
+    "/wp-includes/js/wp-embed.min.js?ver=5.5.3",
+    "/wp-includes/js/wp-util.min.js?ver=5.5.3",
+    "/wp-includes/js/zxcvbn-async.min.js?ver=1.0",
+    "/wp-includes/wlwmanifest.xml",
+    "/wp-json/",
+    "/wp-json/oembed/1.0/embed?url=http%3A%2F%2Fedge%2F2026%2F10%2F30%2Fhello-world%2F",
+    "/wp-json/oembed/1.0/embed?url=http%3A%2F%2Fedge%2F2026%2F10%2F30%2Fhello-world%2F&format=xml",
+    "/wp-json/oembed/1.0/embed?url=http%3A%2F%2Fedge%2Fsample-page%2F",
+    "/wp-json/oembed/1.0/embed?url=http%3A%2F%2Fedge%2Fsample-page%2F&format=xml",
+    "/wp-json/wp/v2/media?per_page=100",
+    "/wp-json/wp/v2/pages/2",
+    "/wp-json/wp/v2/pages?per_page=100",
+    "/wp-json/wp/v2/posts/1",
+    "/wp-json/wp/v2/posts?per_page=100",
+    "/wp-json/wp/v2/users/1",
+    "/wp-login.php",
+    "/wp-login.php?action=lostpassword",
+    "/wp-sitemap-posts-page-1.xml",
+    "/wp-sitemap-posts-post-1.xml",
+    "/wp-sitemap-taxonomies-category-1.xml",
+    "/wp-sitemap-users-1.xml",
+    "/wp-sitemap.xml",
+    "/xmlrpc.php?rsd"
+  ],
+  "source_lines": 5000,
+  "replay_lines": 15000,
+  "counts": {
+    "visitor": 14919,
+    "scanner": 81
   },
-  "started_at_utc": "2026-10-30T15:49:39.734070+00:00",
-  "ended_at_utc": "2026-10-30T15:50:26.183223+00:00"
+  "visitors": {
+    "requests": 14919,
+    "source_404s": 0
+  },
+  "scanners": {
+    "requests": 81,
+    "retained_source_paths": true
+  },
+  "status_note": "scanner source status codes are retained; visitor response mix comes from the access log after replay",
+  "replay": {
+    "source": "background.log.gz",
+    "seed": 5031,
+    "pace_seconds": 0.001,
+    "attempted": 15000,
+    "parsed": 15000,
+    "failures": {
+      "http_error": 1617
+    },
+    "started_at_utc": "2026-10-30T16:56:12.454040+00:00",
+    "ended_at_utc": "2026-10-30T16:58:17.328008+00:00"
+  },
+  "attack_start_seed": 5031,
+  "attack_start_fraction": 0.54,
+  "status_mix": {
+    "visitor": {
+      "200": 13383,
+      "404": 384,
+      "301": 984,
+      "302": 168
+    },
+    "scanner": {
+      "404": 81
+    }
+  }
 }

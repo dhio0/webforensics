@@ -1,50 +1,80 @@
-# s01 pilot notes
+# s01: unauthenticated WordPress File Manager upload
 
-## Scenario and verification
+## Application and verification
 
-This pilot uses CVE-2020-25213 in WordPress File Manager 6.0 on WordPress 5.5.3 with
-the Apache/PHP image recorded in `SOURCES.md`. NVD describes the vulnerable exposed
-elFinder connector and unauthenticated upload/execution behavior:
-[NVD CVE-2020-25213](https://nvd.nist.gov/vuln/detail/CVE-2020-25213). In the internal
-Docker lab, the unauthenticated upload returned a success response, the uploaded file
-was served from the plugin's file directory, and the pinned Weevely 4.0.3 agent returned
-results for three commands. The Windows host received only the defanged webroot and the
-authenticated encrypted full capture. No Contact Form 7 test was run; CVE-2020-35489 is
-not used by this scenario.
+This scenario uses WordPress 5.5.3 with WordPress File Manager 6.0 and CVE-2020-25213.
+The [NVD advisory](https://nvd.nist.gov/vuln/detail/CVE-2020-25213) describes the exposed
+elFinder connector and unauthenticated upload and execution path. In the isolated lab,
+the upload succeeded, the uploaded file ran under Apache/PHP, and the pinned Weevely
+agent returned results for three identification commands. No attack request or agent
+contents are included here.
 
-## How each step line was found
+The app image is pinned by the digest in `replay/restore.json`. The full original capture
+is encrypted outside Git under the directory configured by `lab/v2/.env`.
 
-`label.py` joined the edge's ordinary combined access log with the separate ordered
-sidecar and checked request, status, client, and timestamp for every pair. The root
-cause upload used the unique `X-Lab-Step` value recorded by the scenario runner. Weevely
-cannot add that header, so each command record stores the attacker address, the HTTP
-request and status, and a narrow 30 ms interval near the end of that single command's
-own recorded execution window. Each interval identifies exactly one matching request.
+## Request phases and line labels
 
-| Step | Access log line | How it was selected |
+The attacker first checked the site and plugin version, then made two routine probes.
+These four recon lines are labelled but have `expected_in_timeline: false`. Seed `5031`
+selected a 54% attack start; the upload began at 54.00% of the completed access log.
+Three agent requests followed it.
+
+| Step | Access line | Expected in timeline |
 |---|---:|---|
-| Unauthenticated plugin file upload (root cause) | 28 | Unique sidecar step label |
-| Weevely identity command | 71 | Attacker address, request, status, recorded time window |
-| Weevely working-directory command | 100 | Attacker address, request, status, recorded time window |
-| Weevely user command | 128 | Attacker address, request, status, recorded time window |
+| Site check | 8110 | No |
+| Plugin version check | 8111 | No |
+| Admin probe | 8112 | No |
+| XML-RPC probe | 8113 | No |
+| Unauthenticated upload (root cause) | 8114 | Yes |
+| Agent identity | 8120 | Yes |
+| Agent working directory | 8123 | Yes |
+| Agent user | 8126 | Yes |
 
-The replay runner attempted 5,000 background requests from 5,000 log lines; all 5,000
-appear in the evidence access log. The access log also contains 13 attacker requests and
-3 requests originating from the WordPress container during startup. The application
-requests are not background traffic or attack steps.
+`label.py` joins the ordered sidecar and combined access log and verifies every pair's
+request, status, client address, and timestamp. The sidecar uses the lab step header for
+the four recon requests and upload; each agent command uses the attacker address, exact
+request and status, and a narrow recorded time window.
 
-## Changed files and defanging
+## Background traffic
 
-The baseline comparison found two new PHP paths: the uploaded agent and an empty plugin
-backup index. Both appear in `evidence/manifest.tsv` with their original metadata and
-hashes, and both are represented by inert `DEFANGED` stubs in `evidence/webroot/`.
-`evidence/defanged.tsv` records the original hashes, sizes, roles, and reasons. The
-manifest loader reports two expected content-hash mismatches because the safe stubs
-intentionally differ from the original files; its manifest syntax parse failures are
-zero. Access-log and error-log parse failures are zero.
+The source is the [NASA KSC HTTP trace](https://ita.ee.lbl.gov/html/contrib/NASA-HTTP.html),
+which has no User-Agent field. The deterministic preparation step therefore uses a fixed
+browser User-Agent for visitor rows. It identifies scanner traffic by the source status
+pattern (404) and keeps those source paths. It frequency-ranks the remaining paths and
+maps them to the pre-attack crawl of the app, including pages, REST URLs, login, search,
+and discovered assets.
 
-The captured `error.log` is empty because this run emitted no nginx errors; it was
-created fresh for this pilot after the interrupted-run leftovers were deleted.
+The replay contains 15,000 background requests: 14,919 visitors and 81 scanner requests.
+The visitor responses were 13,383 HTTP 200, 984 HTTP 301, 168 HTTP 302, and 384 HTTP
+404. The retained scanner mix was 81 HTTP 404.
+The replay ran in its own container at `192.0.2.135`; simulated client addresses are the
+first field in `access.log.gz`. The background container address does not occur in that
+evidence log. `replay/background.json` records the classification rule and counts.
 
-The encrypted capture is outside the repository at the local full-evidence path from
-`lab/v2/.env`. It uses AES-256-GCM. No Defender exclusions were added.
+## Changed files and side effect
+
+The baseline was collected after plugin activation. Immediately before the baseline, the
+empty `wp-content/uploads/wp-file-manager-pro/fm_backup/index.php` was removed. It
+reappeared as an empty file after the upload request, confirming that the upload flow
+creates it as a plugin side effect. Its ground-truth role is `side_effect`, with
+`expected_in_report: false`. The uploaded agent is the other changed file. Both are
+represented by inert `DEFANGED` stubs, and `defanged.tsv` preserves their original hashes.
+
+Only new or changed files are stored under `evidence/webroot`. Run
+`python lab/v2/restore_webroot.py s01 DEST` outside the repository to restore the rest
+from the pinned image and validate all manifest hashes before scoring.
+
+## Evidence checks
+
+- The attacker container could not reach an external address; a non-allowlisted service
+  name was refused.
+- The access log is ordinary combined format with the simulated client address first and
+  no trailing X-Forwarded-For field. Access and sidecar rows join with zero mismatches.
+- The Apache error log was collected as `evidence/app-error.log`; it has no entries for
+  this run. `ground_truth.json` records Apache format and UTC offset `+0000`.
+- The manifest and access-log adapters report zero parse failures; two expected hash
+  mismatches correspond to the defanged stubs.
+- The full restore command checked all manifest entries outside the repository.
+- The encrypted full capture is stored outside Git. No live attacker file was copied to
+  the host without defanging.
+- No `webforensics analyze` or `webforensics eval` command was run.

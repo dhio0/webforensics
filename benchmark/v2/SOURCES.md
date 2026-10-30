@@ -9,6 +9,8 @@ listed as a candidate is not evidence that a scenario has been replayed.
 |---|---|---|---|
 | WordPress | 5.5.3, Docker Hub `linux/amd64` manifest `sha256:07fffd786a81e5f23fe4f5f58a181b43084ed232e1db732415023848937b9c73` | GPL-2.0-or-later | [official image](https://hub.docker.com/_/wordpress), [5.5.3 archive](https://wordpress.org/wordpress-5.5.3.tar.gz) |
 | WordPress File Manager | 6.0, archive SHA-256 `f70dd0e72d030795639e3c59e4a0c73005cabf07e1c91efaa34d0808a5995c9d` | GPLv2 (plugin header) | [version archive](https://downloads.wordpress.org/plugin/wp-file-manager.6.0.zip), [CVE-2020-25213](https://nvd.nist.gov/vuln/detail/CVE-2020-25213) |
+| s01 WordPress app image | Docker image content digest `sha256:5f928299d26e3b67c82df6f3d4733def009812e76ce908e5fd81f4e3db6fdddf` | WordPress and plugin licenses above | `replay/restore.json` |
+| phpMyFAQ | 3.2.5; affected by CVE-2024-27299 | MPL-2.0 (`LICENSE` at the 3.2.5 tag) | [license](https://github.com/thorsten/phpMyFAQ/blob/3.2.5/LICENSE), [GitHub advisory](https://github.com/thorsten/phpMyFAQ/security/advisories/GHSA-qgxx-4xv5-6hcw), [fix commit](https://github.com/thorsten/phpMyFAQ/commit/1b68a5f89fb65996c56285fa636b818de8608011) |
 | Contact Form 7 | 5.3.1, WordPress.org version archive | GPL-2.0-or-later | [version archive](https://downloads.wordpress.org/plugin/contact-form-7.5.3.1.zip), [CVE-2020-35489 advisory](https://nvd.nist.gov/vuln/detail/CVE-2020-35489) |
 | MariaDB | 10.5.27, Docker Hub `linux/amd64` manifest `sha256:6a12617127de7ad42895232407abf403ae79f465bb818a8ac7ffbb97b8b18937` | GPL-2.0 | [official image](https://hub.docker.com/_/mariadb) |
 | nginx | 1.27.5-alpine, image digest `sha256:65645c7bb6a0661892a8b03b89d0743208a18dd2f3f17a54ef4b76fb8e2f2a10` | BSD-2-Clause | [official image](https://hub.docker.com/_/nginx) |
@@ -40,6 +42,12 @@ invent one.
 | Docker attacker/app images | final image digests | Build and pin only after tool versions and application set are fixed. |
 
 ## CVE verification notes
+
+- [CVE-2024-27299](https://github.com/thorsten/phpMyFAQ/security/advisories/GHSA-qgxx-4xv5-6hcw):
+  phpMyFAQ 3.2.5 is affected and 3.2.6 is patched. The maintainer's fix commit names
+  `phpmyfaq/src/phpMyFAQ/News.php` and changes the vulnerable `authorEmail` value at
+  lines 289 and 335. The 3.2.5 source tag has an explicit MPL-2.0 license. This verifies
+  the source and line provenance for a possible s03 record; no s03 attack has been run.
 
 - [CVE-2020-35489](https://nvd.nist.gov/vuln/detail/CVE-2020-35489): Contact Form 7
   releases before 5.3.2 are affected. CERT-In's [advisory](https://www.cert-in.org.in/s2cMainServlet?VLCODE=CIVN-2020-0442&pageid=PUBVLNOTES01)

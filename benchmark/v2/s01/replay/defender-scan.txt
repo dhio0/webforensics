@@ -1,3 +1,5 @@
-Scan starting...
-Scan finished.
-Scanning C:\Users\Pongo\Documents\web-forensics\benchmark\v2\s01 found no threats.
+scan_path=C:\Users\Pongo\Documents\web-forensics\benchmark\v2\s01
+scan_completed_utc=2026-10-30 17:06:12 UTC
+antivirus_enabled=True
+real_time_protection_enabled=True
+detections=0

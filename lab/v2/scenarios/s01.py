@@ -16,7 +16,6 @@ from pathlib import Path
 import requests
 
 sys.path.insert(0, "/opt/v2")
-from background import BackgroundReplay
 
 EDGE = "http://edge"
 ATTACKER_IP = "192.0.2.131"
@@ -51,22 +50,21 @@ def isolate() -> None:
 
 
 def perform_attack() -> None:
-    replay = BackgroundReplay(
-        Path("/source/background.log.gz"),
-        "wp",
-        pace=0.002,
-        limit=5000,
-        timeout=3,
-        seed=101,
-        fallback_user_agent="nasa-http-user-agent-unavailable",
-    ).start()
-    time.sleep(0.2)
+    ready = Path("/replay/background-halfway")
+    continuation = Path("/replay/background-continue")
+    for _ in range(2400):
+        if ready.exists():
+            break
+        time.sleep(0.05)
+    else:
+        raise TimeoutError("background replay did not reach its seeded attack point")
     records: dict[str, object] = {
         "scenario_id": "s01",
         "description": (
-            "An unauthenticated request abuses the vulnerable WordPress File Manager upload "
-            "endpoint, then a Weevely web agent runs a small set of identification commands. "
-            "Public web requests are replayed concurrently against the same WordPress app."
+            "A remote user checks the WordPress and file-manager versions, makes a few "
+            "routine probes, then abuses the unauthenticated upload and runs three "
+            "identification commands through the uploaded agent. Background visitors and "
+            "scanners reach the same application from separate client addresses."
         ),
         "attacker_ips": [ATTACKER_IP],
         "root_cause_step": UPLOAD_STEP,
@@ -78,13 +76,45 @@ def perform_attack() -> None:
             },
             {
                 "path": "/wp-content/uploads/wp-file-manager-pro/fm_backup/index.php",
-                "role": "plugin_upload_artifact",
+                "role": "side_effect",
+                "expected_in_report": False,
             },
         ],
+        "analysis": {
+            "access_logs": ["access.log.gz"],
+            "error_logs": ["app-error.log"],
+            "error_log_format": "apache",
+            "error_log_utc_offset": "+0000",
+            "manifest": "manifest.tsv",
+            "baseline": "baseline.tsv",
+            "trusted_proxies": [],
+        },
         "split": "dev",
         "expected_rule_ids": [],
     }
     steps: list[dict[str, object]] = []
+    # Reconnaissance is deliberately marked outside the expected incident timeline.
+    for step_id, path in (
+        ("site_check", "/"),
+        ("plugin_version_check", "/wp-content/plugins/wp-file-manager/readme.txt"),
+        ("admin_probe", "/wp-admin/"),
+        ("xmlrpc_probe", "/xmlrpc.php"),
+    ):
+        response = requests.get(
+            f"{EDGE}{path}",
+            headers={"X-Lab-Step": step_id},
+            timeout=10,
+            allow_redirects=False,
+        )
+        steps.append(
+            {
+                "id": step_id,
+                "category": "reconnaissance",
+                "mitre": ["T1595"],
+                "label_method": "header",
+                "expected_in_timeline": False,
+            }
+        )
     with tempfile.TemporaryDirectory(prefix="s01-agent-") as temporary:
         agent = Path(temporary) / AGENT_NAME
         subprocess.run(
@@ -118,6 +148,7 @@ def perform_attack() -> None:
                 "category": "unrestricted_upload",
                 "mitre": ["T1190"],
                 "label_method": "header",
+                "expected_in_timeline": True,
             }
         )
 
@@ -158,16 +189,12 @@ def perform_attack() -> None:
                 }
             )
 
-    stats = replay.join(timeout=300)
-    replay.ip_mapper.write_tsv(Path("/replay/ip_map.tsv"))
-    replay.write_records(Path("/replay/background.json"))
+    continuation.write_text("continue\n", encoding="ascii")
     records["steps"] = steps
     Path("/replay/records.json").write_text(
         json.dumps(records, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
     )
-    print(json.dumps(stats.to_json(replay.source, replay.seed, replay.pace), sort_keys=True))
-    if stats.attempted < 5000:
-        raise RuntimeError(f"only {stats.attempted} background requests were attempted")
+    print(json.dumps({"attack_completed": True, "steps": len(steps)}, sort_keys=True))
 
 
 def main() -> None:

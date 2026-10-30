@@ -27,6 +27,14 @@ services:
       WORDPRESS_DB_NAME: ${MYSQL_DATABASE}
       WORDPRESS_DB_USER: ${MYSQL_USER}
       WORDPRESS_DB_PASSWORD: ${MYSQL_PASSWORD}
+      WORDPRESS_AUTH_KEY: ${WORDPRESS_AUTH_KEY:-m8v2-round5-auth-key-test-only}
+      WORDPRESS_SECURE_AUTH_KEY: ${WORDPRESS_SECURE_AUTH_KEY:-m8v2-round5-secure-auth-key-test-only}
+      WORDPRESS_LOGGED_IN_KEY: ${WORDPRESS_LOGGED_IN_KEY:-m8v2-round5-logged-in-key-test-only}
+      WORDPRESS_NONCE_KEY: ${WORDPRESS_NONCE_KEY:-m8v2-round5-nonce-key-test-only}
+      WORDPRESS_AUTH_SALT: ${WORDPRESS_AUTH_SALT:-m8v2-round5-auth-salt-test-only}
+      WORDPRESS_SECURE_AUTH_SALT: ${WORDPRESS_SECURE_AUTH_SALT:-m8v2-round5-secure-auth-salt-test-only}
+      WORDPRESS_LOGGED_IN_SALT: ${WORDPRESS_LOGGED_IN_SALT:-m8v2-round5-logged-in-salt-test-only}
+      WORDPRESS_NONCE_SALT: ${WORDPRESS_NONCE_SALT:-m8v2-round5-nonce-salt-test-only}
       BENCH_ADMIN_USER: ${BENCH_ADMIN_USER}
       BENCH_ADMIN_PASSWORD: ${BENCH_ADMIN_PASSWORD}
       BENCH_ADMIN_EMAIL: ${BENCH_ADMIN_EMAIL}
@@ -52,7 +60,6 @@ services:
     volumes:
       - ./nginx/templates:/etc/nginx/templates:ro
       - ../../benchmark/v2/${SCENARIO:-s01}/evidence/access.log:/var/log/v2/access.log
-      - ../../benchmark/v2/${SCENARIO:-s01}/evidence/error.log:/var/log/v2/error.log
       - ../../benchmark/v2/${SCENARIO:-s01}/replay:/var/log/v2/replay
     depends_on:
       - wp
@@ -70,6 +77,7 @@ services:
     volumes:
       - ./scenarios:/opt/scenarios:ro
       - ./background.py:/opt/v2/background.py:ro
+      - ./crawl_app.py:/opt/crawl_app.py:ro
       - ../../benchmark/v2/${SCENARIO:-s01}/replay:/replay
       - ../../benchmark/v2/${SCENARIO:-s01}/replay/background.log.gz:/source/background.log.gz:ro
     depends_on:
@@ -77,6 +85,20 @@ services:
     networks:
       lab:
         ipv4_address: 192.0.2.131
+
+  background:
+    image: m8v2-attacker:pilot
+    command: ["sleep", "infinity"]
+    volumes:
+      - ./background.py:/opt/v2/background.py:ro
+      - ./crawl_app.py:/opt/crawl_app.py:ro
+      - ../../benchmark/v2/${SCENARIO:-s01}/replay:/replay
+      - ../../benchmark/v2/${SCENARIO:-s01}/replay/background.log.gz:/source/background.log.gz:ro
+    depends_on:
+      - edge
+    networks:
+      lab:
+        ipv4_address: 192.0.2.135
 
   collector:
     image: m8v2-collector:pilot

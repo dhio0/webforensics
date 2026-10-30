@@ -3,9 +3,9 @@ map $http_x_lab_client_ip $lab_client_ip {
     default $http_x_lab_client_ip;
 }
 
-log_format plain_combined_xff
-    '$remote_addr - $remote_user [$time_local] "$request" $status '
-    '$body_bytes_sent "$http_referer" "$http_user_agent" "$lab_client_ip"';
+log_format plain_combined
+    '$lab_client_ip - $remote_user [$time_local] "$request" $status '
+    '$body_bytes_sent "$http_referer" "$http_user_agent"';
 
 log_format replay_labels escape=json
     '{"msec":"$msec","request_id":"$request_id",'
@@ -13,8 +13,8 @@ log_format replay_labels escape=json
     '"request":"$request","status":"$status",'
     '"step":"$http_x_lab_step"}';
 
-error_log /var/log/v2/error.log notice;
-access_log /var/log/v2/access.log plain_combined_xff;
+error_log /dev/stderr notice;
+access_log /var/log/v2/access.log plain_combined;
 access_log /var/log/v2/replay/labels.log replay_labels;
 
 server {

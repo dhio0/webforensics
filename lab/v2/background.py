@@ -23,9 +23,9 @@ COMBINED = re.compile(
     r'"[^\"]*" "(?P<ua>[^\"]*)"'
 )
 NASA = re.compile(
-    r'^(?P<ip>\S+) (?:\S+ \S+ )?\[[^]]+\] '
+    r"^(?P<ip>\S+) (?:\S+ \S+ )?\[[^]]+\] "
     r'"(?P<method>[A-Z]+) (?P<target>\S+) HTTP/[^\"]+" '
-    r'(?P<status>\d{3}) \S+'
+    r"(?P<status>\d{3}) \S+"
 )
 ALLOWED_TARGETS = {"wp", "smallapp", "dvwa"}
 ATTACKER_NETWORK = ipaddress.ip_network("192.0.2.128/25")
@@ -158,6 +158,9 @@ class BackgroundReplay:
         timeout: float = 5.0,
         seed: int = 0,
         ip_mapper: IPMapper | None = None,
+        pause_at: float | None = None,
+        ready_file: Path | None = None,
+        continue_file: Path | None = None,
     ) -> None:
         if service not in ALLOWED_TARGETS:
             raise ValueError("target service is not allowlisted")
@@ -171,6 +174,11 @@ class BackgroundReplay:
         self.timeout = timeout
         self.seed = seed
         self.ip_mapper = ip_mapper or IPMapper(seed=seed)
+        self.pause_at = pause_at
+        self.ready_file = ready_file
+        self.continue_file = continue_file
+        if pause_at is not None and not (0.3 <= pause_at <= 0.7):
+            raise ValueError("pause point must be between 30% and 70%")
         self.stats = ReplayStats()
         self.error: BaseException | None = None
         self._thread = threading.Thread(target=self._run_guarded, name="v2-background-replay")
@@ -201,6 +209,16 @@ class BackgroundReplay:
             for line_number, line in enumerate(handle, 1):
                 if self.stats.attempted >= self.limit:
                     break
+                if (
+                    self.pause_at is not None
+                    and self.stats.attempted >= int(self.limit * self.pause_at)
+                    and self.ready_file is not None
+                    and self.continue_file is not None
+                ):
+                    self.ready_file.write_text("ready\n", encoding="ascii")
+                    while not self.continue_file.exists():
+                        time.sleep(0.05)
+                    self.pause_at = None
                 row = parse_line(line, self.fallback_user_agent)
                 if row is None:
                     continue
@@ -261,6 +279,9 @@ def main() -> None:
     parser.add_argument("--seed", type=int, default=0)
     parser.add_argument("--ip-map", type=Path, required=True)
     parser.add_argument("--records", type=Path, required=True)
+    parser.add_argument("--pause-at", type=float)
+    parser.add_argument("--ready-file", type=Path)
+    parser.add_argument("--continue-file", type=Path)
     args = parser.parse_args()
     try:
         replay = BackgroundReplay(
@@ -271,12 +292,17 @@ def main() -> None:
             fallback_user_agent=args.fallback_user_agent,
             timeout=args.timeout,
             seed=args.seed,
+            pause_at=args.pause_at,
+            ready_file=args.ready_file,
+            continue_file=args.continue_file,
         ).start()
         stats = replay.join()
     except (ValueError, OSError, RuntimeError, TimeoutError) as exc:
         parser.error(str(exc))
     replay.ip_mapper.write_tsv(args.ip_map)
     replay.write_records(args.records)
+    if args.ready_file:
+        args.ready_file.with_name("background.done").write_text("done\n", encoding="ascii")
     print(json.dumps(stats.to_json(args.source, args.seed, args.pace), sort_keys=True))
 
 

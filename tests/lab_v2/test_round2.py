@@ -269,12 +269,25 @@ def test_edge_plain_log_is_combined_and_drops_custom_headers_upstream() -> None:
     config = (
         ROOT / "lab" / "v2" / "nginx" / "templates" / "default.conf.template"
     ).read_text(encoding="utf-8")
-    plain_format = config.split("log_format plain_combined_xff", 1)[1].split(";", 1)[0]
+    plain_format = config.split("log_format plain_combined", 1)[1].split(";", 1)[0]
     assert "$http_x_lab_step" not in plain_format
-    assert "plain_combined_xff" in config
+    assert "$lab_client_ip" in plain_format
+    assert "$remote_addr" not in plain_format
+    assert '"$http_user_agent"' in plain_format
+    assert "plain_combined_xff" not in config
     assert "replay_labels" in config and "$http_x_lab_step" in config
     assert config.count("proxy_pass_request_headers off;") == 1
     assert config.count("location /") == 1
+
+
+def test_access_index_uses_first_combined_field_as_client_ip(tmp_path: Path) -> None:
+    path = tmp_path / "access.log"
+    path.write_text(
+        '198.51.100.8 - - [30/Oct/2026:12:00:00 +0000] "GET / HTTP/1.1" '
+        '200 123 "-" "browser"\n',
+        encoding="utf-8",
+    )
+    assert label.access_index(path)[0]["client_ip"] == "198.51.100.8"
 
 
 def test_background_posts_have_empty_body_and_redirects_are_disabled() -> None:

@@ -1,19 +1,64 @@
 {
   "scenario_id": "s01",
-  "description": "An unauthenticated request abuses the vulnerable WordPress File Manager upload endpoint, then a Weevely web agent runs a small set of identification commands. Public web requests are replayed concurrently against the same WordPress app.",
+  "description": "A remote user checks the WordPress and file-manager versions, makes a few routine probes, then abuses the unauthenticated upload and runs three identification commands through the uploaded agent. Background visitors and scanners reach the same application from separate client addresses.",
   "attacker_ips": [
     "192.0.2.131"
   ],
   "steps": [
+    {
+      "id": "site_check",
+      "category": "reconnaissance",
+      "mitre": [
+        "T1595"
+      ],
+      "log_file": "access.log.gz",
+      "line_no": 8110,
+      "is_root_cause": false,
+      "expected_in_timeline": false
+    },
+    {
+      "id": "plugin_version_check",
+      "category": "reconnaissance",
+      "mitre": [
+        "T1595"
+      ],
+      "log_file": "access.log.gz",
+      "line_no": 8111,
+      "is_root_cause": false,
+      "expected_in_timeline": false
+    },
+    {
+      "id": "admin_probe",
+      "category": "reconnaissance",
+      "mitre": [
+        "T1595"
+      ],
+      "log_file": "access.log.gz",
+      "line_no": 8112,
+      "is_root_cause": false,
+      "expected_in_timeline": false
+    },
+    {
+      "id": "xmlrpc_probe",
+      "category": "reconnaissance",
+      "mitre": [
+        "T1595"
+      ],
+      "log_file": "access.log.gz",
+      "line_no": 8113,
+      "is_root_cause": false,
+      "expected_in_timeline": false
+    },
     {
       "id": "unauthenticated_file_upload",
       "category": "unrestricted_upload",
       "mitre": [
         "T1190"
       ],
-      "log_file": "access.log",
-      "line_no": 28,
-      "is_root_cause": true
+      "log_file": "access.log.gz",
+      "line_no": 8114,
+      "is_root_cause": true,
+      "expected_in_timeline": true
     },
     {
       "id": "agent_identity",
@@ -21,8 +66,8 @@
       "mitre": [
         "T1059.004"
       ],
-      "log_file": "access.log",
-      "line_no": 71,
+      "log_file": "access.log.gz",
+      "line_no": 8120,
       "is_root_cause": false
     },
     {
@@ -31,8 +76,8 @@
       "mitre": [
         "T1059.004"
       ],
-      "log_file": "access.log",
-      "line_no": 100,
+      "log_file": "access.log.gz",
+      "line_no": 8123,
       "is_root_cause": false
     },
     {
@@ -41,23 +86,24 @@
       "mitre": [
         "T1059.004"
       ],
-      "log_file": "access.log",
-      "line_no": 128,
+      "log_file": "access.log.gz",
+      "line_no": 8126,
       "is_root_cause": false
     }
   ],
   "files": [
     {
       "path": "wp-content/plugins/wp-file-manager/lib/files/maintenance-agent.php",
-      "sha256": "1d27b818c214fbe7f799ab872d12a78b9e331905e40652728e471a3b64ebab35",
+      "sha256": "9b0616c2a8d660c1dd4851cd4d20d2f58cf575cfbdacbfcc2b7e5b4c056b8973",
       "change": "created",
       "role": "webshell_agent"
     },
     {
       "path": "wp-content/uploads/wp-file-manager-pro/fm_backup/index.php",
       "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-      "change": "created",
-      "role": "plugin_upload_artifact"
+      "change": "modified",
+      "role": "side_effect",
+      "expected_in_report": false
     }
   ],
   "root_cause_step": "unauthenticated_file_upload",
@@ -65,12 +111,12 @@
   "expected_rule_ids": [],
   "analysis": {
     "access_logs": [
-      "access.log"
+      "access.log.gz"
     ],
     "error_logs": [
-      "error.log"
+      "app-error.log"
     ],
-    "error_log_format": "nginx",
+    "error_log_format": "apache",
     "error_log_utc_offset": "+0000",
     "manifest": "manifest.tsv",
     "baseline": "baseline.tsv",
