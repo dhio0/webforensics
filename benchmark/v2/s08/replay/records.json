@@ -1,0 +1,146 @@
+{
+  "scenario_id": "s08",
+  "description": "An attacker uploads a temporary agent through the WordPress file manager, uses it for brief identification checks, and deletes it before collection. The remaining evidence is log-only.",
+  "attacker_ips": [
+    "192.0.2.131"
+  ],
+  "root_cause_step": "unauthenticated_file_upload",
+  "steps": [
+    {
+      "id": "site_check",
+      "category": "reconnaissance",
+      "mitre": [
+        "T1595"
+      ],
+      "label_method": "header",
+      "expected_in_timeline": false
+    },
+    {
+      "id": "plugin_version_check",
+      "category": "reconnaissance",
+      "mitre": [
+        "T1595"
+      ],
+      "label_method": "header",
+      "expected_in_timeline": false
+    },
+    {
+      "id": "admin_probe",
+      "category": "reconnaissance",
+      "mitre": [
+        "T1595"
+      ],
+      "label_method": "header",
+      "expected_in_timeline": false
+    },
+    {
+      "id": "xmlrpc_probe",
+      "category": "reconnaissance",
+      "mitre": [
+        "T1595"
+      ],
+      "label_method": "header",
+      "expected_in_timeline": false
+    },
+    {
+      "id": "unauthenticated_file_upload",
+      "category": "unrestricted_upload",
+      "mitre": [
+        "T1190"
+      ],
+      "label_method": "header"
+    },
+    {
+      "id": "agent_identity",
+      "category": "webshell_command",
+      "mitre": [
+        "T1059.004"
+      ],
+      "label_method": "attacker_ip_time_window",
+      "attacker_ip": "192.0.2.131",
+      "started_at": "2026-10-31T15:18:22.726223+00:00",
+      "ended_at": "2026-10-31T15:18:23.132357+00:00",
+      "request": "POST /wp-content/plugins/wp-file-manager/lib/files/m8v2-s08-agent.php HTTP/1.1",
+      "status": 200,
+      "candidate_ordinal": 1
+    },
+    {
+      "id": "agent_working_directory",
+      "category": "webshell_command",
+      "mitre": [
+        "T1059.004"
+      ],
+      "label_method": "attacker_ip_time_window",
+      "attacker_ip": "192.0.2.131",
+      "started_at": "2026-10-31T15:18:23.132378+00:00",
+      "ended_at": "2026-10-31T15:18:23.383045+00:00",
+      "request": "POST /wp-content/plugins/wp-file-manager/lib/files/m8v2-s08-agent.php HTTP/1.1",
+      "status": 200,
+      "candidate_ordinal": 1
+    },
+    {
+      "id": "agent_user",
+      "category": "webshell_command",
+      "mitre": [
+        "T1059.004"
+      ],
+      "label_method": "attacker_ip_time_window",
+      "attacker_ip": "192.0.2.131",
+      "started_at": "2026-10-31T15:18:23.383066+00:00",
+      "ended_at": "2026-10-31T15:18:23.647689+00:00",
+      "request": "POST /wp-content/plugins/wp-file-manager/lib/files/m8v2-s08-agent.php HTTP/1.1",
+      "status": 200,
+      "candidate_ordinal": 1
+    },
+    {
+      "id": "agent_deleted",
+      "category": "webshell_deletion",
+      "mitre": [
+        "T1070.004"
+      ],
+      "label_method": "attacker_ip_time_window",
+      "attacker_ip": "192.0.2.131",
+      "started_at": "2026-10-31T15:18:23.647708+00:00",
+      "ended_at": "2026-10-31T15:18:23.958179+00:00",
+      "request": "POST /wp-content/plugins/wp-file-manager/lib/files/m8v2-s08-agent.php HTTP/1.1",
+      "status": 200,
+      "candidate_ordinal": 1
+    },
+    {
+      "id": "agent_absent_check",
+      "category": "post_deletion_check",
+      "mitre": [
+        "T1070.004"
+      ],
+      "label_method": "header"
+    }
+  ],
+  "files": [
+    {
+      "path": "/wp-content/plugins/wp-file-manager/lib/files/m8v2-s08-agent.php",
+      "role": "webshell_agent",
+      "change": "deleted",
+      "sha256": "b8635cdb968e3fff9a282d75fdbfdb0fb3d32918a19d3ed2d5caaa3cbe51ffb2"
+    },
+    {
+      "path": "/wp-content/uploads/wp-file-manager-pro/fm_backup/index.php",
+      "role": "side_effect",
+      "expected_in_report": false
+    }
+  ],
+  "analysis": {
+    "access_logs": [
+      "access.log.gz"
+    ],
+    "error_logs": [
+      "app-error.log"
+    ],
+    "error_log_format": "apache",
+    "error_log_utc_offset": "+0000",
+    "manifest": "manifest.tsv",
+    "baseline": "baseline.tsv",
+    "trusted_proxies": []
+  },
+  "split": "dev",
+  "expected_rule_ids": []
+}

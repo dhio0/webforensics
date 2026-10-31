@@ -1,0 +1,2 @@
+path	original_sha256	original_size	role	reason
+wp-content/uploads/wp-file-manager-pro/fm_backup/index.php	e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855	0	side_effect	new or changed executable, script-tagged, zip, or phar file

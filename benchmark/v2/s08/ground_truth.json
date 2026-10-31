@@ -1,0 +1,144 @@
+{
+  "scenario_id": "s08",
+  "description": "An attacker uploads a temporary agent through the WordPress file manager, uses it for brief identification checks, and deletes it before collection. The remaining evidence is log-only.",
+  "attacker_ips": [
+    "192.0.2.131"
+  ],
+  "steps": [
+    {
+      "id": "site_check",
+      "category": "reconnaissance",
+      "mitre": [
+        "T1595"
+      ],
+      "log_file": "access.log.gz",
+      "line_no": 10351,
+      "is_root_cause": false,
+      "expected_in_timeline": false
+    },
+    {
+      "id": "plugin_version_check",
+      "category": "reconnaissance",
+      "mitre": [
+        "T1595"
+      ],
+      "log_file": "access.log.gz",
+      "line_no": 10352,
+      "is_root_cause": false,
+      "expected_in_timeline": false
+    },
+    {
+      "id": "admin_probe",
+      "category": "reconnaissance",
+      "mitre": [
+        "T1595"
+      ],
+      "log_file": "access.log.gz",
+      "line_no": 10353,
+      "is_root_cause": false,
+      "expected_in_timeline": false
+    },
+    {
+      "id": "xmlrpc_probe",
+      "category": "reconnaissance",
+      "mitre": [
+        "T1595"
+      ],
+      "log_file": "access.log.gz",
+      "line_no": 10354,
+      "is_root_cause": false,
+      "expected_in_timeline": false
+    },
+    {
+      "id": "unauthenticated_file_upload",
+      "category": "unrestricted_upload",
+      "mitre": [
+        "T1190"
+      ],
+      "log_file": "access.log.gz",
+      "line_no": 10355,
+      "is_root_cause": true
+    },
+    {
+      "id": "agent_identity",
+      "category": "webshell_command",
+      "mitre": [
+        "T1059.004"
+      ],
+      "log_file": "access.log.gz",
+      "line_no": 10356,
+      "is_root_cause": false
+    },
+    {
+      "id": "agent_working_directory",
+      "category": "webshell_command",
+      "mitre": [
+        "T1059.004"
+      ],
+      "log_file": "access.log.gz",
+      "line_no": 10362,
+      "is_root_cause": false
+    },
+    {
+      "id": "agent_user",
+      "category": "webshell_command",
+      "mitre": [
+        "T1059.004"
+      ],
+      "log_file": "access.log.gz",
+      "line_no": 10365,
+      "is_root_cause": false
+    },
+    {
+      "id": "agent_deleted",
+      "category": "webshell_deletion",
+      "mitre": [
+        "T1070.004"
+      ],
+      "log_file": "access.log.gz",
+      "line_no": 10368,
+      "is_root_cause": false
+    },
+    {
+      "id": "agent_absent_check",
+      "category": "post_deletion_check",
+      "mitre": [
+        "T1070.004"
+      ],
+      "log_file": "access.log.gz",
+      "line_no": 10371,
+      "is_root_cause": false
+    }
+  ],
+  "files": [
+    {
+      "path": "wp-content/uploads/wp-file-manager-pro/fm_backup/index.php",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "change": "modified",
+      "role": "side_effect",
+      "expected_in_report": false
+    },
+    {
+      "path": "wp-content/plugins/wp-file-manager/lib/files/m8v2-s08-agent.php",
+      "sha256": "b8635cdb968e3fff9a282d75fdbfdb0fb3d32918a19d3ed2d5caaa3cbe51ffb2",
+      "change": "deleted",
+      "role": "webshell_agent"
+    }
+  ],
+  "root_cause_step": "unauthenticated_file_upload",
+  "split": "dev",
+  "expected_rule_ids": [],
+  "analysis": {
+    "access_logs": [
+      "access.log.gz"
+    ],
+    "error_logs": [
+      "app-error.log"
+    ],
+    "error_log_format": "apache",
+    "error_log_utc_offset": "+0000",
+    "manifest": "manifest.tsv",
+    "baseline": "baseline.tsv",
+    "trusted_proxies": []
+  }
+}

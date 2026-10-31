@@ -208,6 +208,29 @@ def changed_files(
                 ),
             }
         )
+    for rel_path, metadata in sorted(file_metadata.items()):
+        if (
+            rel_path in baseline
+            or rel_path in current
+            or metadata.get("change") != "deleted"
+        ):
+            continue
+        sha256 = metadata.get("sha256")
+        if not isinstance(sha256, str) or not re.fullmatch(r"[0-9a-f]{64}", sha256):
+            raise ValueError(f"transient deleted file {rel_path!r} has no valid SHA-256")
+        result.append(
+            {
+                "path": rel_path,
+                "sha256": sha256,
+                "change": "deleted",
+                "role": metadata.get("role", "unclassified_change"),
+                **(
+                    {"expected_in_report": metadata["expected_in_report"]}
+                    if "expected_in_report" in metadata
+                    else {}
+                ),
+            }
+        )
     return result
 
 
