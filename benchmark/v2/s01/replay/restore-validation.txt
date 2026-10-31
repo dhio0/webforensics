@@ -1,3 +1,4 @@
-external restore succeeded: 2845 manifest entries checked; all non-stub hashes matched and the two listed stubs validated.
+external restore succeeded: 2845 manifest entries checked; all non-stub hashes matched and both listed stubs validated.
+restore image: sha256:9f583315107a756a0398b1d7b556afdc054230c5320f6b07291a3d2744e120d8
 repository destination refusal: PASS.
-pinned image: sha256:5f928299d26e3b67c82df6f3d4733def009812e76ce908e5fd81f4e3db6fdddf
+full restored-tree verification output: C:\Windows\Temp\m8v2-restore-s01-51b317c261f04798a7d4ca714451702a

@@ -77,7 +77,33 @@ def main() -> None:
     run("config", "--quiet")
     prepare_log_mounts()
     replay = ROOT / "benchmark" / "v2" / SCENARIO / "replay"
-    for name in ("labels.log", "background-halfway", "background-continue", "background.done"):
+    subprocess.run(
+        [
+            str(PYTHON),
+            str(ROOT / "lab" / "v2" / "prepare_zenodo_background.py"),
+            "--zenodo-zip",
+            str(ROOT / "lab" / "v2" / ".cache" / "zenodo-20001206-organization-x.zip"),
+            "--nasa-log",
+            str(ROOT / "lab" / "v2" / ".cache" / "NASA_access_log_Jul95.gz"),
+            "--output",
+            str(replay / "source-background.log.gz"),
+            "--report",
+            str(replay / "source-preparation.json"),
+            "--limit",
+            "15000",
+        ],
+        cwd=ROOT,
+        check=True,
+    )
+    for name in (
+        "labels.log",
+        "background-halfway",
+        "background-continue",
+        "background.done",
+        "background-error.json",
+        "background-plan.json",
+        "background-run.json",
+    ):
         (replay / name).unlink(missing_ok=True)
     run("build")
     run("up", "-d", "db", "wp", "edge", "attacker", "background", "collector")
@@ -94,7 +120,28 @@ def main() -> None:
     )
     attack_seed = 5031
     attack_fraction = random.Random(attack_seed).randint(30, 70) / 100
-    run("exec", "-T", "attacker", "python", "/opt/scenarios/s01.py", "isolation")
+    isolation = subprocess.run(
+        [
+            "docker",
+            "compose",
+            "--env-file",
+            str(ENV_FILE),
+            "-f",
+            str(COMPOSE_FILE),
+            "exec",
+            "-T",
+            "attacker",
+            "python",
+            "/opt/scenarios/s01.py",
+            "isolation",
+        ],
+        cwd=ROOT,
+        env={**os.environ, "SCENARIO": SCENARIO},
+        check=True,
+        text=True,
+        capture_output=True,
+    )
+    (replay / "isolation-test.txt").write_text(isolation.stdout, encoding="utf-8")
     run("exec", "-T", "attacker", "python", "/opt/crawl_app.py", "/replay/app_urls.txt")
     subprocess.run(
         [
@@ -173,6 +220,13 @@ def main() -> None:
     for _ in range(600):
         if (replay / "background.done").is_file():
             break
+        error_file = replay / "background-error.json"
+        if error_file.is_file():
+            failure = json.loads(error_file.read_text(encoding="utf-8"))
+            raise RuntimeError(
+                f"background replay failed ({failure['error_type']}) after "
+                f"source line {failure['last_source_line']}"
+            )
         time.sleep(0.5)
     else:
         raise TimeoutError("background replay did not finish within five minutes")
@@ -182,7 +236,7 @@ def main() -> None:
     plan["attack_start_seed"] = attack_seed
     plan["attack_start_fraction"] = attack_fraction
     mapped_addresses = set()
-    for row in (replay / "ip_map.tsv").read_text(encoding="ascii").splitlines()[2:]:
+    for row in (replay / "ip_map.tsv").read_text(encoding="utf-8").splitlines()[2:]:
         _source, mapped = row.split("\t")
         mapped_addresses.add(mapped)
     status_mix = {group: {} for group in ("visitor", "scanner")}
@@ -197,7 +251,7 @@ def main() -> None:
         if line.split(" ", 1)[0] in mapped_addresses
     ]
     ua_scanner = re.compile(
-        r"bot|crawler|spider|scanner|sqlmap|nikto|nmap|gobuster|dirb", re.I
+        r"bot|crawler|spider|scanner|sqlmap|nikto|nmap|gobuster|dirb|uptime|hetrix", re.I
     )
     with gzip.open(replay / "background.log.gz", "rt", encoding="utf-8") as source_rows:
         for source_line, access_line in zip(source_rows, access_rows, strict=True):
@@ -213,6 +267,9 @@ def main() -> None:
             code = match.group(1)
             status_mix[group][code] = status_mix[group].get(code, 0) + 1
     plan["status_mix"] = status_mix
+    plan["source_preparation"] = json.loads(
+        (replay / "source-preparation.json").read_text(encoding="utf-8")
+    )
     (replay / "background.json").write_text(json.dumps(plan, indent=2) + "\n", encoding="utf-8")
     run("stop", "edge")
     run(
@@ -310,6 +367,44 @@ def main() -> None:
         check=True,
     )
     run("down")
+    subprocess.run(
+        [
+            str(PYTHON),
+            str(ROOT / "lab" / "v2" / "self_check.py"),
+            SCENARIO,
+            "--root",
+            str(ROOT),
+            "--output",
+            str(replay / "self-check.txt"),
+        ],
+        cwd=ROOT,
+        check=True,
+    )
+    subprocess.run(
+        [
+            "powershell.exe",
+            "-NoProfile",
+            "-ExecutionPolicy",
+            "Bypass",
+            "-File",
+            str(ROOT / "lab" / "v2" / "defender_scan.ps1"),
+            "-ScanPath",
+            str(ROOT / "benchmark" / "v2" / SCENARIO),
+            "-OutputPath",
+            str(replay / "defender-scan.txt"),
+        ],
+        cwd=ROOT,
+        check=True,
+    )
+    for name in (
+        "background-halfway",
+        "background-continue",
+        "background.done",
+        "background-error.json",
+        "background-plan.json",
+        "background-run.json",
+    ):
+        (replay / name).unlink(missing_ok=True)
 
 
 if __name__ == "__main__":

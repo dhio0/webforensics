@@ -26,27 +26,42 @@ Three agent requests followed it.
 | Admin probe | 8112 | No |
 | XML-RPC probe | 8113 | No |
 | Unauthenticated upload (root cause) | 8114 | Yes |
-| Agent identity | 8120 | Yes |
+| Agent identity | 8119 | Yes |
 | Agent working directory | 8123 | Yes |
 | Agent user | 8126 | Yes |
 
 `label.py` joins the ordered sidecar and combined access log and verifies every pair's
 request, status, client address, and timestamp. The sidecar uses the lab step header for
-the four recon requests and upload; each agent command uses the attacker address, exact
-request and status, and a narrow recorded time window.
+the four recon requests and upload. Each agent command uses the attacker address, exact
+request and status, and a narrow recorded time window. The identity command generated
+two identical agent requests in its window; its record selects the first request as the
+command initiation, while later polling requests remain unlabelled.
 
 ## Background traffic
 
-The source is the [NASA KSC HTTP trace](https://ita.ee.lbl.gov/html/contrib/NASA-HTTP.html),
-which has no User-Agent field. The deterministic preparation step therefore uses a fixed
-browser User-Agent for visitor rows. It identifies scanner traffic by the source status
-pattern (404) and keeps those source paths. It frequency-ranks the remaining paths and
-maps them to the pre-attack crawl of the app, including pages, REST URLs, login, search,
-and discovered assets.
+Visitor request methods, source targets, response patterns, and User-Agent strings come
+from Organization X in the [MIT-licensed Zenodo log dataset](https://zenodo.org/records/20001206).
+The source anonymizes almost every client address to one value, so the preparation step
+pairs the chronological Organization X request rows with evenly sampled NASA KSC source
+client identities. NASA's trace is used only for client identity; its missing User-Agent
+field is never filled with an invented visitor agent. The selected stream has 903 distinct
+User-Agent strings and 10,384 client identities; the most common agent is 4.41% and the
+largest client share is 0.98%.
 
-The replay contains 15,000 background requests: 14,919 visitors and 81 scanner requests.
-The visitor responses were 13,383 HTTP 200, 984 HTTP 301, 168 HTTP 302, and 384 HTTP
-404. The retained scanner mix was 81 HTTP 404.
+The deterministic classifier retains scanner User-Agents and source-side 404s with their
+original paths. A single protocol-relative scanner path was normalized to an internal
+origin-form path so the target allowlist could reject network authorities. For visitor
+rows the preparer frequency-ranks source paths and maps them to the pre-attack crawl of
+this app, while preserving method, query string, protocol, client, User-Agent, and line
+order. App targets include pages, REST URLs, login, search, and discovered assets. Source
+request bodies are unavailable, so POST requests replay empty.
+
+The replay contains 15,000 background requests: 12,077 visitors and 2,923 scanner
+requests. Visitor responses were 10,671 HTTP 200, 740 HTTP 301, 216 HTTP 302, 71 HTTP
+400, 48 HTTP 401, 290 HTTP 404, and 41 HTTP 405. This is 96.27% 2xx/3xx. Scanner
+responses were 2,264 HTTP 404, 642 HTTP 200, 9 HTTP 302, 7 HTTP 301, and 1 HTTP 403.
+`replay/source-preparation.json` and `replay/background.json` preserve the source and
+transformation counts. The attack lines span 53.973%–54.080% of the 15,026-line access log.
 The replay ran in its own container at `192.0.2.135`; simulated client addresses are the
 first field in `access.log.gz`. The background container address does not occur in that
 evidence log. `replay/background.json` records the classification rule and counts.

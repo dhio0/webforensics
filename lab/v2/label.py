@@ -91,6 +91,25 @@ def join_log_rows(
     return joined
 
 
+def select_time_window_candidate(
+    candidates: list[dict[str, Any]], step_id: str, ordinal: int | None = None
+) -> dict[str, Any]:
+    """Select a request from a tool window by explicit order when needed."""
+    if ordinal is not None:
+        if ordinal < 1 or ordinal > len(candidates):
+            raise ValueError(
+                f"time window for {step_id} has {len(candidates)} requests; "
+                f"candidate ordinal {ordinal} is unavailable"
+            )
+        return candidates[ordinal - 1]
+    if len(candidates) != 1:
+        raise ValueError(
+            f"time window for {step_id} identifies {len(candidates)} requests; "
+            "add a request/status discriminator or candidate_ordinal"
+        )
+    return candidates[0]
+
+
 def parse_manifest(path: Path) -> dict[str, dict[str, str]]:
     rows: dict[str, dict[str, str]] = {}
     columns_seen = False
@@ -212,12 +231,9 @@ def make_ground_truth(
                 and ("request" not in step or row["request"] == step["request"])
                 and ("status" not in step or row["status"] == int(step["status"]))
             ]
-            if len(candidates) != 1:
-                raise ValueError(
-                    f"time window for {step_id} identifies {len(candidates)} requests; "
-                    "add a request/status discriminator"
-                )
-            labelled = candidates[0]
+            labelled = select_time_window_candidate(
+                candidates, step_id, step.get("candidate_ordinal")
+            )
         else:
             raise ValueError(f"unsupported label method {method!r} for step {step_id}")
         steps.append(

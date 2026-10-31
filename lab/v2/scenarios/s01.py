@@ -186,6 +186,7 @@ def perform_attack() -> None:
                         "HTTP/1.1"
                     ),
                     "status": 200,
+                    "candidate_ordinal": 1,
                 }
             )
 

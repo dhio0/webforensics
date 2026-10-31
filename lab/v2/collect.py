@@ -13,6 +13,7 @@ import gzip
 import json
 import os
 import shutil
+from contextlib import suppress
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -121,9 +122,11 @@ def defang_snapshot(
     for rel_path, row in sorted(current.items()):
         source = webroot / rel_path
         destination = output / rel_path
-        destination.parent.mkdir(parents=True, exist_ok=True)
         before = baseline.get(rel_path)
         changed = changed_from_baseline(row, before)
+        if not changed:
+            continue
+        destination.parent.mkdir(parents=True, exist_ok=True)
         if row.kind == "l":
             # Do not export symlinks from the container. New/changed links are represented
             # by an inert stub; unchanged links are omitted from the content snapshot.
@@ -161,6 +164,31 @@ def defang_snapshot(
             handle.write("\t".join(escaped_tsv(str(value)) for value in values) + "\n")
     scan_defanged_snapshot(output, current, baseline)
     return replaced
+
+
+def trim_unchanged_snapshot(
+    snapshot: Path,
+    current: dict[str, ManifestRow],
+    baseline: dict[str, ManifestRow],
+) -> int:
+    """Remove unchanged baseline files from an older full-tree snapshot."""
+    removed = 0
+    for path in snapshot.rglob("*"):
+        if not path.is_file():
+            continue
+        rel_path = path.relative_to(snapshot).as_posix()
+        row = current.get(rel_path)
+        if row is None or not changed_from_baseline(row, baseline.get(rel_path)):
+            path.unlink()
+            removed += 1
+    for directory in sorted(
+        (path for path in snapshot.rglob("*") if path.is_dir()),
+        key=lambda path: len(path.parts),
+        reverse=True,
+    ):
+        with suppress(OSError):
+            directory.rmdir()
+    return removed
 
 
 def scan_defanged_snapshot(

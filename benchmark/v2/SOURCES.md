@@ -9,13 +9,14 @@ listed as a candidate is not evidence that a scenario has been replayed.
 |---|---|---|---|
 | WordPress | 5.5.3, Docker Hub `linux/amd64` manifest `sha256:07fffd786a81e5f23fe4f5f58a181b43084ed232e1db732415023848937b9c73` | GPL-2.0-or-later | [official image](https://hub.docker.com/_/wordpress), [5.5.3 archive](https://wordpress.org/wordpress-5.5.3.tar.gz) |
 | WordPress File Manager | 6.0, archive SHA-256 `f70dd0e72d030795639e3c59e4a0c73005cabf07e1c91efaa34d0808a5995c9d` | GPLv2 (plugin header) | [version archive](https://downloads.wordpress.org/plugin/wp-file-manager.6.0.zip), [CVE-2020-25213](https://nvd.nist.gov/vuln/detail/CVE-2020-25213) |
-| s01 WordPress app image | Docker image content digest `sha256:5f928299d26e3b67c82df6f3d4733def009812e76ce908e5fd81f4e3db6fdddf` | WordPress and plugin licenses above | `replay/restore.json` |
+| s01 WordPress app image | Docker image content digest `sha256:9f583315107a756a0398b1d7b556afdc054230c5320f6b07291a3d2744e120d8` | WordPress and plugin licenses above | `replay/restore.json` |
 | phpMyFAQ | 3.2.5; affected by CVE-2024-27299 | MPL-2.0 (`LICENSE` at the 3.2.5 tag) | [license](https://github.com/thorsten/phpMyFAQ/blob/3.2.5/LICENSE), [GitHub advisory](https://github.com/thorsten/phpMyFAQ/security/advisories/GHSA-qgxx-4xv5-6hcw), [fix commit](https://github.com/thorsten/phpMyFAQ/commit/1b68a5f89fb65996c56285fa636b818de8608011) |
 | Contact Form 7 | 5.3.1, WordPress.org version archive | GPL-2.0-or-later | [version archive](https://downloads.wordpress.org/plugin/contact-form-7.5.3.1.zip), [CVE-2020-35489 advisory](https://nvd.nist.gov/vuln/detail/CVE-2020-35489) |
 | MariaDB | 10.5.27, Docker Hub `linux/amd64` manifest `sha256:6a12617127de7ad42895232407abf403ae79f465bb818a8ac7ffbb97b8b18937` | GPL-2.0 | [official image](https://hub.docker.com/_/mariadb) |
 | nginx | 1.27.5-alpine, image digest `sha256:65645c7bb6a0661892a8b03b89d0743208a18dd2f3f17a54ef4b76fb8e2f2a10` | BSD-2-Clause | [official image](https://hub.docker.com/_/nginx) |
 | Public sector web-server logs | Zenodo record 20001206, v1 (2026-05-03) | MIT (`mit-license` in Zenodo API metadata) | [record](https://zenodo.org/records/20001206) |
 | NASA KSC HTTP access logs | July and August 1995 traces | Freely redistributable (source page explicitly grants redistribution) | [dataset description and download links](https://ita.ee.lbl.gov/html/contrib/NASA-HTTP.html) |
+| Web Server Log Dataset, Organization X | Zenodo record 20001206, v1; `organization-x.zip` MD5 `b4bf79effa6f3ee1b9e53f278d916620` | MIT (`mit-license` in the Zenodo API metadata) | [record and files](https://zenodo.org/records/20001206) |
 | sqlmap | commit `c42ebd7acf47c88b6407995dd9842a2eb5d6534d` | GPL-2.0 | [pinned source](https://github.com/sqlmapproject/sqlmap/tree/c42ebd7acf47c88b6407995dd9842a2eb5d6534d) |
 | Weevely3 | 4.0.3, commit `3d62e889871a62a344365b6a2d02b35c5ac1e946` | GPL-3.0 | [pinned source](https://github.com/epinna/weevely3/tree/3d62e889871a62a344365b6a2d02b35c5ac1e946) |
 | commix | commit `625c0c46e4257c457774e39bd896307397eaab03` | GPL-3.0-or-later | [pinned source](https://github.com/commixproject/commix/tree/625c0c46e4257c457774e39bd896307397eaab03) |
@@ -23,15 +24,18 @@ listed as a candidate is not evidence that a scenario has been replayed.
 | Python cryptography | 50.0.2 | Apache-2.0 OR BSD-3-Clause | [PyPI release](https://pypi.org/project/cryptography/50.0.2/) |
 | Python attacker base | 3.13.18 slim-bookworm, `linux/amd64` digest `sha256:70bda1e795ded2a684ef9815955e05829b14ee5bb5c3eb2a940648e88f10fce9` | PSF-2.0 | [official image](https://hub.docker.com/_/python) |
 | Weevely attacker image | local image ID `sha256:09ea4569baac3e4bc06b041fa4523ee1f0482ae99fc4ce91e36e34b3edb49e10` | GPL-3.0 | [pinned Weevely3 source](https://github.com/epinna/weevely3/tree/3d62e889871a62a344365b6a2d02b35c5ac1e946) |
-| WordPress app image | local image ID `sha256:a29b594443b1956b91a97cbcb2f360d2be940e70cfc0dd8dd1c2633be23e2910` | GPL-2.0-or-later | built from the pinned WordPress image and File Manager archive above |
+| WordPress app image | local image ID `sha256:9f583315107a756a0398b1d7b556afdc054230c5320f6b07291a3d2744e120d8` | GPL-2.0-or-later | built from the pinned WordPress image and File Manager archive above |
 | Collector image | local image ID `sha256:432cbd4daf7b64945aa11be4d91c12df270800e2a4684514adbfe458a504fd8e` | MIT (project code) | built from the pinned Python base and `cryptography` 50.0.2 |
 | requests | 2.32.4 | Apache-2.0 | [PyPI release](https://pypi.org/project/requests/2.32.4/) |
 
 The external image digests above are pinned for this Docker Desktop `linux/amd64` host.
-The locally built image IDs identify the artifacts used for s01. The Zenodo API metadata reports MIT and the record describes
-Organization X/Y web-server access and error logs. NASA's source format does not
-include a user-agent, so a replay must mark its user-agent as unavailable rather than
-invent one.
+The locally built image IDs identify the artifacts used for s01. The Zenodo API metadata
+reports MIT and describes Organization X/Y web-server logs. Organization X supplies
+real methods, request targets, statuses, and User-Agent values for v2 background rows.
+Its public access log anonymizes nearly all client addresses to the same value, so the
+replay corpus pairs those request rows in chronological order with evenly sampled NASA
+client identities. NASA User-Agent values are never substituted into visitor requests.
+The exact transformation and resulting diversity counts are recorded per scenario.
 
 ## Candidates requiring further verification before use
 

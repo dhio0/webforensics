@@ -2,11 +2,13 @@
 
 from __future__ import annotations
 
+import gzip
 import hashlib
 import io
 import sys
 import tarfile
-from datetime import UTC, datetime
+from collections import Counter
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from time import perf_counter
 from urllib.error import HTTPError, URLError
@@ -16,7 +18,16 @@ import pytest
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT))
 
-from lab.v2 import background, collect, crypto, decrypt, label, validate_evidence  # noqa: E402
+from lab.v2 import (  # noqa: E402
+    background,
+    collect,
+    crypto,
+    decrypt,
+    label,
+    prepare_background,
+    prepare_zenodo_background,
+    validate_evidence,
+)
 
 from webforensics.adapters.file_adapter import (  # noqa: E402
     LogFileSource,
@@ -29,8 +40,17 @@ def manifest_row(path: Path, root: Path, inode: int) -> collect.ManifestRow:
     payload = path.read_bytes()
     sha = hashlib.sha256(payload).hexdigest()
     fields = (
-        rel.encode("utf-8").hex(), "f", str(len(payload)), "644", "1000", str(inode),
-        "1", "2", "3", "0", sha,
+        rel.encode("utf-8").hex(),
+        "f",
+        str(len(payload)),
+        "644",
+        "1000",
+        str(inode),
+        "1",
+        "2",
+        "3",
+        "0",
+        sha,
     )
     return collect.ManifestRow(rel, "f", fields, sha)
 
@@ -38,9 +58,7 @@ def manifest_row(path: Path, root: Path, inode: int) -> collect.ManifestRow:
 def test_ip_mapping_has_no_collisions_for_50000_sources(tmp_path: Path) -> None:
     mapper = background.IPMapper(seed=17)
     start = int(background.ipaddress.ip_address("198.18.0.0"))
-    source_addresses = (
-        str(background.ipaddress.ip_address(start + i + 1)) for i in range(50_000)
-    )
+    source_addresses = (str(background.ipaddress.ip_address(start + i + 1)) for i in range(50_000))
     mapped = [mapper.assign(source_ip) for source_ip in source_addresses]
 
     assert len(mapped) == len(set(mapped)) == 50_000
@@ -51,13 +69,63 @@ def test_ip_mapping_has_no_collisions_for_50000_sources(tmp_path: Path) -> None:
     )
     first_seen = list(mapper.mapping.items())
     assert [ip for ip, _ in first_seen[:3]] == ["198.18.0.1", "198.18.0.2", "198.18.0.3"]
+    unusual_identities = [f"client'{index}.example" for index in range(100)]
+    unusual_mapped = [mapper.assign(identity) for identity in unusual_identities]
+    assert len(unusual_mapped) == len(set(unusual_mapped)) == len(unusual_identities)
     out = tmp_path / "ip_map.tsv"
     mapper.write_tsv(out)
-    assert (
-        out.read_text(encoding="ascii").splitlines()[1]
-        == "source_address_or_host\tmapped_ip"
-    )
+    assert out.read_text(encoding="ascii").splitlines()[1] == "source_address_or_host\tmapped_ip"
     assert mapper.assign("nasa.example.edu") != mapper.assign("other.example.edu")
+
+
+def test_zenodo_selection_caps_user_agents_and_keeps_order() -> None:
+    start = datetime(2026, 1, 1, tzinfo=UTC)
+    rows = []
+    for index in range(100):
+        ua = "common" if index < 80 else f"ua-{index}"
+        rows.append(
+            (
+                start + timedelta(seconds=index),
+                (
+                    f"192.0.2.1 - - [01/Jan/2026:00:00:{index:02d} +0000] "
+                    f'"GET / HTTP/1.1" 200 0 "-" "{ua}"'
+                ),
+                {"ua": ua, "status": "200"},
+            )
+        )
+
+    selected = prepare_zenodo_background.select_zenodo_rows(rows, 20)
+
+    assert len(selected) == 20
+    assert [entry[0] for entry in selected] == sorted(entry[0] for entry in selected)
+    max_ua = max(Counter(entry[2]["ua"] for entry in selected).values())
+    assert max_ua / len(selected) <= 0.20
+
+
+def test_background_normalizes_protocol_relative_scanners_to_lab_paths(tmp_path: Path) -> None:
+    source = tmp_path / "source.log"
+    source.write_text(
+        "198.51.100.1 - - [01/Jan/2026:00:00:00 +0000] "
+        '"GET //scan.example/probe HTTP/1.1" 404 10 "-" "Scanner/1.0"\n'
+        "198.51.100.2 - - [01/Jan/2026:00:00:01 +0000] "
+        '"GET /article.php?q=a%2Fb HTTP/1.1" 200 10 "-" "Browser/1.0"\n',
+        encoding="utf-8",
+    )
+    urls = tmp_path / "urls.txt"
+    urls.write_text("/sample-page/\n/search/?s=seed\n", encoding="utf-8")
+    output = tmp_path / "prepared.log.gz"
+    report = tmp_path / "report.json"
+    classes = tmp_path / "classes.tsv"
+
+    prepare_background.prepare(source, urls, output, report, classes, limit=2)
+
+    with gzip.open(output, "rt", encoding="utf-8") as replay:
+        rows = [background.parse_line(line, "fallback") for line in replay]
+    assert rows[0]["target"] == "/scan.example/probe"
+    assert rows[1]["target"].startswith("/sample-page/?q=a%2Fb")
+    assert all(
+        background.target_url(row["target"], "wp").startswith("http://edge/") for row in rows
+    )
 
 
 def test_gcm_round_trip_authenticates_harmless_file(tmp_path: Path) -> None:
@@ -125,7 +193,7 @@ def test_collector_defangs_every_changed_executable_independent_of_records(tmp_p
     snapshot = tmp_path / "evidence" / "webroot"
     collect.defang_snapshot(root, current, baseline, snapshot, roles={})
 
-    assert (snapshot / "index.php").read_text(encoding="ascii") == "baseline app source"
+    assert not (snapshot / "index.php").exists()
     assert (snapshot / "unlisted.php").read_text(encoding="ascii").startswith("DEFANGED ")
     assert (snapshot / ".htaccess").read_text(encoding="ascii").startswith("DEFANGED ")
     assert (snapshot / "benign-looking.jpg").read_text(encoding="ascii").startswith("DEFANGED ")
@@ -152,7 +220,7 @@ def test_collect_sh_v1_manifest_and_combined_log_load_with_fileadapter(tmp_path:
     )
     access = tmp_path / "access.log"
     access.write_text(
-        '127.0.0.1 - - [30/Oct/2026:12:00:01 +0000] '
+        "127.0.0.1 - - [30/Oct/2026:12:00:01 +0000] "
         '"GET / HTTP/1.1" 200 2 "-" "ua" "198.51.100.1"\n',
         encoding="ascii",
     )
@@ -174,7 +242,7 @@ def test_evidence_validator_prints_adapter_parse_failure_counts(
     webroot = evidence / "webroot"
     webroot.mkdir(parents=True)
     (evidence / "access.log").write_text(
-        '127.0.0.1 - - [30/Oct/2026:12:00:01 +0000] '
+        "127.0.0.1 - - [30/Oct/2026:12:00:01 +0000] "
         '"GET / HTTP/1.1" 200 2 "-" "ua" "198.51.100.1"\n',
         encoding="ascii",
     )
@@ -265,10 +333,19 @@ def test_label_join_scales_to_30000_rows() -> None:
     assert elapsed < 5.0
 
 
+def test_label_time_window_uses_explicit_candidate_order_when_tool_retries() -> None:
+    candidates = [{"access_line_no": 10}, {"access_line_no": 11}]
+    assert label.select_time_window_candidate(candidates, "agent", 1) == candidates[0]
+    with pytest.raises(ValueError, match="identifies 2 requests"):
+        label.select_time_window_candidate(candidates, "agent")
+    with pytest.raises(ValueError, match="ordinal 3 is unavailable"):
+        label.select_time_window_candidate(candidates, "agent", 3)
+
+
 def test_edge_plain_log_is_combined_and_drops_custom_headers_upstream() -> None:
-    config = (
-        ROOT / "lab" / "v2" / "nginx" / "templates" / "default.conf.template"
-    ).read_text(encoding="utf-8")
+    config = (ROOT / "lab" / "v2" / "nginx" / "templates" / "default.conf.template").read_text(
+        encoding="utf-8"
+    )
     plain_format = config.split("log_format plain_combined", 1)[1].split(";", 1)[0]
     assert "$http_x_lab_step" not in plain_format
     assert "$lab_client_ip" in plain_format
@@ -283,8 +360,7 @@ def test_edge_plain_log_is_combined_and_drops_custom_headers_upstream() -> None:
 def test_access_index_uses_first_combined_field_as_client_ip(tmp_path: Path) -> None:
     path = tmp_path / "access.log"
     path.write_text(
-        '198.51.100.8 - - [30/Oct/2026:12:00:00 +0000] "GET / HTTP/1.1" '
-        '200 123 "-" "browser"\n',
+        '198.51.100.8 - - [30/Oct/2026:12:00:00 +0000] "GET / HTTP/1.1" 200 123 "-" "browser"\n',
         encoding="utf-8",
     )
     assert label.access_index(path)[0]["client_ip"] == "198.51.100.8"
@@ -301,9 +377,7 @@ def test_background_posts_have_empty_body_and_redirects_are_disabled() -> None:
     with pytest.raises(ValueError):
         background.target_url("https://example.org/", "wp")
     assert (
-        background.NoRedirects().redirect_request(
-            None, None, 302, "", {}, "https://example.org"
-        )
+        background.NoRedirects().redirect_request(None, None, 302, "", {}, "https://example.org")
         is None
     )
 
@@ -314,7 +388,7 @@ def test_background_thread_records_timing_and_network_failure_kinds(
     source = tmp_path / "requests.log"
     source.write_text(
         "".join(
-            f'198.18.0.{i} - - [30/Oct/2026:12:00:0{i} +0000] '
+            f"198.18.0.{i} - - [30/Oct/2026:12:00:0{i} +0000] "
             f'"GET /item HTTP/1.1" 200 1 "-" "agent-{i}"\n'
             for i in range(1, 5)
         ),

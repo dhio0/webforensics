@@ -1,37 +1,19 @@
-# Benchmark v2 status — round 5
+# Benchmark v2 status — resumable round 5
 
 ## Completed
 
-- **s01** was re-recorded from clean Docker volumes with all six round-5 fixes and
-  committed as `1264c64` (`bench v2: s01 re-recorded (round 5)`). Its artifact and
-  validation details are in [s01/notes.md](s01/notes.md).
-- The s01 scenario directory is 1,998,293 bytes. Its 15,000 background requests split
-  into 14,919 visitors and 81 scanners. Visitor responses were 13,383 HTTP 200, 984
-  HTTP 301, 168 HTTP 302, and 384 HTTP 404; scanners retained 81 HTTP 404 responses.
-- Seed 5031 selected the 54% attack start. Labeled attacker steps are at access-log
-  lines 8110–8114 and 8120, 8123, and 8126. There are two defanged files. Defender
-  reported zero detections. The ground-truth SHA-256 is
-  `f0cf95566e789266c568260c18933f81500aa5e58ba1b624c19b500761d847c0`.
-- Checks: restored all 2,845 manifest entries outside the repository and verified
-  hashes/stubs; evidence adapters reported zero parse failures (the two stub hash
-  differences are expected); schema and deterministic label regeneration passed;
-  full suite `533 passed, 8 skipped`; Ruff passed; goldens remain unchanged.
+- **s01** was re-recorded with Organization X visitor User-Agents and request shapes, paired with NASA KSC client identities because Organization X anonymizes almost all clients to one address. The transformation is documented in [s01/notes.md](s01/notes.md) and [SOURCES.md](SOURCES.md).
+- s01 contains 15,000 background requests (12,077 visitors, 2,923 scanners) and 15,026 total access rows. It has 10,384 background client identities; largest client share 0.973%, largest User-Agent share 4.407%, and visitor 2xx/3xx share 96.274%.
+- Attack labels are at lines 8110–8114, 8119, 8123, and 8126. The attack spans 53.973%–54.080% of the access log. There are two defanged files. Ground-truth SHA-256: `62a692cdbf2d15240c6e75bb912ae9ae54c1ada2e212695087b0d49dbb183858`.
+- The scenario folder is 3,259,570 bytes. `replay/self-check.txt` reports schema and regeneration PASS, zero access parse failures, expected visitor/scanner mix, attack position, and size. Restore verification checked 2,845 manifest entries and refused a repository destination. Defender was enabled with real-time protection and reported 0 detections.
+- Latest project checks: `pytest` 536 passed, 8 skipped; `ruff check .` passes; the existing benchmark scenarios and goldens are unchanged. No files under `src/webforensics/` changed. No analysis or evaluation was run.
 
-## s03 not recorded
+## Next
 
-No candidate checked met all three requirements together: a small PHP application, an
-explicit OSI-approved redistribution license, and a published SQL injection CVE whose
-advisory or fix identifies the vulnerable source location.
+Record **s03** using phpMyFAQ 3.2.5 (MPL-2.0, CVE-2024-27299), adapting the story to the verified vulnerability and documenting the adaptation. Then record dev scenarios s04, s05, s07, s08, s10, and s12, one commit each. Record held-out s02, s06, s09, and s11 last; add `HELDOUT.md` with each ground-truth hash and recording commit. Finish by updating README, SOURCES, and this status.
 
-- PHPGurukul Small CRM 3.0 has CVE-2024-44644 naming `manage-tickets.php`, but an
-  explicit OSI-approved license and licensed source release were not verified.
-- PHPGurukul Student Record System 3.20 has CVE-2024-44640 naming `add-course.php`,
-  but its redistribution license remains unclear.
-- phpMyFAQ 3.2.5 has an explicit MPL-2.0 license and verified CVE-2024-27299 source/fix
-  provenance in `phpmyfaq/src/phpMyFAQ/News.php` lines 289 and 335. It is a full FAQ
-  platform with an upstream repository about 52.8 MB, so it does not fit the small-app
-  requirement.
+## Leftover files
 
-No s03 source, image, attack, or ground truth was recorded. Per the task's stop condition,
-work stops here; s02 and s04–s12 have not started. See [SOURCES.md](SOURCES.md) for
-verification links and additional candidates.
+- `lab/v2/.cache/zenodo-20001206-organization-x.zip` is an ignored source archive retained for subsequent scenario replays.
+- `C:\Windows\Temp\m8v2-restore-s01-51b317c261f04798a7d4ca714451702a` is the verified full defanged restore tree. A cleanup attempt was blocked by policy; it is retained and should be removed manually when convenient.
+- The encrypted full capture remains outside Git in the directory configured by `lab/v2/.env`.

@@ -6,9 +6,9 @@
   "app_urls": [
     "/",
     "/2026/10/",
-    "/2026/10/30/hello-world/",
-    "/2026/10/30/hello-world/?replytocom=1",
-    "/2026/10/30/hello-world/feed/",
+    "/2026/10/31/hello-world/",
+    "/2026/10/31/hello-world/?replytocom=1",
+    "/2026/10/31/hello-world/feed/",
     "/?p=1",
     "/?p=2",
     "/?s=forensics",
@@ -50,8 +50,8 @@
     "/wp-includes/js/zxcvbn-async.min.js?ver=1.0",
     "/wp-includes/wlwmanifest.xml",
     "/wp-json/",
-    "/wp-json/oembed/1.0/embed?url=http%3A%2F%2Fedge%2F2026%2F10%2F30%2Fhello-world%2F",
-    "/wp-json/oembed/1.0/embed?url=http%3A%2F%2Fedge%2F2026%2F10%2F30%2Fhello-world%2F&format=xml",
+    "/wp-json/oembed/1.0/embed?url=http%3A%2F%2Fedge%2F2026%2F10%2F31%2Fhello-world%2F",
+    "/wp-json/oembed/1.0/embed?url=http%3A%2F%2Fedge%2F2026%2F10%2F31%2Fhello-world%2F&format=xml",
     "/wp-json/oembed/1.0/embed?url=http%3A%2F%2Fedge%2Fsample-page%2F",
     "/wp-json/oembed/1.0/embed?url=http%3A%2F%2Fedge%2Fsample-page%2F&format=xml",
     "/wp-json/wp/v2/media?per_page=100",
@@ -69,18 +69,19 @@
     "/wp-sitemap.xml",
     "/xmlrpc.php?rsd"
   ],
-  "source_lines": 5000,
+  "source_lines": 15000,
   "replay_lines": 15000,
+  "non_origin_targets_normalized_to_local_paths": 1,
   "counts": {
-    "visitor": 14919,
-    "scanner": 81
+    "visitor": 12077,
+    "scanner": 2923
   },
   "visitors": {
-    "requests": 14919,
+    "requests": 12077,
     "source_404s": 0
   },
   "scanners": {
-    "requests": 81,
+    "requests": 2923,
     "retained_source_paths": true
   },
   "status_note": "scanner source status codes are retained; visitor response mix comes from the access log after replay",
@@ -90,23 +91,58 @@
     "pace_seconds": 0.001,
     "attempted": 15000,
     "parsed": 15000,
+    "last_source_line": 15000,
     "failures": {
-      "http_error": 1617
+      "http_error": 3687
     },
-    "started_at_utc": "2026-10-30T16:56:12.454040+00:00",
-    "ended_at_utc": "2026-10-30T16:58:17.328008+00:00"
+    "started_at_utc": "2026-10-31T12:20:32.559457+00:00",
+    "ended_at_utc": "2026-10-31T12:22:25.092748+00:00"
   },
   "attack_start_seed": 5031,
   "attack_start_fraction": 0.54,
   "status_mix": {
     "visitor": {
-      "200": 13383,
-      "404": 384,
-      "301": 984,
-      "302": 168
+      "200": 10671,
+      "301": 740,
+      "302": 216,
+      "400": 71,
+      "401": 48,
+      "404": 290,
+      "405": 41
     },
     "scanner": {
-      "404": 81
+      "404": 2264,
+      "200": 642,
+      "302": 9,
+      "301": 7,
+      "403": 1
+    }
+  },
+  "source_preparation": {
+    "source_dataset": "Zenodo record 20001206, Organization X, MIT",
+    "request_source": "zenodo-20001206-organization-x.zip",
+    "client_identity_source": "NASA_access_log_Jul95.gz",
+    "client_identity_rule": "NASA source addresses sampled evenly in original order and paired with Organization X request rows in chronological order; Organization X anonymizes nearly all client addresses to one value",
+    "source_rows": 213121,
+    "selected_rows": 15000,
+    "distinct_user_agents": 903,
+    "maximum_user_agent_share": 0.044066666666666664,
+    "distinct_client_identities": 10384,
+    "maximum_client_share": 0.009733333333333333,
+    "scanner_rows_by_user_agent_or_source_404": 2923,
+    "source_status_mix": {
+      "200": 9414,
+      "206": 6,
+      "302": 4023,
+      "304": 293,
+      "403": 1,
+      "404": 1261,
+      "500": 2
+    },
+    "source_method_mix": {
+      "GET": 12693,
+      "HEAD": 669,
+      "POST": 1638
     }
   }
 }

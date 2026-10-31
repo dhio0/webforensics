@@ -1,8 +1,8 @@
 /
 /2026/10/
-/2026/10/30/hello-world/
-/2026/10/30/hello-world/?replytocom=1
-/2026/10/30/hello-world/feed/
+/2026/10/31/hello-world/
+/2026/10/31/hello-world/?replytocom=1
+/2026/10/31/hello-world/feed/
 /?p=1
 /?p=2
 /?s=forensics
@@ -44,8 +44,8 @@
 /wp-includes/js/zxcvbn-async.min.js?ver=1.0
 /wp-includes/wlwmanifest.xml
 /wp-json/
-/wp-json/oembed/1.0/embed?url=http%3A%2F%2Fedge%2F2026%2F10%2F30%2Fhello-world%2F
-/wp-json/oembed/1.0/embed?url=http%3A%2F%2Fedge%2F2026%2F10%2F30%2Fhello-world%2F&format=xml
+/wp-json/oembed/1.0/embed?url=http%3A%2F%2Fedge%2F2026%2F10%2F31%2Fhello-world%2F
+/wp-json/oembed/1.0/embed?url=http%3A%2F%2Fedge%2F2026%2F10%2F31%2Fhello-world%2F&format=xml
 /wp-json/oembed/1.0/embed?url=http%3A%2F%2Fedge%2Fsample-page%2F
 /wp-json/oembed/1.0/embed?url=http%3A%2F%2Fedge%2Fsample-page%2F&format=xml
 /wp-json/wp/v2/media?per_page=100

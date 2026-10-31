@@ -67,7 +67,7 @@
         "T1059.004"
       ],
       "log_file": "access.log.gz",
-      "line_no": 8120,
+      "line_no": 8119,
       "is_root_cause": false
     },
     {
@@ -94,7 +94,7 @@
   "files": [
     {
       "path": "wp-content/plugins/wp-file-manager/lib/files/maintenance-agent.php",
-      "sha256": "9b0616c2a8d660c1dd4851cd4d20d2f58cf575cfbdacbfcc2b7e5b4c056b8973",
+      "sha256": "27beedb327e7428508116ebe25a0ea3e6029f709fe40fa79604bb35547e34307",
       "change": "created",
       "role": "webshell_agent"
     },

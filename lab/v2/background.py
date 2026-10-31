@@ -19,12 +19,12 @@ from urllib.request import HTTPRedirectHandler, ProxyHandler, Request, build_ope
 
 COMBINED = re.compile(
     r'^(?P<ip>\S+) \S+ \S+ \[[^]]+\] "(?P<method>[A-Z]+) '
-    r'(?P<target>\S+) HTTP/[^\"]+" (?P<status>\d{3}) \S+ '
+    r'(?P<target>\S+) (?P<protocol>HTTP/[^\"]+)" (?P<status>\d{3}) \S+ '
     r'"[^\"]*" "(?P<ua>[^\"]*)"'
 )
 NASA = re.compile(
     r"^(?P<ip>\S+) (?:\S+ \S+ )?\[[^]]+\] "
-    r'"(?P<method>[A-Z]+) (?P<target>\S+) HTTP/[^\"]+" '
+    r'"(?P<method>[A-Z]+) (?P<target>\S+) (?P<protocol>HTTP/[^\"]+)" '
     r"(?P<status>\d{3}) \S+"
 )
 ALLOWED_TARGETS = {"wp", "smallapp", "dvwa"}
@@ -65,8 +65,8 @@ class IPMapper:
             source_ip = str(ipaddress.ip_address(source_ip))
         except ValueError:
             source_ip = source_ip.strip().rstrip(".").lower()
-            if not re.fullmatch(r"[a-z0-9_](?:[a-z0-9_.-]{0,251}[a-z0-9_])?", source_ip):
-                raise ValueError(f"invalid source host identity: {source_ip!r}") from None
+            if not source_ip or any(ord(char) < 32 or char.isspace() for char in source_ip):
+                raise ValueError("invalid source client identity") from None
         existing = self.mapping.get(source_ip)
         if existing is not None:
             return existing
@@ -89,7 +89,7 @@ class IPMapper:
 
     def write_tsv(self, path: Path) -> None:
         path.parent.mkdir(parents=True, exist_ok=True)
-        with path.open("w", encoding="ascii", newline="\n") as output:
+        with path.open("w", encoding="utf-8", newline="\n") as output:
             output.write(f"#seed={self.seed}\n")
             output.write("source_address_or_host\tmapped_ip\n")
             for source_ip, mapped_ip in self.mapping.items():
@@ -127,6 +127,7 @@ def target_url(target: str, service: str) -> str:
 class ReplayStats:
     attempted: int = 0
     parsed: int = 0
+    last_source_line: int = 0
     failures: Counter[str] = field(default_factory=Counter)
     started_at: str | None = None
     ended_at: str | None = None
@@ -138,6 +139,7 @@ class ReplayStats:
             "pace_seconds": pace,
             "attempted": self.attempted,
             "parsed": self.parsed,
+            "last_source_line": self.last_source_line,
             "failures": dict(sorted(self.failures.items())),
             "started_at_utc": self.started_at,
             "ended_at_utc": self.ended_at,
@@ -209,6 +211,7 @@ class BackgroundReplay:
             for line_number, line in enumerate(handle, 1):
                 if self.stats.attempted >= self.limit:
                     break
+                self.stats.last_source_line = line_number
                 if (
                     self.pause_at is not None
                     and self.stats.attempted >= int(self.limit * self.pause_at)
@@ -283,6 +286,7 @@ def main() -> None:
     parser.add_argument("--ready-file", type=Path)
     parser.add_argument("--continue-file", type=Path)
     args = parser.parse_args()
+    error_path = args.records.with_name("background-error.json")
     try:
         replay = BackgroundReplay(
             args.source,
@@ -298,7 +302,22 @@ def main() -> None:
         ).start()
         stats = replay.join()
     except (ValueError, OSError, RuntimeError, TimeoutError) as exc:
-        parser.error(str(exc))
+        error_type = type(replay.error or exc).__name__
+        error_path.write_text(
+            json.dumps(
+                {
+                    **replay.stats.to_json(args.source, args.seed, args.pace),
+                    "error_type": error_type,
+                },
+                indent=2,
+            )
+            + "\n",
+            encoding="utf-8",
+        )
+        parser.error(
+            f"background replay failed ({error_type}) after source line "
+            f"{replay.stats.last_source_line}"
+        )
     replay.ip_mapper.write_tsv(args.ip_map)
     replay.write_records(args.records)
     if args.ready_file:

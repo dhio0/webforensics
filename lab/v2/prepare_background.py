@@ -8,10 +8,16 @@ import json
 import re
 from collections import Counter
 from pathlib import Path
+from urllib.parse import urlsplit
 
-from background import parse_line
+try:
+    from .background import parse_line
+except ImportError:  # direct script execution from lab/v2
+    from background import parse_line
 
-SCANNER_UA = re.compile(r"bot|crawler|spider|scanner|sqlmap|nikto|nmap|gobuster|dirb", re.I)
+SCANNER_UA = re.compile(
+    r"bot|crawler|spider|scanner|sqlmap|nikto|nmap|gobuster|dirb|uptime|hetrix", re.I
+)
 FALLBACK_UA = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/128.0 Safari/537.36"
 
 
@@ -38,6 +44,21 @@ def prepare(
                 parsed.append(row)
     if not parsed:
         raise ValueError("source log had no parseable requests")
+    normalized_targets = 0
+    for row in parsed:
+        source_target = row["target"]
+        parts = urlsplit(source_target)
+        if source_target.startswith("//"):
+            source_target = "/" + source_target.lstrip("/")
+            normalized_targets += 1
+        elif parts.scheme or parts.netloc:
+            source_path = parts.path or "/"
+            source_target = source_path + (f"?{parts.query}" if parts.query else "")
+            normalized_targets += 1
+        if not source_target.startswith("/"):
+            source_target = "/" + source_target
+            normalized_targets += 1
+        row["target"] = source_target
     path_counts = Counter(row["target"].split("?", 1)[0] for row in parsed)
     rank_map = {
         source_path: urls[index % len(urls)]
@@ -50,7 +71,11 @@ def prepare(
         scanner = bool(SCANNER_UA.search(row["ua"])) or row["status"] == "404"
         row["class"] = "scanner" if scanner else "visitor"
         if not scanner:
-            row["target"] = rank_map[row["target"].split("?", 1)[0]]
+            source_query = row["target"].partition("?")[2]
+            ranked_url = rank_map[row["target"].split("?", 1)[0]]
+            ranked_path, _separator, ranked_query = ranked_url.partition("?")
+            query = source_query or ranked_query
+            row["target"] = f"{ranked_path}?{query}" if query else ranked_path
         classified.append(row)
     expanded = [classified[index % len(classified)] for index in range(limit)]
     output.parent.mkdir(parents=True, exist_ok=True)
@@ -58,7 +83,8 @@ def prepare(
         for row in expanded:
             handle.write(
                 f"{row['ip']} - - [30/Oct/2026:12:00:00 +0000] "
-                f'"{row["method"]} {row["target"]} HTTP/1.1" {row["status"]} 0 '
+                f'"{row["method"]} {row["target"]} {row.get("protocol", "HTTP/1.1")}" '
+                f"{row['status']} 0 "
                 f'"-" "{row["ua"] or FALLBACK_UA}"\n'
             )
     counts = Counter(row["class"] for row in expanded)
@@ -81,6 +107,7 @@ def prepare(
         "app_urls": urls,
         "source_lines": len(parsed),
         "replay_lines": len(expanded),
+        "non_origin_targets_normalized_to_local_paths": normalized_targets,
         "counts": dict(counts),
         "visitors": {
             "requests": counts["visitor"],
