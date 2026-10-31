@@ -1,0 +1,3 @@
+path	original_sha256	original_size	role	reason
+wp-content/plugins/m8v2-maintenance/m8v2-maintenance.php	5efe0bd2d8da8b522338743a2394a03eed7732d3ae12131a562911bdc65edf61	235	malicious_plugin	new or changed executable, script-tagged, zip, or phar file
+wp-content/uploads/wp-file-manager-pro/fm_backup/index.php	e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855	0	new_or_modified_artifact	new or changed executable, script-tagged, zip, or phar file

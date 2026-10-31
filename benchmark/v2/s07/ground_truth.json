@@ -1,0 +1,160 @@
+{
+  "scenario_id": "s07",
+  "description": "An attacker guesses the WordPress administrator password, signs in, and uploads a small plugin that leaves a text marker when activated.",
+  "attacker_ips": [
+    "192.0.2.131"
+  ],
+  "steps": [
+    {
+      "id": "site_check",
+      "category": "reconnaissance",
+      "mitre": [
+        "T1595"
+      ],
+      "log_file": "access.log.gz",
+      "line_no": 7351,
+      "is_root_cause": false,
+      "expected_in_timeline": false
+    },
+    {
+      "id": "login_page_probe",
+      "category": "reconnaissance",
+      "mitre": [
+        "T1595"
+      ],
+      "log_file": "access.log.gz",
+      "line_no": 7352,
+      "is_root_cause": false,
+      "expected_in_timeline": false
+    },
+    {
+      "id": "admin_area_probe",
+      "category": "reconnaissance",
+      "mitre": [
+        "T1595"
+      ],
+      "log_file": "access.log.gz",
+      "line_no": 7353,
+      "is_root_cause": false,
+      "expected_in_timeline": false
+    },
+    {
+      "id": "plugin_upload_probe",
+      "category": "reconnaissance",
+      "mitre": [
+        "T1595"
+      ],
+      "log_file": "access.log.gz",
+      "line_no": 7354,
+      "is_root_cause": false,
+      "expected_in_timeline": false
+    },
+    {
+      "id": "hydra_valid_login",
+      "category": "brute_force_success",
+      "mitre": [
+        "T1110.001"
+      ],
+      "log_file": "access.log.gz",
+      "line_no": 7362,
+      "is_root_cause": false
+    },
+    {
+      "id": "login_form",
+      "category": "valid_account_access",
+      "mitre": [
+        "T1078.003"
+      ],
+      "log_file": "access.log.gz",
+      "line_no": 7365,
+      "is_root_cause": false
+    },
+    {
+      "id": "editor_login",
+      "category": "valid_account_access",
+      "mitre": [
+        "T1078.003"
+      ],
+      "log_file": "access.log.gz",
+      "line_no": 7366,
+      "is_root_cause": false
+    },
+    {
+      "id": "plugin_upload_form",
+      "category": "valid_account_access",
+      "mitre": [
+        "T1078.003"
+      ],
+      "log_file": "access.log.gz",
+      "line_no": 7367,
+      "is_root_cause": false
+    },
+    {
+      "id": "plugin_upload",
+      "category": "malicious_plugin_upload",
+      "mitre": [
+        "T1505.003"
+      ],
+      "log_file": "access.log.gz",
+      "line_no": 7368,
+      "is_root_cause": true
+    },
+    {
+      "id": "plugin_activation",
+      "category": "persistence_activation",
+      "mitre": [
+        "T1505.003"
+      ],
+      "log_file": "access.log.gz",
+      "line_no": 7370,
+      "is_root_cause": false
+    },
+    {
+      "id": "marker_check",
+      "category": "post_compromise_check",
+      "mitre": [
+        "T1105"
+      ],
+      "log_file": "access.log.gz",
+      "line_no": 7371,
+      "is_root_cause": false
+    }
+  ],
+  "files": [
+    {
+      "path": "wp-content/plugins/m8v2-maintenance/m8v2-maintenance.php",
+      "sha256": "5efe0bd2d8da8b522338743a2394a03eed7732d3ae12131a562911bdc65edf61",
+      "change": "created",
+      "role": "malicious_plugin"
+    },
+    {
+      "path": "wp-content/uploads/m8v2-s07-marker.txt",
+      "sha256": "c48caafad19f81d57fe917b47a7f9620e8bda89489dc95c2890e2ffb8631c108",
+      "change": "created",
+      "role": "plugin_marker"
+    },
+    {
+      "path": "wp-content/uploads/wp-file-manager-pro/fm_backup/index.php",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "change": "modified",
+      "role": "side_effect",
+      "expected_in_report": false
+    }
+  ],
+  "root_cause_step": "plugin_upload",
+  "split": "dev",
+  "expected_rule_ids": [],
+  "analysis": {
+    "access_logs": [
+      "access.log.gz"
+    ],
+    "error_logs": [
+      "app-error.log"
+    ],
+    "error_log_format": "apache",
+    "error_log_utc_offset": "+0000",
+    "manifest": "manifest.tsv",
+    "baseline": "baseline.tsv",
+    "trusted_proxies": []
+  }
+}
