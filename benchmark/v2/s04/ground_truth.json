@@ -75,10 +75,10 @@
   "files": [
     {
       "path": "data/tracking31102026",
-      "sha256": "13e934c048587d972fcb7a914d139139d8af47b2b62aefcbde904bd2933eba3e",
+      "sha256": "fbc48e7b9b0f594ed126b31f38b8ac929bacac310b6fe703b4045d0fb9b58279",
       "change": "modified",
-      "role": "application_runtime_data",
-      "expected_in_report": true
+      "role": "side_effect",
+      "expected_in_report": false
     },
     {
       "path": "images/category-1-.php..",

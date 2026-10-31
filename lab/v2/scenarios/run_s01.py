@@ -143,6 +143,14 @@ def main() -> None:
     )
     (replay / "isolation-test.txt").write_text(isolation.stdout, encoding="utf-8")
     run("exec", "-T", "attacker", "python", "/opt/crawl_app.py", "/replay/app_urls.txt")
+    run(
+        "exec",
+        "-T",
+        "edge",
+        "sh",
+        "-c",
+        "truncate -s 0 /var/log/v2/access.log /var/log/v2/replay/labels.log",
+    )
     subprocess.run(
         [
             str(PYTHON),
@@ -360,6 +368,14 @@ def main() -> None:
     labels.unlink()
     labels = replay / "labels.log.gz"
     run_label[run_label.index(str(replay / "labels.log"))] = str(labels)
+    rewrite = [
+        str(PYTHON),
+        str(ROOT / "lab" / "v2" / "rewrite_user_agents.py"),
+        str(ROOT / "benchmark" / "v2" / SCENARIO),
+        "--drop",
+        "M8-pristine-app-crawler",
+    ]
+    subprocess.run(rewrite, cwd=ROOT, check=True)
     subprocess.run(run_label, cwd=ROOT, check=True)
     subprocess.run(
         [str(PYTHON), str(ROOT / "lab" / "v2" / "validate_evidence.py"), str(evidence)],

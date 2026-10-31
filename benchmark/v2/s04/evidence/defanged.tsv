@@ -1,3 +1,3 @@
 path	original_sha256	original_size	role	reason
-data/tracking31102026	13e934c048587d972fcb7a914d139139d8af47b2b62aefcbde904bd2933eba3e	4042390	application_runtime_data	changed file exceeds public snapshot size limit; full copy remains encrypted
+data/tracking31102026	fbc48e7b9b0f594ed126b31f38b8ac929bacac310b6fe703b4045d0fb9b58279	4116295	side_effect	changed file exceeds public snapshot size limit; full copy remains encrypted
 images/category-1-.php..	7ee88917606d721e1485abcd6885df913264b81c5d2ef5ce39dda9609e2490ed	89	attacker_file	new or changed executable, script-tagged, zip, or phar file

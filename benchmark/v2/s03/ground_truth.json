@@ -64,10 +64,10 @@
   "files": [
     {
       "path": "data/tracking31102026",
-      "sha256": "a3c6b1d913e81f94d8d371bb24d357779ade86a94d21f1a7be7cbb6ca3a4b3a4",
+      "sha256": "7f66af062423c42b0da45cbcf92d82c5975f40a1fbdad59c833c169b566e571b",
       "change": "modified",
-      "role": "application_runtime_data",
-      "expected_in_report": true
+      "role": "side_effect",
+      "expected_in_report": false
     }
   ],
   "root_cause_step": "save_news_sql_injection",

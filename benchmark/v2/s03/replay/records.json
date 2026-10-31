@@ -55,8 +55,8 @@
   "files": [
     {
       "path": "data/tracking31102026",
-      "role": "application_runtime_data",
-      "expected_in_report": true
+      "role": "side_effect",
+      "expected_in_report": false
     }
   ],
   "vulnerable_code": {

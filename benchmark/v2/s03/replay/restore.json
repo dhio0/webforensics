@@ -1,7 +1,7 @@
 {
   "application": "phpMyFAQ 3.2.5",
   "app_type": "phpmyfaq",
-  "image": "sha256:ad332294411c32cded91f9bdb2f650652ada270b20e07db6927dfa368d65f390",
+  "image": "sha256:375e21ecfe8e322c83567b110c8460a499fd14a55cf2c1961ce4b85a5dcd4534",
   "webroot": "/var/www/html",
   "setup_overlay": "replay/restore-overlay"
 }

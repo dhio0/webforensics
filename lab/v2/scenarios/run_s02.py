@@ -175,9 +175,7 @@ def main() -> None:
     )
     run("up", "-d", "db", "dvwa", "edge", "attacker", "background", "collector")
     wait_for_edge()
-    isolation = docker_log(
-        "exec", "-T", "attacker", "python", "/opt/scenarios/s02.py", "isolation"
-    )
+    isolation = docker_log("exec", "-T", "attacker", "python", "/opt/scenarios/s02.py", "isolation")
     (replay / "isolation-test.txt").write_text(isolation.stdout, encoding="utf-8")
     run("exec", "-T", "attacker", "python", "/opt/scenarios/s05.py", "setup")
     run(
@@ -313,11 +311,16 @@ def main() -> None:
             match = re.search(r'"[A-Z]+ [^ ]+ HTTP/[0-9.]+" (\d{3}) ', access_line)
             if item is None or match is None:
                 raise RuntimeError("background source/access row could not be classified")
-            group = "scanner" if item["status"] == "404" or re.search(
-                r"bot|crawler|spider|scanner|sqlmap|nikto|nmap|gobuster|dirb|uptime|hetrix",
-                item["ua"],
-                re.I,
-            ) else "visitor"
+            group = (
+                "scanner"
+                if item["status"] == "404"
+                or re.search(
+                    r"bot|crawler|spider|scanner|sqlmap|nikto|nmap|gobuster|dirb|uptime|hetrix",
+                    item["ua"],
+                    re.I,
+                )
+                else "visitor"
+            )
             code = match.group(1)
             status_mix[group][code] = status_mix[group].get(code, 0) + 1
     plan["status_mix"] = status_mix
@@ -384,6 +387,14 @@ def main() -> None:
     ):
         packed.writelines(source)
     labels.unlink()
+    rewrite = [
+        str(PYTHON),
+        str(ROOT / "lab" / "v2" / "rewrite_user_agents.py"),
+        str(ROOT / "benchmark" / "v2" / SCENARIO),
+    ]
+    if SCENARIO == "s01":
+        rewrite.extend(("--drop", "M8-pristine-app-crawler"))
+    subprocess.run(rewrite, cwd=ROOT, check=True)
     subprocess.run(
         [
             str(PYTHON),

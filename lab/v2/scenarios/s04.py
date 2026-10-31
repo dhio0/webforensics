@@ -224,8 +224,8 @@ def attack() -> None:
             },
             {
                 "path": f"/data/tracking{datetime.now(UTC).strftime('%d%m%Y')}",
-                "role": "application_runtime_data",
-                "expected_in_report": True,
+                "role": "side_effect",
+                "expected_in_report": False,
             },
         ],
         "vulnerable_code": {

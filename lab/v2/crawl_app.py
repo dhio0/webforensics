@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import posixpath
 import re
 import xml.etree.ElementTree as ET
 from collections import deque
@@ -46,14 +47,22 @@ def crawl(output: Path, base: str = BASE) -> int:
     visited: set[str] = set()
     urls: set[str] = set()
 
-    def normalize(value: str, base: str = BASE) -> str | None:
-        parts = urlsplit(urljoin(base, value))
+    def normalize(value: str, base_url: str) -> str | None:
+        parts = urlsplit(urljoin(base_url, value))
         if parts.scheme != "http" or parts.netloc not in {host, "edge"}:
             return None
-        return urlunsplit(("http", host, parts.path or "/", parts.query, ""))
+        path = posixpath.normpath(parts.path or "/")
+        if parts.path.endswith("/") and path != "/":
+            path += "/"
+        segments = [segment for segment in path.split("/") if segment]
+        for start in range(len(segments)):
+            for width in range(1, (len(segments) - start) // 2 + 1):
+                if segments[start : start + width] == segments[start + width : start + 2 * width]:
+                    return None
+        return urlunsplit(("http", host, path, parts.query, ""))
 
     while queue and len(visited) < 250:
-        url = normalize(queue.popleft())
+        url = normalize(queue.popleft(), base)
         if url is None:
             continue
         parts = urlsplit(url)
@@ -62,7 +71,16 @@ def crawl(output: Path, base: str = BASE) -> int:
         visited.add(url)
         urls.add(parts.path + (("?" + parts.query) if parts.query else ""))
         try:
-            request = Request(url, headers={"User-Agent": "M8-pristine-app-crawler"})
+            request = Request(
+                url,
+                headers={
+                    "User-Agent": (
+                        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+                        "AppleWebKit/537.36 (KHTML, like Gecko) "
+                        "Chrome/131.0.0.0 Safari/537.36"
+                    )
+                },
+            )
             with opener.open(request, timeout=5) as response:
                 body = response.read(1_000_000)
                 content_type = response.headers.get("Content-Type", "")
@@ -71,7 +89,7 @@ def crawl(output: Path, base: str = BASE) -> int:
         if "json" in content_type:
             for match in re.findall(rb'"link"\s*:\s*"([^"\\]+)', body):
                 candidate = match.decode("utf-8", "ignore").replace("\\/", "/")
-                normalized = normalize(candidate)
+                normalized = normalize(candidate, response.geturl())
                 if normalized:
                     queue.append(normalized)
         elif "xml" in content_type or parts.path.endswith(".xml"):
@@ -79,7 +97,7 @@ def crawl(output: Path, base: str = BASE) -> int:
                 root = ET.fromstring(body)
                 for element in root.iter():
                     if element.text and element.tag.endswith("loc"):
-                        normalized = normalize(element.text)
+                        normalized = normalize(element.text, response.geturl())
                         if normalized:
                             queue.append(normalized)
             except ET.ParseError:
@@ -88,7 +106,7 @@ def crawl(output: Path, base: str = BASE) -> int:
             parser = Links()
             parser.feed(body.decode("utf-8", "replace"))
             for href in parser.values:
-                normalized = normalize(href, url)
+                normalized = normalize(href, response.geturl())
                 if normalized:
                     queue.append(normalized)
     if host == "wp":

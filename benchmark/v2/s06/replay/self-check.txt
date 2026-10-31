@@ -8,6 +8,9 @@
   "largest_background_client_share": 0.00973,
   "background_user_agents": 903,
   "largest_user_agent_share": 0.04407,
+  "top_user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/217.155.106.155 Safari/537.36 Edg/217.155.106.155",
+  "nested_path_share": 0.00027,
+  "request_paths_with_lab_terms": 0,
   "visitor_success_share": 0.93467,
   "scanner_rows": 2923,
   "attack_position_range": [
@@ -15,6 +18,6 @@
     0.30023
   ],
   "defanged_files": 0,
-  "scenario_bytes": 2068966,
-  "ground_truth_sha256": "83863843daa1c18bfd5df5800265fa6ec3c535a03755e226746598d1a50f8eaf"
+  "scenario_bytes": 2069255,
+  "ground_truth_sha256": "2719dda470be507574b2f4a004e85151ece9829dd8daf12a451871812d76e327"
 }

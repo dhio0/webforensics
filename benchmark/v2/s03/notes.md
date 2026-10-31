@@ -17,6 +17,8 @@ The replay authenticates the seeded benchmark administrator, opens Save News, ru
 - The s03 folder is 3,496,035 bytes. The schema, byte-identical ground-truth regeneration, background-diversity checks, evidence adapters, restore of 2,880 manifest entries, and Defender scan all pass. Defender realtime protection was enabled and detections were zero.
 - Restore uses the pinned phpMyFAQ image plus five small setup-generated `index.html` files from `replay/restore-overlay/` and the locally configured database settings. The setup overlay contains no credentials.
 
+The tracking file changes with ordinary traffic and is recorded as a side effect with `expected_in_report: false`.
+
 ## Sources
 
 - [Maintainer security advisory GHSA-qgxx-4xv5-6hcw](https://github.com/thorsten/phpMyFAQ/security/advisories/GHSA-qgxx-4xv5-6hcw)

@@ -29,7 +29,7 @@ the replay sidecar and the corresponding request lines in
 | `category_image_upload` | 6,455 | HTTP 200; root cause |
 | `uploaded_file_execution` | 6,456 | HTTP 200; execution confirmed |
 
-The attack steps fall at 42.989%–43.023% of the 15,006-row access log. The
+The attack steps fall at 42.989%â€“43.023% of the 15,006-row access log. The
 15,000 background rows comprise 12,077 visitors and 2,923 scanner rows. There
 are 10,384 client identities and 903 User-Agents; the largest client share is
 0.973% and the largest User-Agent share is 4.407%. Visitor 2xx/3xx success is

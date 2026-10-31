@@ -46,8 +46,8 @@ the access log and sidecar; the crawl ran before incident logging. Ground truth 
 regenerated with `label.py` so all reported access lines match the retained evidence.
 
 `crawl_app.py` resolves each link against the response's final URL, normalizes its path,
-rejects adjacent repeated path segments, and deduplicates normalized URLs. Redirect errors
-(including loops) are discarded. The all-scenario self-check rejects any access-log
+rejects adjacent repeated segment blocks such as repeated asset prefixes, and deduplicates
+normalized URLs. Redirect errors (including loops) are discarded. The all-scenario self-check rejects any access-log
 User-Agent containing a lab label, reports request paths that contain those words, and
 requires fewer than 1% of background paths to repeat a segment three or more times.
 

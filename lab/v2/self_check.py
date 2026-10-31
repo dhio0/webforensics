@@ -6,6 +6,7 @@ import argparse
 import gzip
 import hashlib
 import json
+import re
 import tempfile
 from collections import Counter
 from pathlib import Path
@@ -43,6 +44,9 @@ def check_scenario(root: Path, scenario_id: str) -> dict[str, Any]:
 
     access_name = truth["analysis"]["access_logs"][0]
     access_rows = label.access_index(evidence / access_name)
+    opener = gzip.open if (evidence / access_name).suffix == ".gz" else Path.open
+    with opener(evidence / access_name, "rt", encoding="utf-8", errors="replace") as stream:
+        access_lines = stream.readlines()
     sidecar_path = replay / "labels.log.gz"
     label.join_log_rows(label.sidecar_rows(sidecar_path), access_rows)
     generated = label.make_ground_truth(records, evidence, sidecar_path, scenario_id)
@@ -94,6 +98,36 @@ def check_scenario(root: Path, scenario_id: str) -> dict[str, Any]:
     if "192.0.2.135" in {row["client_ip"] for row in access_rows}:
         raise ValueError("background container address appears in evidence")
 
+    user_agents: list[str] = []
+    request_paths: list[str] = []
+    for line_no, line in enumerate(access_lines, 1):
+        fields = re.search(
+            r'"(?P<request>(?:[^"\\]|\\.)*)" \d{3} \d+ "(?:[^"\\]|\\.)*" '
+            r'"(?P<ua>(?:[^"\\]|\\.)*)"$',
+            line.rstrip("\r\n"),
+        )
+        if not fields:
+            raise ValueError(f"access line {line_no} has no request or User-Agent field")
+        ua = label.unescape_nginx(fields["ua"])
+        request = label.unescape_nginx(fields["request"])
+        user_agents.append(ua)
+        parts = request.split()
+        request_paths.append(parts[1].split("?", 1)[0] if len(parts) >= 2 else "")
+        if re.search(r"m8|m8v2|crawler", ua, re.I):
+            raise ValueError(f"access line {line_no} has a lab-labelled User-Agent")
+
+    background_line_numbers = {row["line_no"] for row in actual_background}
+    nested_count = 0
+    for line_no, path in enumerate(request_paths, 1):
+        if line_no not in background_line_numbers:
+            continue
+        segments = Counter(part for part in path.split("/") if part)
+        if any(count >= 3 for count in segments.values()):
+            nested_count += 1
+    nested_share = nested_count / len(actual_background)
+    if nested_share >= 0.01:
+        raise ValueError("1% or more of background paths repeat a segment three times")
+
     source_uas = Counter(row["ua"] for row in source)
     if max(source_uas.values()) / len(source) > 0.20:
         raise ValueError("a background User-Agent exceeds 20%")
@@ -127,6 +161,8 @@ def check_scenario(root: Path, scenario_id: str) -> dict[str, Any]:
         fractions = [line / len(access_rows) for line in mapped_attacker_lines]
         if min(fractions) < 0.30 or max(fractions) > 0.70:
             raise ValueError("attacker lines fall outside the 30-70% interval")
+    if root_step and not 0.30 <= root_step["line_no"] / len(access_rows) <= 0.70:
+        raise ValueError("compromise root cause falls outside the 30-70% interval")
 
     current = collect.read_manifest(evidence / "manifest.tsv")
     baseline = collect.read_manifest(evidence / "baseline.tsv")
@@ -160,6 +196,11 @@ def check_scenario(root: Path, scenario_id: str) -> dict[str, Any]:
         "largest_background_client_share": round(max(client_counts.values()) / len(source), 5),
         "background_user_agents": len(source_uas),
         "largest_user_agent_share": round(max(source_uas.values()) / len(source), 5),
+        "top_user_agent": Counter(user_agents).most_common(1)[0][0],
+        "nested_path_share": round(nested_share, 5),
+        "request_paths_with_lab_terms": sum(
+            bool(re.search(r"m8|m8v2|crawler", path, re.I)) for path in request_paths
+        ),
         "visitor_success_share": round(visitor_success / visitor_lines, 5),
         "scanner_rows": scanner_lines,
         "attack_position_range": [
