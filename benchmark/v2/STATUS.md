@@ -27,9 +27,11 @@
 
 - **s06 (held-out, adapted)** records a DVWA LFI read of the isolated container's `/etc/passwd`. The marked file-read request is line 4,505; no RCE or CVE is claimed because a repeatable log/session poisoning path was not verified. The 15,000 background rows accompany 15,005 total access rows; no file was changed or defanged. Ground-truth SHA-256 is `83863843daa1c18bfd5df5800265fa6ec3c535a03755e226746598d1a50f8eaf`; scenario folder size is 2,079,385 bytes. Schema, byte-identical regeneration, parser validation, self-check, restore, and Defender scan pass with zero detections. See `s06/notes.md` for the adaptation.
 
+- **s09 (held-out)** records a WordPress administrator installing the local package and the pinned Weevely agent changing the agent's modification time. The marked upload is line 9,905 and the verified timestamp operation is root cause at line 9,912. It has 15,000 background rows, 15,016 total rows, three defanged files, and zero Defender detections. Ground-truth SHA-256 is `85c6374f9de51f39758e194f6c0faa0fec3713a7d533d0db8fdb0cbc1d1e4500`; folder size is 3,257,000 bytes. The authenticated installer path has no separate CVE claim.
+
 ## Next exact step
 
-Record held-out scenario s09 for timestamp changes with the pinned Weevely tool if its file timestamp module works in the isolated WordPress app. If it cannot be verified, document the skip and why. Then finish `HELDOUT.md`, README/SOURCES, and final acceptance checks. s11 was recorded first among held-outs; s02 and s06 are now recorded.
+All four held-out IDs now have recordings (s11 was recorded first; s02, s06, and s09 followed). Add `HELDOUT.md` with hashes and recording commits, replace the stale README status with the final scenario table and restore/scoring instructions, then run every requested acceptance check and set this file to complete.
 
 ## Remaining plan
 
@@ -45,6 +47,7 @@ Record held-out scenario s09 for timestamp changes with the pinned Weevely tool 
 - The encrypted s05 full capture remains outside Git in the directory configured by `lab/v2/.env`.
 - The encrypted s08 full capture remains outside Git in the directory configured by `lab/v2/.env`.
 - The encrypted s10 full capture remains outside Git in the directory configured by `lab/v2/.env`.
+- The encrypted s09 full capture remains outside Git in the directory configured by `lab/v2/.env`.
 - The encrypted s02 full capture remains outside Git in the directory configured by `lab/v2/.env`.
 - The encrypted s06 full capture remains outside Git in the directory configured by `lab/v2/.env`.
 - s01's restored tree remains at `C:\Windows\Temp\m8v2-restore-s01-51b317c261f04798a7d4ca714451702a`. s03 restore-validation trees remain under `%TEMP%` from failed attempts; the successful verification tree is `%TEMP%\m8v2-restore-s03-benchv2-final-11`.
@@ -53,6 +56,7 @@ Record held-out scenario s09 for timestamp changes with the pinned Weevely tool 
 - The s07 restore-validation trees remain at `%TEMP%\m8v2-restore-s07-benchv2-final-01` and `-02`.
 - The s08 restore-validation tree remains at `%TEMP%\m8v2-restore-s08-benchv2-final-01`.
 - The s10 restore-validation tree remains at `%TEMP%\m8v2-restore-s10-benchv2-final-01`.
+- The s09 restore-validation tree remains at `%TEMP%\m8v2-restore-s09-benchv2-final-01`.
 - The s02 restore-validation tree remains at `%TEMP%\m8v2-restore-s02-benchv2-final-01`.
 - The s06 restore-validation tree remains at `%TEMP%\m8v2-restore-s06-benchv2-final-01`.
 - The s11 restore-validation tree remains at `%TEMP%\m8v2-restore-s11-benchv2-final-01`.

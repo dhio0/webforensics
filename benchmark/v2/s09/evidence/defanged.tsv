@@ -1,0 +1,4 @@
+path	original_sha256	original_size	role	reason
+wp-content/plugins/m8v2-timestomp/m8v2-s09-agent.php	3786505a11c5836d6503a52380fbe1464fa0670942ed92b0e9b8d8c4fc10edf8	516	webshell_agent	new or changed executable, script-tagged, zip, or phar file
+wp-content/plugins/m8v2-timestomp/m8v2-timestomp.php	8d6f593c95bb4c31c4da7fcf5833c89d898226fc776a37e5d5fe5b972e4fbf2b	66	attacker_plugin	new or changed executable, script-tagged, zip, or phar file
+wp-content/uploads/wp-file-manager-pro/fm_backup/index.php	e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855	0	new_or_modified_artifact	new or changed executable, script-tagged, zip, or phar file

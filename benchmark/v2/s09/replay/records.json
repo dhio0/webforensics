@@ -1,0 +1,81 @@
+{
+  "scenario_id": "s09",
+  "description": "An administrator installs a local fixture archive containing a Weevely agent. The pinned agent's file timestamp module changes the agent's modification time to an earlier date and verifies the result.",
+  "attacker_ips": [
+    "192.0.2.131"
+  ],
+  "root_cause_step": "agent_timestomp",
+  "steps": [
+    {
+      "id": "administrator_login",
+      "category": "valid_account_access",
+      "mitre": [
+        "T1078.003"
+      ],
+      "label_method": "header",
+      "expected_in_timeline": false
+    },
+    {
+      "id": "plugin_upload_form",
+      "category": "reconnaissance",
+      "mitre": [
+        "T1595"
+      ],
+      "label_method": "header",
+      "expected_in_timeline": false
+    },
+    {
+      "id": "agent_upload",
+      "category": "tool_upload",
+      "mitre": [
+        "T1505.003"
+      ],
+      "label_method": "header",
+      "expected_in_timeline": false
+    },
+    {
+      "id": "agent_timestomp",
+      "category": "timestamp_manipulation",
+      "mitre": [
+        "T1070.006"
+      ],
+      "label_method": "attacker_ip_time_window",
+      "attacker_ip": "192.0.2.131",
+      "started_at": "2026-10-31T16:23:05.737169+00:00",
+      "ended_at": "2026-10-31T16:23:06.018309+00:00",
+      "request": "POST /wp-content/plugins/m8v2-timestomp/m8v2-s09-agent.php HTTP/1.1",
+      "status": 200,
+      "candidate_ordinal": 1
+    }
+  ],
+  "files": [
+    {
+      "path": "/wp-content/plugins/m8v2-timestomp/m8v2-timestomp.php",
+      "role": "attacker_plugin"
+    },
+    {
+      "path": "/wp-content/plugins/m8v2-timestomp/m8v2-s09-agent.php",
+      "role": "webshell_agent"
+    },
+    {
+      "path": "/wp-content/uploads/wp-file-manager-pro/fm_backup/index.php",
+      "role": "side_effect",
+      "expected_in_report": false
+    }
+  ],
+  "analysis": {
+    "access_logs": [
+      "access.log.gz"
+    ],
+    "error_logs": [
+      "app-error.log"
+    ],
+    "error_log_format": "apache",
+    "error_log_utc_offset": "+0000",
+    "manifest": "manifest.tsv",
+    "baseline": "baseline.tsv",
+    "trusted_proxies": []
+  },
+  "split": "held_out",
+  "expected_rule_ids": []
+}
