@@ -1,8 +1,9 @@
-"""Crawl the pristine WordPress app internally before background replay."""
+"""Crawl a pristine scenario app internally before background replay."""
 
 from __future__ import annotations
 
 import re
+import argparse
 import xml.etree.ElementTree as ET
 from collections import deque
 from html.parser import HTMLParser
@@ -27,27 +28,36 @@ class Links(HTMLParser):
                 self.values.append(value)
 
 
-def crawl(output: Path) -> int:
+def crawl(output: Path, base: str = BASE) -> int:
     opener = build_opener(ProxyHandler({}))
-    queue = deque([BASE + "/", BASE + "/wp-login.php", BASE + "/wp-sitemap.xml"])
-    for kind in ("pages", "posts", "media"):
-        queue.append(f"{BASE}/wp-json/wp/v2/{kind}?per_page=100")
-    queue.extend(f"{BASE}/?s={quote(term)}" for term in SEEDS)
+    host = urlsplit(base).netloc
+    queue = deque([base.rstrip("/") + "/"])
+    if host == "wp":
+        queue.extend((BASE + "/wp-login.php", BASE + "/wp-sitemap.xml"))
+        for kind in ("pages", "posts", "media"):
+            queue.append(f"{BASE}/wp-json/wp/v2/{kind}?per_page=100")
+        queue.extend(f"{BASE}/?s={quote(term)}" for term in SEEDS)
+    else:
+        queue.extend(
+            f"{base.rstrip('/')}{path}"
+            for path in ("/login.php", "/search.php", "/admin/index.php")
+        )
+        queue.extend(f"{base.rstrip('/')}/search.php?search={quote(term)}" for term in SEEDS)
     visited: set[str] = set()
     urls: set[str] = set()
 
     def normalize(value: str, base: str = BASE) -> str | None:
         parts = urlsplit(urljoin(base, value))
-        if parts.scheme != "http" or parts.netloc not in {"wp", "edge"}:
+        if parts.scheme != "http" or parts.netloc not in {host, "edge"}:
             return None
-        return urlunsplit(("http", "wp", parts.path or "/", parts.query, ""))
+        return urlunsplit(("http", host, parts.path or "/", parts.query, ""))
 
     while queue and len(visited) < 250:
         url = normalize(queue.popleft())
         if url is None:
             continue
         parts = urlsplit(url)
-        if parts.netloc != "wp" or parts.scheme != "http" or url in visited:
+        if parts.netloc != host or parts.scheme != "http" or url in visited:
             continue
         visited.add(url)
         urls.add(parts.path + (("?" + parts.query) if parts.query else ""))
@@ -81,7 +91,10 @@ def crawl(output: Path) -> int:
                 normalized = normalize(href, url)
                 if normalized:
                     queue.append(normalized)
-    urls.update({"/", "/wp-login.php", *(f"/?s={quote(term)}" for term in SEEDS)})
+    if host == "wp":
+        urls.update({"/", "/wp-login.php", *(f"/?s={quote(term)}" for term in SEEDS)})
+    else:
+        urls.update({"/", "/login.php", *(f"/search.php?search={quote(term)}" for term in SEEDS)})
     output.parent.mkdir(parents=True, exist_ok=True)
     output.write_text("\n".join(sorted(urls)) + "\n", encoding="utf-8")
     print(f"crawled={len(visited)} app_urls={len(urls)}")
@@ -91,4 +104,8 @@ def crawl(output: Path) -> int:
 if __name__ == "__main__":
     import sys
 
-    crawl(Path(sys.argv[1]))
+    parser = argparse.ArgumentParser()
+    parser.add_argument("output", type=Path)
+    parser.add_argument("--base", default=BASE)
+    args = parser.parse_args()
+    crawl(args.output, args.base)
