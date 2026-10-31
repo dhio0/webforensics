@@ -1,6 +1,6 @@
 {
   "scenario_id": "s06",
-  "description": "A logged-in user invokes the DVWA local-file-inclusion exercise and reads a container-local system file. No log poisoning, command execution, or file write is claimed; root_cause_step remains null.",
+  "description": "A logged-in user invokes the DVWA local-file-inclusion exercise and reads a container-local system file. The successful file read is the root cause; no log poisoning, command execution, or file write is claimed.",
   "attacker_ips": [
     "192.0.2.131"
   ],
@@ -24,12 +24,12 @@
       ],
       "log_file": "access.log.gz",
       "line_no": 4505,
-      "is_root_cause": false,
-      "expected_in_timeline": false
+      "is_root_cause": true,
+      "expected_in_timeline": true
     }
   ],
   "files": [],
-  "root_cause_step": null,
+  "root_cause_step": "lfi_file_read",
   "split": "held_out",
   "expected_rule_ids": [],
   "analysis": {

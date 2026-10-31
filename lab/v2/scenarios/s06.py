@@ -93,11 +93,11 @@ def attack() -> None:
         "scenario_id": "s06",
         "description": (
             "A logged-in user invokes the DVWA local-file-inclusion exercise and reads a "
-            "container-local system file. No log poisoning, command execution, or file write "
-            "is claimed; root_cause_step remains null."
+            "container-local system file. The successful file read is the root cause; no "
+            "log poisoning, command execution, or file write is claimed."
         ),
         "attacker_ips": [ATTACKER_IP],
-        "root_cause_step": None,
+        "root_cause_step": "lfi_file_read",
         "steps": [
             {
                 "id": "training_account_login",
@@ -111,7 +111,7 @@ def attack() -> None:
                 "category": "local_file_inclusion",
                 "mitre": ["T1005"],
                 "label_method": "header",
-                "expected_in_timeline": False,
+                "expected_in_timeline": True,
             },
         ],
         "files": [],

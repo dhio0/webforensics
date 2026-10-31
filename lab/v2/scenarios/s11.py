@@ -111,7 +111,7 @@ def scan() -> None:
             "A pinned sqlmap run and a short scanner pass probe the isolated WordPress site. "
             "No injectable parameter or compromise is found; no files are changed."
         ),
-        "attacker_ips": [],
+        "attacker_ips": [ATTACKER_IP],
         "root_cause_step": None,
         "steps": steps,
         "files": [

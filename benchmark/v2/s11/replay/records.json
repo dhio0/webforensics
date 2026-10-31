@@ -1,7 +1,9 @@
 {
   "scenario_id": "s11",
   "description": "A pinned sqlmap run and a short scanner pass probe the isolated WordPress site. No injectable parameter or compromise is found; no files are changed.",
-  "attacker_ips": [],
+  "attacker_ips": [
+    "192.0.2.131"
+  ],
   "root_cause_step": null,
   "steps": [
     {
