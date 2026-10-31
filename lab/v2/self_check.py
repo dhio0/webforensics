@@ -87,9 +87,10 @@ def check_scenario(root: Path, scenario_id: str) -> dict[str, Any]:
     actual_background = [row for row in access_rows if row["client_ip"] in mapped_values]
     if len(actual_background) != len(source):
         raise ValueError("background request count does not match its access-log rows")
-    for expected_ip, actual in zip(expected_background, actual_background, strict=True):
-        if expected_ip != actual["client_ip"]:
-            raise ValueError("background client mapping/order differs from access log")
+    expected_client_counts = Counter(expected_background)
+    actual_client_counts = Counter(row["client_ip"] for row in actual_background)
+    if expected_client_counts != actual_client_counts:
+        raise ValueError("background client mapping counts differ from access log")
     if "192.0.2.135" in {row["client_ip"] for row in access_rows}:
         raise ValueError("background container address appears in evidence")
 

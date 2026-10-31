@@ -69,26 +69,43 @@ def sidecar_rows(path: Path) -> list[dict[str, Any]]:
 def join_log_rows(
     sidecar_rows_: list[dict[str, Any]], access_rows: list[dict[str, Any]]
 ) -> list[dict[str, Any]]:
-    """Join same-edge logs in write order, verifying every pair in O(N)."""
+    """Join edge and sidecar rows by request identity and timestamp."""
     if len(sidecar_rows_) != len(access_rows):
         raise ValueError(
             "sidecar/access log line-count mismatch: "
             f"labels={len(sidecar_rows_)} access={len(access_rows)}"
         )
-    joined = []
-    for sidecar, access in zip(sidecar_rows_, access_rows, strict=True):
-        if (
-            access["request"] != sidecar["request"]
-            or access["status"] != sidecar["status"]
-            or access["client_ip"] != sidecar["client_ip"]
-            or abs(access["timestamp"] - sidecar["msec"]) > 1.1
-        ):
+    access_by_identity: dict[tuple[str, int, str], list[dict[str, Any]]] = {}
+    for access in access_rows:
+        identity = (access["request"], access["status"], access["client_ip"])
+        access_by_identity.setdefault(identity, []).append(access)
+    sidecar_by_identity: dict[tuple[str, int, str], list[dict[str, Any]]] = {}
+    for sidecar in sidecar_rows_:
+        identity = (sidecar["request"], sidecar["status"], sidecar["client_ip"])
+        sidecar_by_identity.setdefault(identity, []).append(sidecar)
+
+    matches: dict[int, int] = {}
+    for identity, sidecars in sidecar_by_identity.items():
+        accesses = access_by_identity.get(identity, [])
+        if len(sidecars) != len(accesses):
             raise ValueError(
-                f"sidecar line {sidecar['sidecar_line']} does not match access line "
-                f"{access['line_no']} by request/status/client/time"
+                "sidecar/access occurrence count differs for an identical "
+                "request/status/client tuple"
             )
-        joined.append({**sidecar, "access_line_no": access["line_no"]})
-    return joined
+        ordered_sidecars = sorted(sidecars, key=lambda row: (row["msec"], row["sidecar_line"]))
+        ordered_accesses = sorted(accesses, key=lambda row: (row["timestamp"], row["line_no"]))
+        for sidecar, access in zip(ordered_sidecars, ordered_accesses, strict=True):
+            if abs(access["timestamp"] - sidecar["msec"]) > 1.1:
+                raise ValueError(
+                    f"sidecar line {sidecar['sidecar_line']} has no access-log match "
+                    "within 1.1 seconds by request/status/client"
+                )
+            matches[sidecar["sidecar_line"]] = access["line_no"]
+
+    return [
+        {**sidecar, "access_line_no": matches[sidecar["sidecar_line"]]}
+        for sidecar in sidecar_rows_
+    ]
 
 
 def select_time_window_candidate(

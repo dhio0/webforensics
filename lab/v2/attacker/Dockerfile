@@ -8,8 +8,10 @@ RUN python -m pip install --no-cache-dir requests==2.32.4 \
     && python -m pip install --no-cache-dir /opt/weevely3 \
     && git clone https://github.com/sqlmapproject/sqlmap.git /opt/sqlmap \
     && git -C /opt/sqlmap checkout c42ebd7acf47c88b6407995dd9842a2eb5d6534d \
+    && git clone https://github.com/commixproject/commix.git /opt/commix \
+    && git -C /opt/commix checkout 625c0c46e4257c457774e39bd896307397eaab03 \
     && apt-get purge -y --auto-remove git \
-    && rm -rf /var/lib/apt/lists/* /opt/weevely3/.git /opt/sqlmap/.git
+    && rm -rf /var/lib/apt/lists/* /opt/weevely3/.git /opt/sqlmap/.git /opt/commix/.git
 
 WORKDIR /opt
 CMD ["sleep", "infinity"]

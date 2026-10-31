@@ -244,7 +244,8 @@ class BackgroundReplay:
                 self.stats.attempted += 1
                 try:
                     with opener.open(request, timeout=self.timeout) as response:
-                        response.read(1)
+                        while response.read(64 * 1024):
+                            pass
                 except HTTPError:
                     self.stats.failures["http_error"] += 1
                 except TimeoutError:

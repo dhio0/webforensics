@@ -1,0 +1,133 @@
+{
+  "scenario_id": "s05",
+  "description": "An authenticated DVWA user opens the command-injection module. Pinned Commix confirms that the input reaches an operating-system command; a marked follow-up request writes a fixed plain-text file under the webroot, and the file is read back.",
+  "attacker_ips": [
+    "192.0.2.131"
+  ],
+  "steps": [
+    {
+      "id": "site_check",
+      "category": "reconnaissance",
+      "mitre": [
+        "T1595"
+      ],
+      "log_file": "access.log.gz",
+      "line_no": 6001,
+      "is_root_cause": false,
+      "expected_in_timeline": false
+    },
+    {
+      "id": "login_page_probe",
+      "category": "reconnaissance",
+      "mitre": [
+        "T1595"
+      ],
+      "log_file": "access.log.gz",
+      "line_no": 6002,
+      "is_root_cause": false,
+      "expected_in_timeline": false
+    },
+    {
+      "id": "command_module_probe",
+      "category": "reconnaissance",
+      "mitre": [
+        "T1595"
+      ],
+      "log_file": "access.log.gz",
+      "line_no": 6003,
+      "is_root_cause": false,
+      "expected_in_timeline": false
+    },
+    {
+      "id": "editor_login",
+      "category": "valid_account_access",
+      "mitre": [
+        "T1078"
+      ],
+      "log_file": "access.log.gz",
+      "line_no": 6004,
+      "is_root_cause": false,
+      "expected_in_timeline": true
+    },
+    {
+      "id": "security_page_open",
+      "category": "valid_account_access",
+      "mitre": [
+        "T1078"
+      ],
+      "log_file": "access.log.gz",
+      "line_no": 6005,
+      "is_root_cause": false,
+      "expected_in_timeline": true
+    },
+    {
+      "id": "security_level_set",
+      "category": "valid_account_access",
+      "mitre": [
+        "T1078"
+      ],
+      "log_file": "access.log.gz",
+      "line_no": 6006,
+      "is_root_cause": false,
+      "expected_in_timeline": true
+    },
+    {
+      "id": "commix_detection",
+      "category": "command_injection",
+      "mitre": [
+        "T1190"
+      ],
+      "log_file": "access.log.gz",
+      "line_no": 6007,
+      "is_root_cause": false,
+      "expected_in_timeline": false
+    },
+    {
+      "id": "command_injection_file_write",
+      "category": "command_injection",
+      "mitre": [
+        "T1059.004"
+      ],
+      "log_file": "access.log.gz",
+      "line_no": 6019,
+      "is_root_cause": true,
+      "expected_in_timeline": true
+    },
+    {
+      "id": "marker_file_check",
+      "category": "valid_account_access",
+      "mitre": [
+        "T1078"
+      ],
+      "log_file": "access.log.gz",
+      "line_no": 6020,
+      "is_root_cause": false,
+      "expected_in_timeline": true
+    }
+  ],
+  "files": [
+    {
+      "path": "hackable/uploads/m8v2-s05-marker.txt",
+      "sha256": "79246263cf06203d3d303d01bf47ad6a7b277d9f0586755b2f10ea50b607d845",
+      "change": "created",
+      "role": "attacker_file",
+      "expected_in_report": true
+    }
+  ],
+  "root_cause_step": "command_injection_file_write",
+  "split": "dev",
+  "expected_rule_ids": [],
+  "analysis": {
+    "access_logs": [
+      "access.log.gz"
+    ],
+    "error_logs": [
+      "app-error.log"
+    ],
+    "error_log_format": "apache",
+    "error_log_utc_offset": "+0000",
+    "manifest": "manifest.tsv",
+    "baseline": "baseline.tsv",
+    "trusted_proxies": []
+  }
+}
