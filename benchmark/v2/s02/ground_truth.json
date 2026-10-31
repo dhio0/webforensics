@@ -1,0 +1,84 @@
+{
+  "scenario_id": "s02",
+  "description": "After the preconfigured DVWA administrator session is established, pinned sqlmap confirms SQL injection and attempts a user-table dump; the same session uploads and briefly verifies an agent. The SQLi is not represented as the cause of the login because this DVWA module requires authentication.",
+  "attacker_ips": [
+    "192.0.2.131"
+  ],
+  "steps": [
+    {
+      "id": "sqlmap_injection_check",
+      "category": "sql_injection",
+      "mitre": [
+        "T1190"
+      ],
+      "log_file": "access.log.gz",
+      "line_no": 10354,
+      "is_root_cause": false
+    },
+    {
+      "id": "administrator_login",
+      "category": "valid_account_access",
+      "mitre": [
+        "T1078"
+      ],
+      "log_file": "access.log.gz",
+      "line_no": 10351,
+      "is_root_cause": false
+    },
+    {
+      "id": "security_level_low",
+      "category": "valid_account_access",
+      "mitre": [
+        "T1078"
+      ],
+      "log_file": "access.log.gz",
+      "line_no": 10353,
+      "is_root_cause": false
+    },
+    {
+      "id": "upload_form",
+      "category": "reconnaissance",
+      "mitre": [
+        "T1595"
+      ],
+      "log_file": "access.log.gz",
+      "line_no": 10590,
+      "is_root_cause": false,
+      "expected_in_timeline": false
+    },
+    {
+      "id": "agent_upload",
+      "category": "file_upload",
+      "mitre": [
+        "T1505.003"
+      ],
+      "log_file": "access.log.gz",
+      "line_no": 10591,
+      "is_root_cause": true
+    }
+  ],
+  "files": [
+    {
+      "path": "hackable/uploads/m8v2-s02-agent.php",
+      "sha256": "e6742c05c7035be569758489171c87e748ba59af3a2627b7acc5c53843b00c4f",
+      "change": "created",
+      "role": "webshell_agent"
+    }
+  ],
+  "root_cause_step": "agent_upload",
+  "split": "held_out",
+  "expected_rule_ids": [],
+  "analysis": {
+    "access_logs": [
+      "access.log.gz"
+    ],
+    "error_logs": [
+      "app-error.log"
+    ],
+    "error_log_format": "apache",
+    "error_log_utc_offset": "+0000",
+    "manifest": "manifest.tsv",
+    "baseline": "baseline.tsv",
+    "trusted_proxies": []
+  }
+}

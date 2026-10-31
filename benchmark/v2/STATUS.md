@@ -23,9 +23,11 @@
 
 - **s11 (held-out)** records a no-compromise WordPress scanner/sqlmap run. Eight marked probes span lines 5,851–5,858; sqlmap found no injectable search parameter. There are 15,000 background rows and 15,104 access rows total. The collector defanged one empty File Manager side effect. Schema, byte-identical regeneration, evidence parsing, self-check, restore of 2,844 entries, and Defender scan pass; Defender detections are zero. Ground-truth SHA-256 is `f2819fcc1e050473c793b85eafd7e44ed68bffe53514ed522ad12dd9fff5dbbb`; scenario size before final commit is 3,266,494 bytes. The app returned some normal 200/302/405 responses, so the originally described all-failure scanner story was adapted and that limit is recorded in `s11/notes.md`.
 
+- **s02 (held-out, adapted)** uses DVWA at pinned commit `a1978a2fed195acd093010af6395f86a281537ca`. Authenticated sqlmap confirmed the `id` SQLi and attempted a user-table dump, but no dump file was produced. DVWA requires login before the SQLi module, so the configured admin login came first; the later agent upload at line 10,591 is truthfully marked as the root cause. Steps span lines 10,351–10,591 in a 15,247-row log with 15,000 background rows. The collector defanged one PHP agent. Schema, byte-identical regeneration, evidence parse, self-check, restore of 252 entries, and Defender scan pass with zero detections. Ground-truth SHA-256 is `d7ac3c02f0de620bed382caeb3930fd92c9eda4edfe6cc8c8dc508403d9a413c`. The scenario is 2,098,342 bytes. Full adaptation details are in `s02/notes.md`; it does not claim a hash dump or a CVE.
+
 ## Next exact step
 
-Record held-out scenario s02 from its pinned sources, run its scenario checks, and commit it with a clean status checkpoint. Then continue with s06 and s09; add `HELDOUT.md`, update README/SOURCES, and run the requested final acceptance checks. s11 was recorded first among held-outs; the remaining held-outs follow the listed sequence.
+Record held-out scenario s06 from an isolated LFI candidate, commit the verified evidence or document a skip if the execution path cannot be made safe and repeatable. Then handle s09, add `HELDOUT.md`, update README/SOURCES, and run all requested final acceptance checks. s11 was recorded first among held-outs; s02 follows it, then s06 and s09.
 
 ## Remaining plan
 
@@ -41,12 +43,15 @@ Record held-out scenario s02 from its pinned sources, run its scenario checks, a
 - The encrypted s05 full capture remains outside Git in the directory configured by `lab/v2/.env`.
 - The encrypted s08 full capture remains outside Git in the directory configured by `lab/v2/.env`.
 - The encrypted s10 full capture remains outside Git in the directory configured by `lab/v2/.env`.
+- The encrypted s02 full capture remains outside Git in the directory configured by `lab/v2/.env`.
 - s01's restored tree remains at `C:\Windows\Temp\m8v2-restore-s01-51b317c261f04798a7d4ca714451702a`. s03 restore-validation trees remain under `%TEMP%` from failed attempts; the successful verification tree is `%TEMP%\m8v2-restore-s03-benchv2-final-11`.
 - s04 restore-validation scratch trees from failed and successful path-format checks remain under `%TEMP%`: `m8v2-restore-s04-benchv2-final-01` through `-04`.
 - The s05 restore-validation tree remains at `%TEMP%\m8v2-restore-s05-benchv2-final-01`.
 - The s07 restore-validation trees remain at `%TEMP%\m8v2-restore-s07-benchv2-final-01` and `-02`.
 - The s08 restore-validation tree remains at `%TEMP%\m8v2-restore-s08-benchv2-final-01`.
 - The s10 restore-validation tree remains at `%TEMP%\m8v2-restore-s10-benchv2-final-01`.
+- The s02 restore-validation tree remains at `%TEMP%\m8v2-restore-s02-benchv2-final-01`.
 - The s11 restore-validation tree remains at `%TEMP%\m8v2-restore-s11-benchv2-final-01`.
 - The s12 restore-validation tree remains at `%TEMP%\m8v2-restore-s12-benchv2-final-01`.
 - The encrypted s12 full capture remains outside Git in the directory configured by `lab/v2/.env`.
+

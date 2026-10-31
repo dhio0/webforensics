@@ -1,0 +1,7 @@
+{
+  "application": "DVWA",
+  "app_type": "dvwa",
+  "image": "sha256:f88bd59c68eaae46c3677866e3d1f80f3612eb3c41983e9cabc56ff7d0c7e99b",
+  "webroot": "/var/www/html",
+  "attacker_image": "sha256:4efec7d3150f08434fc7ac22aa661e2a06506c1abba284474d1b1845b3df0b58"
+}
