@@ -88,6 +88,22 @@ def join_log_rows(
     for identity, sidecars in sidecar_by_identity.items():
         accesses = access_by_identity.get(identity, [])
         if len(sidecars) != len(accesses):
+            for sidecar, access in zip(sidecar_rows_, access_rows, strict=True):
+                sidecar_identity = (
+                    sidecar["request"],
+                    sidecar["status"],
+                    sidecar["client_ip"],
+                )
+                access_identity = (
+                    access["request"],
+                    access["status"],
+                    access["client_ip"],
+                )
+                if sidecar_identity != access_identity:
+                    raise ValueError(
+                        f"sidecar line {sidecar['sidecar_line']} request/status/client "
+                        f"does not match access line {access['line_no']}"
+                    )
             raise ValueError(
                 "sidecar/access occurrence count differs for an identical "
                 "request/status/client tuple"
