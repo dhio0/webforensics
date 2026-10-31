@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import hashlib
+import os
 import shutil
 import subprocess
 import time
@@ -14,9 +15,9 @@ from collect import read_manifest
 ROOT = Path(__file__).resolve().parents[2]
 
 
-def digest(path: Path) -> str:
+def digest(path: str | Path) -> str:
     sha = hashlib.sha256()
-    with path.open("rb") as source:
+    with open(path, "rb") as source:
         for chunk in iter(lambda: source.read(1024 * 1024), b""):
             sha.update(chunk)
     return sha.hexdigest()
@@ -28,6 +29,18 @@ def is_inside(path: Path, parent: Path) -> bool:
         return True
     except ValueError:
         return False
+
+
+def io_path(path: Path) -> str | Path:
+    """Use Win32 extended paths so POSIX artifact names ending in dots survive."""
+    if os.name != "nt":
+        return path
+    value = str(path)
+    if value.startswith("\\\\?\\"):
+        return value
+    if value.startswith("\\\\"):
+        return "\\\\?\\UNC\\" + value.lstrip("\\")
+    return "\\\\?\\" + value
 
 
 def restore(scenario: str, destination: Path) -> int:
@@ -51,6 +64,7 @@ def restore(scenario: str, destination: Path) -> int:
     manifest = read_manifest(scenario_dir / "evidence" / "manifest.tsv")
     baseline = read_manifest(scenario_dir / "evidence" / "baseline.tsv")
     overlay = scenario_dir / "evidence" / "webroot"
+    snapshot_path_map = config.get("snapshot_path_map", {})
     defanged_path = scenario_dir / "evidence" / "defanged.tsv"
     allowed_stub = set()
     with defanged_path.open(encoding="utf-8") as table:
@@ -127,12 +141,12 @@ def restore(scenario: str, destination: Path) -> int:
             raise ValueError("setup overlay must stay inside the scenario directory")
         if setup_overlay.is_dir():
             for source in setup_overlay.rglob("*"):
-                if not source.is_file() or source.is_symlink():
+                if not os.path.isfile(io_path(source)) or source.is_symlink():
                     continue
                 rel = source.relative_to(setup_overlay)
                 target = dest / rel
                 target.parent.mkdir(parents=True, exist_ok=True)
-                shutil.copyfile(source, target)
+                shutil.copyfile(io_path(source), io_path(target))
 
     if app_type == "phpmyfaq":
         def php_quote(value: str) -> str:
@@ -167,24 +181,26 @@ def restore(scenario: str, destination: Path) -> int:
         changed = base_row is None or any(
             row.fields[index] != base_row.fields[index] for index in (1, 2, 3, 4, 5, 7, 8, 9, 10)
         )
-        if changed and (overlay / rel).is_file():
+        source = overlay / snapshot_path_map.get(rel, rel)
+        if changed and os.path.isfile(io_path(source)):
             target.parent.mkdir(parents=True, exist_ok=True)
-            shutil.copyfile(overlay / rel, target)
-        if not target.exists():
+            shutil.copyfile(io_path(source), io_path(target))
+        if not os.path.exists(io_path(target)):
             raise ValueError(f"manifest path missing from restored image: {rel}")
         if row.kind == "f":
-            actual = digest(target)
+            actual = digest(io_path(target))
             if actual != row.sha256:
                 if rel not in allowed_stub:
                     raise ValueError(f"manifest hash mismatch for {rel}: {actual} != {row.sha256}")
-                stub = target.read_text(encoding="ascii", errors="strict")
+                with open(io_path(target), encoding="ascii", errors="strict") as source:
+                    stub = source.read()
                 if not stub.startswith(f"DEFANGED {row.sha256} {row.fields[2]}\n"):
                     raise ValueError(f"defanged stub is invalid for {rel}")
         checked += 1
     extras = {
         p.relative_to(dest).as_posix()
         for p in dest.rglob("*")
-        if p.is_file() and p.relative_to(dest).as_posix() not in manifest
+        if os.path.isfile(io_path(p)) and p.relative_to(dest).as_posix() not in manifest
     }
     if extras:
         raise ValueError(f"restored image has files outside manifest: {sorted(extras)[:5]}")

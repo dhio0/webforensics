@@ -129,13 +129,17 @@ def check_scenario(root: Path, scenario_id: str) -> dict[str, Any]:
 
     current = collect.read_manifest(evidence / "manifest.tsv")
     baseline = collect.read_manifest(evidence / "baseline.tsv")
+    restore_config = json.loads((scenario / "replay" / "restore.json").read_text(encoding="utf-8"))
+    snapshot_path_map = restore_config.get("snapshot_path_map", {})
+    reverse_path_map = {stored: original for original, stored in snapshot_path_map.items()}
     for path in (evidence / "webroot").rglob("*"):
         if not path.is_file():
             continue
-        rel_path = path.relative_to(evidence / "webroot").as_posix()
+        stored_path = path.relative_to(evidence / "webroot").as_posix()
+        rel_path = reverse_path_map.get(stored_path, stored_path)
         if not collect.changed_from_baseline(current[rel_path], baseline.get(rel_path)):
-            raise ValueError(f"unchanged baseline file is stored in snapshot: {rel_path}")
-    collect.scan_defanged_snapshot(evidence / "webroot", current, baseline)
+            raise ValueError(f"unchanged baseline file is stored in snapshot: {stored_path}")
+    collect.scan_defanged_snapshot(evidence / "webroot", current, baseline, snapshot_path_map)
     size_bytes = sum(path.stat().st_size for path in scenario.rglob("*") if path.is_file())
     if size_bytes >= 5_000_000:
         raise ValueError("scenario folder is not under 5 MB")

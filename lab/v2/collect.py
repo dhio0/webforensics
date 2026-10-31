@@ -201,16 +201,19 @@ def scan_defanged_snapshot(
     snapshot: Path,
     current: dict[str, ManifestRow],
     baseline: dict[str, ManifestRow],
+    snapshot_path_map: dict[str, str] | None = None,
 ) -> None:
+    reverse_path_map = {stored: original for original, stored in (snapshot_path_map or {}).items()}
     for path in snapshot.rglob("*"):
         if not path.is_file():
             continue
-        rel_path = path.relative_to(snapshot).as_posix()
+        stored_path = path.relative_to(snapshot).as_posix()
+        rel_path = reverse_path_map.get(stored_path, stored_path)
         row = current[rel_path]
         if changed_from_baseline(row, baseline.get(rel_path)) and any(
             marker in path.read_bytes() for marker in (b"<?php", b"<?=")
         ):
-            raise RuntimeError(f"live PHP opener remains in changed snapshot file: {rel_path}")
+            raise RuntimeError(f"live PHP opener remains in changed snapshot file: {stored_path}")
 
 
 def baseline_capture(captured: Path, output: Path) -> None:

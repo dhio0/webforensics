@@ -1,0 +1,10 @@
+{
+  "application": "phpMyFAQ 3.2.5",
+  "app_type": "phpmyfaq",
+  "image": "sha256:1bb7e47b771e7061c2265143b13592dcd02dcae91dea9642e1929f815be790bd",
+  "webroot": "/var/www/html",
+  "setup_overlay": "replay/restore-overlay",
+  "snapshot_path_map": {
+    "images/category-1-.php..": "images/category-1-.php.__posix_trailing_dots_2"
+  }
+}
