@@ -35,6 +35,22 @@ Header-capable steps use a unique `X-Lab-Step`; Weevely and Hydra steps use the 
 script's attacker-IP/time-window record plus a request/status discriminator. Labels
 never enter the evidence access log, and no tool output is consumed.
 
+## User-Agent normalization and access-log filtering
+
+After collection, `rewrite_user_agents.py <scenario>` applies the exact mappings in that
+scenario's `replay/ua_map.tsv` to the User-Agent field in `evidence/access.log.gz` only.
+It leaves the encrypted full capture and the public source replay unchanged. The script
+checks the access-log/sidecar request, status, client, and timestamp join before and after
+rewriting. For s01, the same step drops the six pre-collection app-crawl requests from both
+the access log and sidecar; the crawl ran before incident logging. Ground truth is then
+regenerated with `label.py` so all reported access lines match the retained evidence.
+
+`crawl_app.py` resolves each link against the response's final URL, normalizes its path,
+rejects adjacent repeated path segments, and deduplicates normalized URLs. Redirect errors
+(including loops) are discarded. The all-scenario self-check rejects any access-log
+User-Agent containing a lab label, reports request paths that contain those words, and
+requires fewer than 1% of background paths to repeat a segment three or more times.
+
 ## Collection and defanging
 
 `collect.py` invokes the existing `scripts/collect.sh` inside the app container. A
