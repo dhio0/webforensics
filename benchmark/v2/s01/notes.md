@@ -15,20 +15,21 @@ is encrypted outside Git under the directory configured by `lab/v2/.env`.
 ## Request phases and line labels
 
 The attacker first checked the site and plugin version, then made two routine probes.
-These four recon lines are labelled but have `expected_in_timeline: false`. Seed `5031`
-selected a 54% attack start; the upload began at 54.00% of the completed access log.
-Three agent requests followed it.
+These four recon lines are labelled but have `expected_in_timeline: false`. The app crawl
+ran before access-log collection; its six requests are excluded from the evidence and label
+sidecar. Seed `5031` selected a 54% attack start; the upload began at 54.00% of the
+completed access log. Three agent requests followed it.
 
 | Step | Access line | Expected in timeline |
 |---|---:|---|
-| Site check | 8110 | No |
-| Plugin version check | 8111 | No |
-| Admin probe | 8112 | No |
-| XML-RPC probe | 8113 | No |
-| Unauthenticated upload (root cause) | 8114 | Yes |
-| Agent identity | 8119 | Yes |
-| Agent working directory | 8123 | Yes |
-| Agent user | 8126 | Yes |
+| Site check | 8104 | No |
+| Plugin version check | 8105 | No |
+| Admin probe | 8106 | No |
+| XML-RPC probe | 8107 | No |
+| Unauthenticated upload (root cause) | 8108 | Yes |
+| Agent identity | 8113 | Yes |
+| Agent working directory | 8117 | Yes |
+| Agent user | 8120 | Yes |
 
 `label.py` joins the ordered sidecar and combined access log and verifies every pair's
 request, status, client address, and timestamp. The sidecar uses the lab step header for
@@ -61,7 +62,7 @@ requests. Visitor responses were 10,671 HTTP 200, 740 HTTP 301, 216 HTTP 302, 71
 400, 48 HTTP 401, 290 HTTP 404, and 41 HTTP 405. This is 96.27% 2xx/3xx. Scanner
 responses were 2,264 HTTP 404, 642 HTTP 200, 9 HTTP 302, 7 HTTP 301, and 1 HTTP 403.
 `replay/source-preparation.json` and `replay/background.json` preserve the source and
-transformation counts. The attack lines span 53.973%–54.080% of the 15,026-line access log.
+transformation counts. The attack lines span 53.973%â€“54.080% of the 15,026-line access log.
 The replay ran in its own container at `192.0.2.135`; simulated client addresses are the
 first field in `access.log.gz`. The background container address does not occur in that
 evidence log. `replay/background.json` records the classification rule and counts.
