@@ -1,29 +1,42 @@
 # Benchmark v2
 
-Benchmark v2 is reserved for replay evidence from vulnerable applications, public
-background traffic, and real attack tools. The ground-truth format remains compatible
-with the v1 schema; the schema adds a `deleted` file change, a file `role`, and an
-optional advisory URL for vulnerable-code provenance.
+Benchmark v2 contains twelve replay scenarios built from pinned applications, tools, and public background traffic. Each scenario has its own source-derived `ground_truth.json`, evidence logs and manifest, a baseline-relative webroot snapshot, replay metadata, and recording notes. The ground truth uses the v1 schema with additive fields for deleted files, roles, expected-report flags, and vulnerable-code provenance.
 
-The s01 pilot is recorded. It includes replay records, `ground_truth.json`, `notes.md`,
-access/error logs, manifests, a defanged webroot snapshot, and `defanged.tsv`. Its full
-webroot is encrypted outside Git. The pilot has not been scored with the webforensics
-CLI.
+No v2 scenario was scored with the `webforensics analyze` or `webforensics eval` commands during recording. Existing benchmark goldens remain unchanged.
 
-The v2 replay and evidence workflow is under [`lab/v2`](../../lab/v2/README.md). See
-[`SOURCES.md`](SOURCES.md) for the verified public sources and release candidates.
+The background is 15,000 request rows per scenario from Zenodo Organization X, with NASA client identities paired deterministically. Visitor requests use paths discovered from the selected app; source scanner paths and statuses are retained. The records preserve the background and scanner status mix. Public POST request bodies are unavailable and are replayed empty.
 
-**Recording status:** s01 only. Scenarios s02–s12 have not been started. Treat s01 as a
-pilot for review, not as a scored benchmark or a source of v2 accuracy numbers.
+## Scenario results
 
-Defanging compares every captured file with the pristine baseline. New or changed files
-are stubbed if their extension is executable, if they contain script openers, or if they
-are ZIP/PHAR archives. This also stubs benign PHP files created by plugins; the encrypted
-full capture retains their originals. Public POST log entries replay with empty bodies
-because the source logs do not contain request bodies.
+`Attacker requests` is total access-log rows minus background rows and includes the scenario's named actions plus tool or scanner traffic. Step IDs and one-based access-log lines are listed in the table; each notes file explains how the lines were selected. Position is measured against total access-log rows.
 
-Only changed or new webroot files are stored in each scenario. Before scoring, restore the
-complete webroot outside this repository with `python lab/v2/restore_webroot.py SCENARIO
-DEST`; the command extracts unchanged files from the scenario's pinned app image, overlays
-the committed changed files, and verifies each manifest hash. It refuses destinations
-inside the repository.
+| ID | Split | App and CVE | Background / total rows | Attacker rows; position | Named steps (`id@line`) | Defanged | Folder size | Ground-truth SHA-256 | Adaptation |
+|---|---|---|---:|---|---|---:|---:|---|---|
+| s01 | dev | WordPress 5.5.3 / File Manager 6.0; CVE-2020-25213 | 15,000 / 15,026 | 26; 53.97–54.08% | site_check@8110; plugin_version_check@8111; admin_probe@8112; xmlrpc_probe@8113; unauthenticated_file_upload@8114; agent_identity@8119; agent_working_directory@8123; agent_user@8126 ([notes](s01/notes.md)) | 2 | 3.10 MiB (3,248,732 B) | `be357b9cef16ab9fd2a6b8531881ee02cda1983d35c2132161c7bb8b76e4d682` | Unauthenticated plugin upload; isolated execution confirmed. |
+| s02 | held_out | DVWA pinned training app; no separate CVE | 15,000 / 15,247 | 247; 67.89–69.46% | sqlmap_injection_check@10354; administrator_login@10351; security_level_low@10353; upload_form@10590; agent_upload@10591 ([notes](s02/notes.md)) | 1 | 1.99 MiB (2,087,923 B) | `d7ac3c02f0de620bed382caeb3930fd92c9eda4edfe6cc8c8dc508403d9a413c` | DVWA requires authentication before SQLi; sqlmap confirmed injection but produced no user-table dump. The later upload, not SQLi, is root cause. |
+| s03 | dev | phpMyFAQ 3.2.5; CVE-2024-27299 | 15,000 / 15,023 | 23; 33.95–34.10% | site_check@5101; news_admin_probe@5102; editor_login@5103; news_editor_open@5104; save_news_sql_injection@5123 ([notes](s03/notes.md)) | 1 | 3.33 MiB (3,496,035 B) | `d96f2725dcfd534f9b992610946e43fa4a605895e2424cc7e9ef6cb269d52405` | Adapted from a small PHP app to licensed phpMyFAQ. |
+| s04 | dev | phpMyFAQ 3.2.5; CVE-2024-28105 | 15,000 / 15,006 | 6; 42.99–43.02% | site_check@6451; category_admin_probe@6452; editor_login@6453; category_editor_open@6454; category_image_upload@6455; uploaded_file_execution@6456 ([notes](s04/notes.md)) | 2 | 3.31 MiB (3,469,775 B) | `6eb28af7c3cd7734fa2525e3b395c6483c8e6fb3ad2745112c7b530c0688b5d8` | Authenticated category-image upload bypass. |
+| s05 | dev | DVWA pinned training app; no separate CVE | 15,000 / 15,020 | 20; 39.95–40.08% | site_check@6001; login_page_probe@6002; command_module_probe@6003; editor_login@6004; security_page_open@6005; security_level_set@6006; commix_detection@6007; command_injection_file_write@6019; marker_file_check@6020 ([notes](s05/notes.md)) | 0 | 1.98 MiB (2,079,106 B) | `3141713b0b8b62fe8a939115006cebb474938f01eb7da4b7563c41aea88b2e5c` | Commix command injection; plain-text marker only. |
+| s06 | held_out | DVWA pinned training app; no separate CVE | 15,000 / 15,005 | 5; 30.00–30.02% | training_account_login@4502; lfi_file_read@4505 ([notes](s06/notes.md)) | 0 | 1.97 MiB (2,068,966 B) | `83863843daa1c18bfd5df5800265fa6ec3c535a03755e226746598d1a50f8eaf` | Adapted to verified local-file inclusion. Log/session poisoning and RCE were not verified. |
+| s07 | dev | WordPress 5.5.3; normal plugin installer, no CVE claimed | 15,000 / 15,022 | 22; 48.94–49.07% | site_check@7351; login_page_probe@7352; admin_area_probe@7353; plugin_upload_probe@7354; hydra_valid_login@7362; login_form@7365; editor_login@7366; plugin_upload_form@7367; plugin_upload@7368; plugin_activation@7370; marker_check@7371 ([notes](s07/notes.md)) | 2 | 3.10 MiB (3,250,339 B) | `8af2596a9823cef52d51561d745f464aed588cbfcf30317131fc6437d3decdbd` | Hydra login and marker-only plugin installation. |
+| s08 | dev | WordPress 5.5.3 / File Manager 6.0; CVE-2020-25213 | 15,000 / 15,021 | 21; 68.91–69.04% | site_check@10351; plugin_version_check@10352; admin_probe@10353; xmlrpc_probe@10354; unauthenticated_file_upload@10355; agent_identity@10356; agent_working_directory@10362; agent_user@10365; agent_deleted@10368; agent_absent_check@10371 ([notes](s08/notes.md)) | 1 | 3.10 MiB (3,250,508 B) | `bd191ce98466319ccce0b7f3d321d8f1282d24f7db8a1fff8a9bd955ba20aabc` | Agent removed before collection; deletion metadata is retained. |
+| s09 | held_out | WordPress 5.5.3; normal plugin installer, no CVE claimed | 15,000 / 15,016 | 16; 65.94–66.01% | administrator_login@9902; plugin_upload_form@9903; agent_upload@9905; agent_timestomp@9912 ([notes](s09/notes.md)) | 3 | 3.10 MiB (3,246,583 B) | `85c6374f9de51f39758e194f6c0faa0fec3713a7d533d0db8fdb0cbc1d1e4500` | Pinned Weevely file timestamp module changed the agent mtime. |
+| s10 | dev | WordPress 5.5.3; normal plugin installer, no CVE claimed | 15,000 / 15,016 | 16; 63.94–64.00% | site_check@9601; login_page_probe@9602; admin_probe@9603; plugin_upload_probe@9604; login_form@9605; editor_login@9606; plugin_upload_form@9607; persistence_upload@9609; image_agent_command@9610 ([notes](s10/notes.md)) | 4 | 3.10 MiB (3,249,869 B) | `91569f3a3903c6e78737694a77c9ab79d3ad42764b1820717fda40b2c22549f5` | Package installed handler configuration and an image-extension agent. |
+| s11 | held_out | WordPress 5.5.3; no CVE, failed sqlmap/scanner scenario | 15,000 / 15,104 | 104; 38.74–38.78% | scanner_probe_1@5851; scanner_probe_2@5852; scanner_probe_3@5853; scanner_probe_4@5854; scanner_probe_5@5855; scanner_probe_6@5856; scanner_probe_7@5857; scanner_probe_8@5858 ([notes](s11/notes.md)) | 1 | 3.11 MiB (3,257,677 B) | `f2819fcc1e050473c793b85eafd7e44ed68bffe53514ed522ad12dd9fff5dbbb` | No injectable parameter found; known paths returned some normal 200/302/405 responses. |
+| s12 | dev | WordPress 5.5.3; benign no-CVE scenario | 15,000 / 15,013 | 13; 32.98–33.05% | admin_login_form@4951; admin_login@4952; core_update_check@4953; plugin_update_form@4955; plugin_update_package@4956; plugin_update_apply@4957; cache_warm_form@4958; cache_generation@4959; media_upload_form@4960; media_upload@4961; scanner_catchall_probe@4962 ([notes](s12/notes.md)) | 3 | 3.11 MiB (3,263,416 B) | `78bc3d76a71bad7ddad5e590ec646de77351c0ed0f82a922ef8a1356bb15af5e` | External core update unavailable offline; local benign cache fixture used instead. |
+
+See [`HELDOUT.md`](HELDOUT.md) for the held-out IDs and recording commits. [`STATUS.md`](STATUS.md) has recording provenance and the recorded plan decisions. [`SOURCES.md`](SOURCES.md) lists source versions, licenses, image IDs, and advisories.
+
+## Restore and score
+
+The committed webroot contains only files created or changed from the pristine baseline. To reconstruct a complete defanged webroot, first use the image recorded for that scenario and overlay the changed files:
+
+```powershell
+python lab/v2/restore_webroot.py s03 C:\Users\Pongo\Documents\cases\benchmark-v2-restore\s03
+```
+
+Choose an empty destination outside the repository. The restore command verifies the manifest hashes and accounts for the explicitly listed defanged stubs. Then score using the existing file-adapter inputs: scenario `evidence/access.log.gz` for `--log`, `evidence/app-error.log` for `--error-log`, `evidence/manifest.tsv` for `--manifest`, the restored directory for `--webroot`, and `evidence/baseline.tsv` for `--baseline`. Use the scenario's `ground_truth.json` as the answer key; do not tune on the held-out split.
+
+Changed executable files, script-containing files, and archive files are replaced in the committed webroot by inert stubs. This includes benign PHP cache or plugin-update files; their original contents remain only in the encrypted full capture outside Git. To score full file content, use `lab/v2/decrypt.py` with the key and external directory configured in the ignored `lab/v2/.env`; follow the isolation and Defender instructions in [`lab/v2/README.md`](../../lab/v2/README.md). Public POST bodies are empty in replay because the source logs contain no bodies.
+
+Each folder stays below 5 MB; the complete `benchmark/v2/` tree stays below 150 MB. The final acceptance checks load evidence and regenerate ground truth but do not run analysis or evaluation.

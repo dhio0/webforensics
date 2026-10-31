@@ -1,66 +1,64 @@
-# Benchmark v2 status — resumable round 5
+# Benchmark v2 status — complete
 
 ## Completed
 
-- **s01** was re-recorded with Organization X request shapes and User-Agents paired with NASA KSC client identities. It has 15,000 background requests and 15,026 total access rows. Its folder is 3,259,570 bytes, ground-truth SHA-256 is `62a692cdbf2d15240c6e75bb912ae9ae54c1ada2e212695087b0d49dbb183858`, and commit `10a8298` records the scenario.
-- **s03** records authenticated phpMyFAQ 3.2.5 CVE-2024-27299 in Save News. The root cause is a 2xx attacker request; the source file is `News.php:289`, hash `b5bc9846390989799935252d07ba16ce480b0ca4a5ef7a1d9fc8de758421cd2a`. The targeted database-delay confirmation took 1.022 seconds; the generic sqlmap check did not detect the cross-field condition. No attacker file or operating-system command was used.
-- s03 has 15,000 background requests (12,077 visitors, 2,923 scanners), 15,023 total rows, 10,384 clients, and 903 User-Agents. Largest client share is 0.973%, largest User-Agent share 4.407%, visitor success is 99.959%, and attacker steps span 33.955%–34.101% of the access log.
-- s03 schema, byte-identical ground-truth regeneration, parse validation, restore of 2,880 manifest entries, and Defender scan pass. One large phpMyFAQ runtime tracking file is an inert public stub with original hash/size recorded; its full copy is encrypted outside Git. Folder size is 3,496,035 bytes. Ground-truth SHA-256 is `d96f2725dcfd534f9b992610946e43fa4a605895e2424cc7e9ef6cb269d52405`.
-- s03 replay provenance and adaptation are documented in [s03/notes.md](s03/notes.md) and [SOURCES.md](SOURCES.md). The source/runtime fix keeps dynamic phpMyFAQ autoloading enabled; nginx resolves the selected app upstream on the internal network.
-- **s04** records authenticated phpMyFAQ 3.2.5 CVE-2024-28105 category-image upload bypass. The 2xx root-cause request is line 6,455; the fixed marker is returned at line 6,456. The six attacker requests span 42.989%–43.023% of 15,006 rows. There are 15,000 background rows, 10,384 clients, and 903 User-Agents; visitor success is 99.959%, with 2,923 scanner rows retained. The collector defanged two files. Schema, byte-identical label regeneration, zero-parse-failure evidence validation, self-check, restore of all 2,881 manifest entries, and Defender scan pass. Folder size is 3,469,775 bytes, Defender detections are zero, and ground-truth SHA-256 is `6eb28af7c3cd7734fa2525e3b395c6483c8e6fb3ad2745112c7b530c0688b5d8`.
-- s04 provenance and the isolated execution check are described in [s04/notes.md](s04/notes.md); CVE-2024-28105 and the scenario image digest are recorded in [SOURCES.md](SOURCES.md). `restore_webroot.py` now handles POSIX filenames ending in dots on Windows using extended paths.
-- **s05** records command injection in pinned DVWA commit `a1978a2fed195acd093010af6395f86a281537ca` with pinned Commix. DVWA is the task-approved training app for this class and the module has no separate CVE. Commix confirmed command execution; the marked 2xx root-cause request is line 6,019 and its plain-text marker is read at line 6,020. The nine named steps span 39.953%–40.080% of 15,020 rows. The 15,000 background requests have 10,384 clients and 903 User-Agents; visitor success is 93.475%, with 2,923 scanners retained. No files required defanging. Schema, byte-identical label regeneration, zero-parse-failure evidence validation, self-check, restore of 252 manifest entries, and Defender scan pass. The scenario is 2,079,106 bytes with zero Defender detections; ground-truth SHA-256 is `3141713b0b8b62fe8a939115006cebb474938f01eb7da4b7563c41aea88b2e5c`.
-- s05 source/license, Commix pin, source-line provenance, and the log-order adaptation are described in [s05/notes.md](s05/notes.md) and [SOURCES.md](SOURCES.md). The replay submits background requests sequentially; self-check compares exact client identity counts because a few completion rows can be reordered by the server logs.
-- **s07** records the requested WordPress 5.5.3 login-guessing and plugin-upload chain with pinned Hydra. Hydra confirmed the local administrator account; the marked plugin ZIP upload is line 7,368 and the text marker check is line 7,371. The eleven named steps span 48.935%–49.068% of 15,022 rows. The 15,000 background requests have 10,384 clients and 903 User-Agents; visitor success is 96.274%, with 2,923 scanner rows retained. The plugin only writes a text marker rather than providing a shell. The collector defanged the plugin PHP and an empty File Manager backup side effect, which is marked `expected_in_report: false`; the plain-text marker remains unchanged. Schema, byte-identical label regeneration, zero-parse-failure evidence validation, self-check, restore of 2,846 manifest entries, and Defender scan pass. Folder size is 3,250,339 bytes with zero Defender detections; ground-truth SHA-256 is `8af2596a9823cef52d51561d745f464aed588cbfcf30317131fc6437d3decdbd`.
-- s07 source pins, Hydra result, step selection, and the safe marker adaptation are documented in [s07/notes.md](s07/notes.md) and [SOURCES.md](SOURCES.md). No CVE is claimed for the normal authenticated WordPress plugin installer.
-- **s08** records WordPress File Manager 6.0 CVE-2020-25213: an uploaded Weevely agent was used briefly and removed before collection. The 2xx root-cause upload is line 10,355, the removal request is line 10,368, and the absent-path check is line 10,371. Ten named steps span 68.910%–69.043% of 15,021 rows. The 15,000 background requests have 10,384 clients and 903 User-Agents; visitor success is 96.274%, with 2,923 scanner rows retained. The transient agent is recorded as deleted with its hash and size, but its content is absent; the collector defanged one empty File Manager side effect. Schema, byte-identical label regeneration with transient-file support, zero-parse-failure evidence validation, self-check, restore of 2,844 manifest entries, and Defender scan pass. Folder size is 3,250,508 bytes with zero Defender detections; ground-truth SHA-256 is `bd191ce98466319ccce0b7f3d321d8f1282d24f7db8a1fff8a9bd955ba20aabc`.
-- s08 transient-file labeling, deletion evidence, and File Manager provenance are described in [s08/notes.md](s08/notes.md) and [SOURCES.md](SOURCES.md).
-- **s10** records a WordPress 5.5.3 administrator ZIP installation that places `.htaccess` and a Weevely agent with a `.jpg` extension. The 2xx root-cause upload is line 9,609 and the image-extension command check is line 9,610. Nine named steps span 63.938%–63.998% of 15,016 rows. The 15,000 background requests have 10,384 clients and 903 User-Agents; visitor success is 96.274%, with 2,923 scanner rows retained. The collector defanged four paths: `.htaccess`, the package's PHP file, the disguised image, and the empty File Manager side effect. Schema, byte-identical label regeneration, zero-parse-failure evidence validation, self-check, restore of 2,847 manifest entries, and Defender scan pass. Folder size is 3,249,869 bytes with zero Defender detections; ground-truth SHA-256 is `91569f3a3903c6e78737694a77c9ab79d3ad42764b1820717fda40b2c22549f5`.
-- s10's standard admin-installer adaptation and extension-handler check are described in [s10/notes.md](s10/notes.md) and [SOURCES.md](SOURCES.md). No CVE is claimed for the normal WordPress plugin installer.
-- **s12** records a no-compromise WordPress scenario with `root_cause_step: null` and no attacker IPs. The admin checked the core update page, updated the local cache fixture, uploaded media, and generated a benign PHP cache; a scanner catch-all probe received HTTP 200. The eleven named steps span 32.978%–33.051% of 15,013 rows. The 15,000 background requests have 10,384 clients and 903 User-Agents; visitor success is 98.220%, with all 2,923 scanner rows retained and 2,875 returning HTTP 200. The collector defanged three benign PHP paths and retained the PNG. Schema, byte-identical label regeneration, zero-parse-failure evidence validation, self-check, restore of 2,847 manifest entries, and Defender scan pass. Folder size is 3,263,190 bytes with zero Defender detections; ground-truth SHA-256 is `78bc3d76a71bad7ddad5e590ec646de77351c0ed0f82a922ef8a1356bb15af5e`.
-- s12's local plugin update fixture and unavailable-core-update adaptation are explained in [s12/notes.md](s12/notes.md) and recorded in [SOURCES.md](SOURCES.md).
-- Latest full project checks before s03 work: `pytest` 536 passed, 8 skipped; `ruff check .` passed. No files under `src/webforensics/` or existing goldens changed. No analysis or evaluation was run.
+All twelve scenarios are recorded on branch `m8-benchmark-v2`. Development split: s01, s03, s04, s05, s07, s08, s10, s12. Held-out split: s02, s06, s09, s11. Scenario counts, named access-log lines, split, app/CVE, adaptations, folder sizes, and ground-truth hashes are in [README.md](README.md); held-out ground-truth hashes and recording commits are in [HELDOUT.md](HELDOUT.md).
 
-- **s11 (held-out)** records a no-compromise WordPress scanner/sqlmap run. Eight marked probes span lines 5,851–5,858; sqlmap found no injectable search parameter. There are 15,000 background rows and 15,104 access rows total. The collector defanged one empty File Manager side effect. Schema, byte-identical regeneration, evidence parsing, self-check, restore of 2,844 entries, and Defender scan pass; Defender detections are zero. Ground-truth SHA-256 is `f2819fcc1e050473c793b85eafd7e44ed68bffe53514ed522ad12dd9fff5dbbb`; scenario size before final commit is 3,266,494 bytes. The app returned some normal 200/302/405 responses, so the originally described all-failure scanner story was adapted and that limit is recorded in `s11/notes.md`.
+The recording commits are:
 
-- **s02 (held-out, adapted)** uses DVWA at pinned commit `a1978a2fed195acd093010af6395f86a281537ca`. Authenticated sqlmap confirmed the `id` SQLi and attempted a user-table dump, but no dump file was produced. DVWA requires login before the SQLi module, so the configured admin login came first; the later agent upload at line 10,591 is truthfully marked as the root cause. Steps span lines 10,351–10,591 in a 15,247-row log with 15,000 background rows. The collector defanged one PHP agent. Schema, byte-identical regeneration, evidence parse, self-check, restore of 252 entries, and Defender scan pass with zero detections. Ground-truth SHA-256 is `d7ac3c02f0de620bed382caeb3930fd92c9eda4edfe6cc8c8dc508403d9a413c`. The scenario is 2,098,342 bytes. Full adaptation details are in `s02/notes.md`; it does not claim a hash dump or a CVE.
+- s01 `10a8298`
+- s03 `4c57176`
+- s04 `c211f41`
+- s05 `a5fda70`
+- s07 `a769ddb`
+- s08 `e9b2116`
+- s10 `a540ea6`
+- s12 `7362475`
+- s11 `aff8cbf`
+- s02 `ead8215`
+- s06 `b983dee`
+- s09 `cd8786e`
 
-- **s06 (held-out, adapted)** records a DVWA LFI read of the isolated container's `/etc/passwd`. The marked file-read request is line 4,505; no RCE or CVE is claimed because a repeatable log/session poisoning path was not verified. The 15,000 background rows accompany 15,005 total access rows; no file was changed or defanged. Ground-truth SHA-256 is `83863843daa1c18bfd5df5800265fa6ec3c535a03755e226746598d1a50f8eaf`; scenario folder size is 2,079,385 bytes. Schema, byte-identical regeneration, parser validation, self-check, restore, and Defender scan pass with zero detections. See `s06/notes.md` for the adaptation.
+## Adaptations and limits
 
-- **s09 (held-out)** records a WordPress administrator installing the local package and the pinned Weevely agent changing the agent's modification time. The marked upload is line 9,905 and the verified timestamp operation is root cause at line 9,912. It has 15,000 background rows, 15,016 total rows, three defanged files, and zero Defender detections. Ground-truth SHA-256 is `85c6374f9de51f39758e194f6c0faa0fec3713a7d533d0db8fdb0cbc1d1e4500`; folder size is 3,257,000 bytes. The authenticated installer path has no separate CVE claim.
+- s03 uses licensed phpMyFAQ instead of a small PHP app; the source lines and CVE fix provenance are recorded.
+- s02 uses DVWA. Its SQLi page requires login; sqlmap confirmed injection but no user-table dump file was produced. The later agent upload is the ground-truth root cause, so this does not claim that SQLi supplied the login.
+- s06 verifies a local-file read in DVWA only. A log/session poisoning path to RCE was not verified.
+- s09 and s10 use the normal authenticated WordPress plugin installer and make no CVE claim for that installer. s07 likewise makes no CVE claim for plugin installation.
+- s11 uses a failed sqlmap/search probe and scanner sweep. Some known WordPress paths returned normal 200/302/405 responses instead of only errors.
+- s12 could not fetch a WordPress core update package on the internal-only network. It records opening the core-update page and uses a local benign cache-plugin update instead.
 
-## Next exact step
+No scenario was skipped. No v2 analysis/evaluation was run. Existing goldens and `src/webforensics/` are unchanged.
 
-All four held-out IDs now have recordings (s11 was recorded first; s02, s06, and s09 followed). Add `HELDOUT.md` with hashes and recording commits, replace the stale README status with the final scenario table and restore/scoring instructions, then run every requested acceptance check and set this file to complete.
+## Final checks
 
-## Remaining plan
+- `pytest`: **536 passed, 8 skipped**.
+- `ruff check .`: **All checks passed**.
+- `git diff --stat main -- benchmark/scenarios tests/golden`: empty.
+- All twelve per-scenario self-checks pass schema validation and byte-identical ground-truth regeneration. Evidence parsing reports zero access, manifest, and error-log parse failures in every scenario.
+- All 12 scenario isolation checks reject a non-allowlisted service and cannot reach the external address. Every scenario restored its full manifest outside the repository.
+- Defanged webroot scan found no script opener in any changed-file stub. `git grep` found no Weevely agent-template or Commix payload signatures.
+- Defender full scan of `benchmark/v2/` found no threats; individual scenario scans report zero detections.
+- `benchmark/v2/` totals 35,998,473 bytes, below the 150 MB limit; each scenario is below 5 MB.
 
-1. Record held-outs: s02, s06, s09, s11; add their ground-truth hashes and recording commits to `HELDOUT.md`.
-2. Update README, SOURCES, and this status with the finished benchmark; run all requested acceptance checks.
+## Next step
+
+None. The benchmark v2 recording task is complete.
 
 ## Leftover files
 
-- `lab/v2/.cache/zenodo-20001206-organization-x.zip` and `.cache/NASA_access_log_Jul95.gz` are ignored source datasets kept for upcoming replays.
-- `lab/v2/.cache/phpmyfaq-3.2.5-source.zip` and its expanded copy are ignored build inputs. An incomplete official-release download may also remain; it was not used.
-- Encrypted s01 and s03 full captures remain outside Git in the directory configured by `lab/v2/.env`.
-- The encrypted s04 full capture remains outside Git in the directory configured by `lab/v2/.env`.
-- The encrypted s05 full capture remains outside Git in the directory configured by `lab/v2/.env`.
-- The encrypted s08 full capture remains outside Git in the directory configured by `lab/v2/.env`.
-- The encrypted s10 full capture remains outside Git in the directory configured by `lab/v2/.env`.
-- The encrypted s09 full capture remains outside Git in the directory configured by `lab/v2/.env`.
-- The encrypted s02 full capture remains outside Git in the directory configured by `lab/v2/.env`.
-- The encrypted s06 full capture remains outside Git in the directory configured by `lab/v2/.env`.
-- s01's restored tree remains at `C:\Windows\Temp\m8v2-restore-s01-51b317c261f04798a7d4ca714451702a`. s03 restore-validation trees remain under `%TEMP%` from failed attempts; the successful verification tree is `%TEMP%\m8v2-restore-s03-benchv2-final-11`.
-- s04 restore-validation scratch trees from failed and successful path-format checks remain under `%TEMP%`: `m8v2-restore-s04-benchv2-final-01` through `-04`.
-- The s05 restore-validation tree remains at `%TEMP%\m8v2-restore-s05-benchv2-final-01`.
-- The s07 restore-validation trees remain at `%TEMP%\m8v2-restore-s07-benchv2-final-01` and `-02`.
-- The s08 restore-validation tree remains at `%TEMP%\m8v2-restore-s08-benchv2-final-01`.
-- The s10 restore-validation tree remains at `%TEMP%\m8v2-restore-s10-benchv2-final-01`.
-- The s09 restore-validation tree remains at `%TEMP%\m8v2-restore-s09-benchv2-final-01`.
-- The s02 restore-validation tree remains at `%TEMP%\m8v2-restore-s02-benchv2-final-01`.
-- The s06 restore-validation tree remains at `%TEMP%\m8v2-restore-s06-benchv2-final-01`.
-- The s11 restore-validation tree remains at `%TEMP%\m8v2-restore-s11-benchv2-final-01`.
-- The s12 restore-validation tree remains at `%TEMP%\m8v2-restore-s12-benchv2-final-01`.
-- The encrypted s12 full capture remains outside Git in the directory configured by `lab/v2/.env`.
+Encrypted full captures are kept outside Git in the directory configured by `lab/v2/.env`. Source archives and replay inputs under `lab/v2/.cache/` are ignored build inputs. Restore-validation trees remain outside the repository:
 
+- s01: `C:\Windows\Temp\m8v2-restore-s01-51b317c261f04798a7d4ca714451702a`
+- s02: `%TEMP%\m8v2-restore-s02-benchv2-final-01`
+- s03: `%TEMP%\m8v2-restore-s03-benchv2-final-11` plus earlier failed validation trees
+- s04: `%TEMP%\m8v2-restore-s04-benchv2-final-01` through `-04`
+- s05: `%TEMP%\m8v2-restore-s05-benchv2-final-01`
+- s06: `%TEMP%\m8v2-restore-s06-benchv2-final-01`
+- s07: `%TEMP%\m8v2-restore-s07-benchv2-final-01` and `-02`
+- s08: `%TEMP%\m8v2-restore-s08-benchv2-final-01`
+- s09: `%TEMP%\m8v2-restore-s09-benchv2-final-01`
+- s10: `%TEMP%\m8v2-restore-s10-benchv2-final-01`
+- s11: `%TEMP%\m8v2-restore-s11-benchv2-final-01`
+- s12: `%TEMP%\m8v2-restore-s12-benchv2-final-01`
 

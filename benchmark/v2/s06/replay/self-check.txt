@@ -15,6 +15,6 @@
     0.30023
   ],
   "defanged_files": 0,
-  "scenario_bytes": 2079385,
+  "scenario_bytes": 2068966,
   "ground_truth_sha256": "83863843daa1c18bfd5df5800265fa6ec3c535a03755e226746598d1a50f8eaf"
 }

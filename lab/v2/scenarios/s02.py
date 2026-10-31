@@ -134,7 +134,10 @@ def attack() -> None:
             summary = [
                 line.strip()
                 for line in sqlmap.stdout.splitlines()
-                if any(word in line.lower() for word in ("vulnerable", "dumped", "fetched", "error"))
+                if any(
+                    word in line.lower()
+                    for word in ("vulnerable", "dumped", "fetched", "error")
+                )
             ][-8:]
             Path("/replay/s02-sqlmap-summary.json").write_text(
                 json.dumps({"exit_code": sqlmap.returncode, "summary": summary}, indent=2) + "\n",
@@ -147,7 +150,9 @@ def attack() -> None:
                     "exit_code": sqlmap.returncode,
                     "injection_confirmed": injection_confirmed,
                     "user_table_dump_confirmed": dump_ok,
-                    "output_paths": [path.relative_to(output_dir).as_posix() for path in dump_files],
+                    "output_paths": [
+                        path.relative_to(output_dir).as_posix() for path in dump_files
+                    ],
                 },
                 indent=2,
             )

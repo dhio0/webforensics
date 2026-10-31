@@ -2,8 +2,11 @@
 
 ## Current state
 
-Round-three fixes and the s01 pilot are recorded. Scenarios s02–s12 have not been
-started. Do not treat this checkout as a complete multi-scenario benchmark.
+All twelve v2 scenarios are recorded on the `m8-benchmark-v2` branch. The dev
+split is s01, s03, s04, s05, s07, s08, s10, and s12; the held-out split is s02,
+s06, s09, and s11. Scenario-specific adaptations and provenance are recorded in
+`benchmark/v2/README.md`, `HELDOUT.md`, and `STATUS.md`. Recording validation
+does not run the analysis or evaluation commands.
 
 ## Isolation and setup contract
 
