@@ -1,0 +1,5 @@
+path	original_sha256	original_size	role	reason
+wp-content/plugins/m8v2-persistence/.htaccess	8cf2d29eaadd6326481ecec6694d8504565b49dc2d32b1b12a555e18442a98ce	40	persistence_config	new or changed executable, script-tagged, zip, or phar file
+wp-content/plugins/m8v2-persistence/m8v2-persistence.php	d335e76b7564785e687fb669c5fca985099563d68445c28900a62a14eae3b2f7	68	malicious_plugin	new or changed executable, script-tagged, zip, or phar file
+wp-content/plugins/m8v2-persistence/m8v2-photo.jpg	1d6180dd8ad30433d1a3205ed2cbc53d967a0894134c9630b02467f5c9c3af99	515	webshell_agent	new or changed executable, script-tagged, zip, or phar file
+wp-content/uploads/wp-file-manager-pro/fm_backup/index.php	e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855	0	side_effect	new or changed executable, script-tagged, zip, or phar file

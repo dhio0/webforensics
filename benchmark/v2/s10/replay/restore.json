@@ -1,0 +1,7 @@
+{
+  "application": "WordPress 5.5.3",
+  "app_type": "wordpress",
+  "image": "sha256:7f9b718aebbc5511d8299390ed09ae50beca847811292743908045d9c47aa294",
+  "attacker_image": "sha256:4f492b38858335ffc9dd5e7ac18d296b3bd59f0d13de3ce7557ab75a6610da51",
+  "webroot": "/var/www/html"
+}

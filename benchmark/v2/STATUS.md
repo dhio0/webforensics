@@ -15,15 +15,17 @@
 - s07 source pins, Hydra result, step selection, and the safe marker adaptation are documented in [s07/notes.md](s07/notes.md) and [SOURCES.md](SOURCES.md). No CVE is claimed for the normal authenticated WordPress plugin installer.
 - **s08** records WordPress File Manager 6.0 CVE-2020-25213: an uploaded Weevely agent was used briefly and removed before collection. The 2xx root-cause upload is line 10,355, the removal request is line 10,368, and the absent-path check is line 10,371. Ten named steps span 68.910%–69.043% of 15,021 rows. The 15,000 background requests have 10,384 clients and 903 User-Agents; visitor success is 96.274%, with 2,923 scanner rows retained. The transient agent is recorded as deleted with its hash and size, but its content is absent; the collector defanged one empty File Manager side effect. Schema, byte-identical label regeneration with transient-file support, zero-parse-failure evidence validation, self-check, restore of 2,844 manifest entries, and Defender scan pass. Folder size is 3,250,508 bytes with zero Defender detections; ground-truth SHA-256 is `bd191ce98466319ccce0b7f3d321d8f1282d24f7db8a1fff8a9bd955ba20aabc`.
 - s08 transient-file labeling, deletion evidence, and File Manager provenance are described in [s08/notes.md](s08/notes.md) and [SOURCES.md](SOURCES.md).
+- **s10** records a WordPress 5.5.3 administrator ZIP installation that places `.htaccess` and a Weevely agent with a `.jpg` extension. The 2xx root-cause upload is line 9,609 and the image-extension command check is line 9,610. Nine named steps span 63.938%–63.998% of 15,016 rows. The 15,000 background requests have 10,384 clients and 903 User-Agents; visitor success is 96.274%, with 2,923 scanner rows retained. The collector defanged four paths: `.htaccess`, the package's PHP file, the disguised image, and the empty File Manager side effect. Schema, byte-identical label regeneration, zero-parse-failure evidence validation, self-check, restore of 2,847 manifest entries, and Defender scan pass. Folder size is 3,249,869 bytes with zero Defender detections; ground-truth SHA-256 is `91569f3a3903c6e78737694a77c9ab79d3ad42764b1820717fda40b2c22549f5`.
+- s10's standard admin-installer adaptation and extension-handler check are described in [s10/notes.md](s10/notes.md) and [SOURCES.md](SOURCES.md). No CVE is claimed for the normal WordPress plugin installer.
 - Latest full project checks before s03 work: `pytest` 536 passed, 8 skipped; `ruff check .` passed. No files under `src/webforensics/` or existing goldens changed. No analysis or evaluation was run.
 
 ## Next exact step
 
-Record dev scenario s10 from its pinned sources, run its scenario checks, and commit it with a clean status checkpoint. Continue with s12, then held-outs s02, s06, s09, and s11. Finish with `HELDOUT.md`, README, SOURCES, and final status updates.
+Record dev scenario s12 from its pinned sources, run its scenario checks, and commit it with a clean status checkpoint. Then record held-outs s02, s06, s09, and s11. Finish with `HELDOUT.md`, README, SOURCES, and final status updates.
 
 ## Remaining plan
 
-1. Record remaining dev scenarios: s10, s12.
+1. Record remaining dev scenarios: s12.
 2. Record held-outs: s02, s06, s09, s11; add their ground-truth hashes and recording commits to `HELDOUT.md`.
 3. Update README, SOURCES, and this status with the finished benchmark.
 
@@ -35,8 +37,10 @@ Record dev scenario s10 from its pinned sources, run its scenario checks, and co
 - The encrypted s04 full capture remains outside Git in the directory configured by `lab/v2/.env`.
 - The encrypted s05 full capture remains outside Git in the directory configured by `lab/v2/.env`.
 - The encrypted s08 full capture remains outside Git in the directory configured by `lab/v2/.env`.
+- The encrypted s10 full capture remains outside Git in the directory configured by `lab/v2/.env`.
 - s01's restored tree remains at `C:\Windows\Temp\m8v2-restore-s01-51b317c261f04798a7d4ca714451702a`. s03 restore-validation trees remain under `%TEMP%` from failed attempts; the successful verification tree is `%TEMP%\m8v2-restore-s03-benchv2-final-11`.
 - s04 restore-validation scratch trees from failed and successful path-format checks remain under `%TEMP%`: `m8v2-restore-s04-benchv2-final-01` through `-04`.
 - The s05 restore-validation tree remains at `%TEMP%\m8v2-restore-s05-benchv2-final-01`.
 - The s07 restore-validation trees remain at `%TEMP%\m8v2-restore-s07-benchv2-final-01` and `-02`.
 - The s08 restore-validation tree remains at `%TEMP%\m8v2-restore-s08-benchv2-final-01`.
+- The s10 restore-validation tree remains at `%TEMP%\m8v2-restore-s10-benchv2-final-01`.
