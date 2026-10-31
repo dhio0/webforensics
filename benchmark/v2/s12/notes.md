@@ -47,7 +47,7 @@ separate benign side effect. The collector defanged the changed plugin PHP,
 cache PHP, and empty File Manager PHP path. It did not alter the PNG. Schema
 validation, byte-identical label regeneration, zero-parse-failure evidence
 validation, self-check, restoration of all 2,847 manifest entries, and the final
-Defender scan passed. The scenario folder is 3,263,285 bytes including these
+Defender scan passed. The scenario folder is 3,263,416 bytes including these
 notes and scan record; Defender realtime protection was enabled and the scan
 found zero detections. Isolation checks refused a non-allowlisted service and
 confirmed external addresses were unreachable.

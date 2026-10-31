@@ -21,9 +21,11 @@
 - s12's local plugin update fixture and unavailable-core-update adaptation are explained in [s12/notes.md](s12/notes.md) and recorded in [SOURCES.md](SOURCES.md).
 - Latest full project checks before s03 work: `pytest` 536 passed, 8 skipped; `ruff check .` passed. No files under `src/webforensics/` or existing goldens changed. No analysis or evaluation was run.
 
+- **s11 (held-out)** records a no-compromise WordPress scanner/sqlmap run. Eight marked probes span lines 5,851–5,858; sqlmap found no injectable search parameter. There are 15,000 background rows and 15,104 access rows total. The collector defanged one empty File Manager side effect. Schema, byte-identical regeneration, evidence parsing, self-check, restore of 2,844 entries, and Defender scan pass; Defender detections are zero. Ground-truth SHA-256 is `f2819fcc1e050473c793b85eafd7e44ed68bffe53514ed522ad12dd9fff5dbbb`; scenario size before final commit is 3,266,494 bytes. The app returned some normal 200/302/405 responses, so the originally described all-failure scanner story was adapted and that limit is recorded in `s11/notes.md`.
+
 ## Next exact step
 
-Record held-out scenario s02 from its pinned sources, run its scenario checks, and commit it with a clean status checkpoint. Continue with s06, s09, and s11, then add `HELDOUT.md`, update README/SOURCES, and run the requested final acceptance checks.
+Record held-out scenario s02 from its pinned sources, run its scenario checks, and commit it with a clean status checkpoint. Then continue with s06 and s09; add `HELDOUT.md`, update README/SOURCES, and run the requested final acceptance checks. s11 was recorded first among held-outs; the remaining held-outs follow the listed sequence.
 
 ## Remaining plan
 
@@ -45,5 +47,6 @@ Record held-out scenario s02 from its pinned sources, run its scenario checks, a
 - The s07 restore-validation trees remain at `%TEMP%\m8v2-restore-s07-benchv2-final-01` and `-02`.
 - The s08 restore-validation tree remains at `%TEMP%\m8v2-restore-s08-benchv2-final-01`.
 - The s10 restore-validation tree remains at `%TEMP%\m8v2-restore-s10-benchv2-final-01`.
+- The s11 restore-validation tree remains at `%TEMP%\m8v2-restore-s11-benchv2-final-01`.
 - The s12 restore-validation tree remains at `%TEMP%\m8v2-restore-s12-benchv2-final-01`.
 - The encrypted s12 full capture remains outside Git in the directory configured by `lab/v2/.env`.

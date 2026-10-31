@@ -1,0 +1,13 @@
+{
+  "source": "background.log.gz",
+  "seed": 5111,
+  "pace_seconds": 0.001,
+  "attempted": 15000,
+  "parsed": 15000,
+  "last_source_line": 15000,
+  "failures": {
+    "http_error": 3687
+  },
+  "started_at_utc": "2026-10-31T15:59:55.655690+00:00",
+  "ended_at_utc": "2026-10-31T16:02:15.348545+00:00"
+}
