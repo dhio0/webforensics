@@ -1,0 +1,4 @@
+path	original_sha256	original_size	role	reason
+wp-content/cache/m8v2-s12-page.php	179ffacefc0f4b7adf265caa685ec8cea07d8cbf3ce7075e4263f9619e921d5e	50	benign_cache_generated	new or changed executable, script-tagged, zip, or phar file
+wp-content/plugins/m8v2-cache-fixture/m8v2-cache-fixture.php	c6ba6f948994088302d96b79f52b4106f8601a5a6fe17c107cc109e36fa78b78	1071	benign_plugin_update	new or changed executable, script-tagged, zip, or phar file
+wp-content/uploads/wp-file-manager-pro/fm_backup/index.php	e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855	0	side_effect	new or changed executable, script-tagged, zip, or phar file

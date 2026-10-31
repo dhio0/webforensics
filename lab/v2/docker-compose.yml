@@ -61,6 +61,7 @@ services:
     volumes:
       - wpdata:/var/www/html
       - collector-work:/collector-work
+      - ./scenarios/fixtures:/opt/fixtures:ro
     depends_on:
       db:
         condition: service_healthy

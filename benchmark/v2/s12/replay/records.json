@@ -1,0 +1,122 @@
+{
+  "scenario_id": "s12",
+  "description": "An administrator checks core updates, updates a local cache plugin, uploads media, and warms a benign PHP cache. A scanner receives a catch-all 200; there is no compromise.",
+  "attacker_ips": [],
+  "root_cause_step": null,
+  "steps": [
+    {
+      "id": "admin_login_form",
+      "category": "benign_admin_activity",
+      "mitre": [],
+      "label_method": "header",
+      "expected_in_timeline": false
+    },
+    {
+      "id": "admin_login",
+      "category": "benign_admin_activity",
+      "mitre": [],
+      "label_method": "header",
+      "expected_in_timeline": false
+    },
+    {
+      "id": "core_update_check",
+      "category": "benign_core_update_check",
+      "mitre": [],
+      "label_method": "header",
+      "expected_in_timeline": false
+    },
+    {
+      "id": "plugin_update_form",
+      "category": "benign_plugin_update",
+      "mitre": [],
+      "label_method": "header",
+      "expected_in_timeline": false
+    },
+    {
+      "id": "plugin_update_package",
+      "category": "benign_plugin_update",
+      "mitre": [],
+      "label_method": "header",
+      "expected_in_timeline": false
+    },
+    {
+      "id": "plugin_update_apply",
+      "category": "benign_plugin_update",
+      "mitre": [],
+      "label_method": "header",
+      "expected_in_timeline": false
+    },
+    {
+      "id": "cache_warm_form",
+      "category": "benign_cache_activity",
+      "mitre": [],
+      "label_method": "header",
+      "expected_in_timeline": false
+    },
+    {
+      "id": "cache_generation",
+      "category": "benign_cache_activity",
+      "mitre": [],
+      "label_method": "header",
+      "expected_in_timeline": false
+    },
+    {
+      "id": "media_upload_form",
+      "category": "benign_media_upload",
+      "mitre": [],
+      "label_method": "header",
+      "expected_in_timeline": false
+    },
+    {
+      "id": "media_upload",
+      "category": "benign_media_upload",
+      "mitre": [],
+      "label_method": "header",
+      "expected_in_timeline": false
+    },
+    {
+      "id": "scanner_catchall_probe",
+      "category": "benign_scanner_request",
+      "mitre": [],
+      "label_method": "header",
+      "expected_in_timeline": false
+    }
+  ],
+  "files": [
+    {
+      "path": "/wp-content/plugins/m8v2-cache-fixture/m8v2-cache-fixture.php",
+      "role": "benign_plugin_update",
+      "expected_in_report": false
+    },
+    {
+      "path": "/wp-content/cache/m8v2-s12-page.php",
+      "role": "benign_cache_generated",
+      "expected_in_report": false
+    },
+    {
+      "path": "/wp-content/uploads/2026/10/m8v2-s12-admin-media.png",
+      "role": "benign_media_upload",
+      "expected_in_report": false
+    },
+    {
+      "path": "/wp-content/uploads/wp-file-manager-pro/fm_backup/index.php",
+      "role": "side_effect",
+      "expected_in_report": false
+    }
+  ],
+  "analysis": {
+    "access_logs": [
+      "access.log.gz"
+    ],
+    "error_logs": [
+      "app-error.log"
+    ],
+    "error_log_format": "apache",
+    "error_log_utc_offset": "+0000",
+    "manifest": "manifest.tsv",
+    "baseline": "baseline.tsv",
+    "trusted_proxies": []
+  },
+  "split": "dev",
+  "expected_rule_ids": []
+}

@@ -17,17 +17,18 @@
 - s08 transient-file labeling, deletion evidence, and File Manager provenance are described in [s08/notes.md](s08/notes.md) and [SOURCES.md](SOURCES.md).
 - **s10** records a WordPress 5.5.3 administrator ZIP installation that places `.htaccess` and a Weevely agent with a `.jpg` extension. The 2xx root-cause upload is line 9,609 and the image-extension command check is line 9,610. Nine named steps span 63.938%–63.998% of 15,016 rows. The 15,000 background requests have 10,384 clients and 903 User-Agents; visitor success is 96.274%, with 2,923 scanner rows retained. The collector defanged four paths: `.htaccess`, the package's PHP file, the disguised image, and the empty File Manager side effect. Schema, byte-identical label regeneration, zero-parse-failure evidence validation, self-check, restore of 2,847 manifest entries, and Defender scan pass. Folder size is 3,249,869 bytes with zero Defender detections; ground-truth SHA-256 is `91569f3a3903c6e78737694a77c9ab79d3ad42764b1820717fda40b2c22549f5`.
 - s10's standard admin-installer adaptation and extension-handler check are described in [s10/notes.md](s10/notes.md) and [SOURCES.md](SOURCES.md). No CVE is claimed for the normal WordPress plugin installer.
+- **s12** records a no-compromise WordPress scenario with `root_cause_step: null` and no attacker IPs. The admin checked the core update page, updated the local cache fixture, uploaded media, and generated a benign PHP cache; a scanner catch-all probe received HTTP 200. The eleven named steps span 32.978%–33.051% of 15,013 rows. The 15,000 background requests have 10,384 clients and 903 User-Agents; visitor success is 98.220%, with all 2,923 scanner rows retained and 2,875 returning HTTP 200. The collector defanged three benign PHP paths and retained the PNG. Schema, byte-identical label regeneration, zero-parse-failure evidence validation, self-check, restore of 2,847 manifest entries, and Defender scan pass. Folder size is 3,263,190 bytes with zero Defender detections; ground-truth SHA-256 is `78bc3d76a71bad7ddad5e590ec646de77351c0ed0f82a922ef8a1356bb15af5e`.
+- s12's local plugin update fixture and unavailable-core-update adaptation are explained in [s12/notes.md](s12/notes.md) and recorded in [SOURCES.md](SOURCES.md).
 - Latest full project checks before s03 work: `pytest` 536 passed, 8 skipped; `ruff check .` passed. No files under `src/webforensics/` or existing goldens changed. No analysis or evaluation was run.
 
 ## Next exact step
 
-Record dev scenario s12 from its pinned sources, run its scenario checks, and commit it with a clean status checkpoint. Then record held-outs s02, s06, s09, and s11. Finish with `HELDOUT.md`, README, SOURCES, and final status updates.
+Record held-out scenario s02 from its pinned sources, run its scenario checks, and commit it with a clean status checkpoint. Continue with s06, s09, and s11, then add `HELDOUT.md`, update README/SOURCES, and run the requested final acceptance checks.
 
 ## Remaining plan
 
-1. Record remaining dev scenarios: s12.
-2. Record held-outs: s02, s06, s09, s11; add their ground-truth hashes and recording commits to `HELDOUT.md`.
-3. Update README, SOURCES, and this status with the finished benchmark.
+1. Record held-outs: s02, s06, s09, s11; add their ground-truth hashes and recording commits to `HELDOUT.md`.
+2. Update README, SOURCES, and this status with the finished benchmark; run all requested acceptance checks.
 
 ## Leftover files
 
@@ -44,3 +45,5 @@ Record dev scenario s12 from its pinned sources, run its scenario checks, and co
 - The s07 restore-validation trees remain at `%TEMP%\m8v2-restore-s07-benchv2-final-01` and `-02`.
 - The s08 restore-validation tree remains at `%TEMP%\m8v2-restore-s08-benchv2-final-01`.
 - The s10 restore-validation tree remains at `%TEMP%\m8v2-restore-s10-benchv2-final-01`.
+- The s12 restore-validation tree remains at `%TEMP%\m8v2-restore-s12-benchv2-final-01`.
+- The encrypted s12 full capture remains outside Git in the directory configured by `lab/v2/.env`.

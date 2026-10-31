@@ -1,0 +1,27 @@
+{
+  "source_dataset": "Zenodo record 20001206, Organization X, MIT",
+  "request_source": "zenodo-20001206-organization-x.zip",
+  "client_identity_source": "NASA_access_log_Jul95.gz",
+  "client_identity_rule": "NASA source addresses sampled evenly in original order and paired with Organization X request rows in chronological order; Organization X anonymizes nearly all client addresses to one value",
+  "source_rows": 213121,
+  "selected_rows": 15000,
+  "distinct_user_agents": 903,
+  "maximum_user_agent_share": 0.044066666666666664,
+  "distinct_client_identities": 10384,
+  "maximum_client_share": 0.009733333333333333,
+  "scanner_rows_by_user_agent_or_source_404": 2923,
+  "source_status_mix": {
+    "200": 9414,
+    "206": 6,
+    "302": 4023,
+    "304": 293,
+    "403": 1,
+    "404": 1261,
+    "500": 2
+  },
+  "source_method_mix": {
+    "GET": 12693,
+    "HEAD": 669,
+    "POST": 1638
+  }
+}
