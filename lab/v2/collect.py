@@ -29,6 +29,7 @@ EXECUTABLE_SUFFIXES = {
 }
 ARCHIVE_SUFFIXES = {".zip", ".phar"}
 PHP_OPENERS = (b"<?", b"<%")
+PUBLIC_ARTIFACT_MAX_BYTES = 1_000_000
 @dataclass(frozen=True)
 class ManifestRow:
     path: str
@@ -94,6 +95,7 @@ def should_defang(path: Path, content: bytes) -> bool:
         or suffix in ARCHIVE_SUFFIXES
         or any(opener in content for opener in PHP_OPENERS)
         or content.startswith(b"PK\x03\x04")
+        or len(content) > PUBLIC_ARTIFACT_MAX_BYTES
     )
 
 
@@ -142,7 +144,11 @@ def defang_snapshot(
             continue
         content = source.read_bytes()
         if changed and should_defang(source, content):
-            reason = "new or changed executable, script-tagged, zip, or phar file"
+            reason = (
+                "changed file exceeds public snapshot size limit; full copy remains encrypted"
+                if len(content) > PUBLIC_ARTIFACT_MAX_BYTES
+                else "new or changed executable, script-tagged, zip, or phar file"
+            )
             destination.write_text(
                 f"DEFANGED {row.sha256} {row.fields[2]}\n", encoding="ascii", newline="\n"
             )

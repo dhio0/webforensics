@@ -1,16 +1,21 @@
 # s03: phpMyFAQ authenticated Save News SQL injection
 
-## Scenario adaptation and verification status
+## Scenario and provenance
 
-This scenario uses phpMyFAQ 3.2.5 (MPL-2.0) and CVE-2024-27299. The upstream advisory says exploitation requires an authenticated account with permission to add or edit FAQ news. The upstream fix changes the `authorEmail` escaping in `phpmyfaq/src/phpMyFAQ/News.php` at lines 289 and 335. The 3.2.5 source tag was fetched and its SHA-256 verified as `282b638d7ecda25d6a803d16d9865c6b8aa0516ec9ed6d24bfadabdc6800d05f`.
+This replay uses phpMyFAQ 3.2.5 (MPL-2.0) and CVE-2024-27299. The maintainer advisory says the affected news editor requires an authenticated user with add/edit rights. The upstream fix changes `authorEmail` escaping in `phpmyfaq/src/phpMyFAQ/News.php` at lines 289 and 335. The pinned 3.2.5 source tag is `ee05654763ef0f16137d3bd21ec50e2f21ffb8f8`; the downloaded source archive SHA-256 is `282b638d7ecda25d6a803d16d9865c6b8aa0516ec9ed6d24bfadabdc6800d05f`.
 
-The scenario adapts the originally proposed SQLi-to-file-write story to authenticated SQL injection in the Save News feature. The planned benignly bounded outcome is database read proof only, without writing a server file. This limitation follows the documented vulnerability path and does not claim an unauthenticated foothold. The attack has not yet been run or captured.
+The replay authenticates the seeded benchmark administrator, opens Save News, runs pinned sqlmap with a generic single-field check, then uses one maintainer-documented short database-delay check to confirm the flaw. The generic sqlmap check did not identify the cross-field condition. The targeted confirmation returned HTTP 200 after a 1.022-second database delay. It wrote no server-side attack file and ran no operating-system command. The advisory and fix are linked below.
 
-## Capture state
+## Recorded evidence
 
-The phpMyFAQ image builds from the pinned 3.2.5 source archive using PHP 8.1 and Composer dependencies. The app stack starts on an internal Docker network with PostgreSQL. Setup created the database tables and benchmark administrator. The attacker network isolation checks passed. During initial runtime checks, the frontend and admin routes returned an empty response body after setup. This issue must be diagnosed and fixed before recording background traffic or an attack.
-
-No s03 ground truth has been generated. No line numbers, vulnerable-code hash, file list, or attack outcome are claimed yet. The source code line numbers above are sourced from the upstream fix commit and still need to be connected to the replay's captured vulnerable source hash.
+- Access log: 15,023 rows, including 15,000 background rows; no access, manifest, or Apache error parse failures.
+- Background diversity: 10,384 clients and 903 User-Agents. Largest client share is 0.973%; largest User-Agent share is 4.407%.
+- Visitor 2xx/3xx share is 99.959%; all 2,923 source-classified scanner rows were retained.
+- Five attacker steps are labelled between 33.955% and 34.101% of the access log. The root-cause request is an attacker HTTP 2xx response.
+- Ground truth records `News.php`, line 289, with vulnerable-source SHA-256 `b5bc9846390989799935252d07ba16ce480b0ca4a5ef7a1d9fc8de758421cd2a`.
+- One phpMyFAQ runtime tracking file changed during the run. Its path, original SHA-256, and size are in `evidence/manifest.tsv` and `evidence/defanged.tsv`; its public snapshot is an inert stub because the original is larger than the 1 MB public snapshot limit. The full webroot remains in the encrypted capture outside the repository.
+- The s03 folder is 3,496,035 bytes. The schema, byte-identical ground-truth regeneration, background-diversity checks, evidence adapters, restore of 2,880 manifest entries, and Defender scan all pass. Defender realtime protection was enabled and detections were zero.
+- Restore uses the pinned phpMyFAQ image plus five small setup-generated `index.html` files from `replay/restore-overlay/` and the locally configured database settings. The setup overlay contains no credentials.
 
 ## Sources
 

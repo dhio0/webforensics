@@ -39,6 +39,7 @@ def restore(scenario: str, destination: Path) -> int:
 
     config = json.loads(metadata.read_text(encoding="utf-8"))
     image = config["image"]
+    app_type = config.get("app_type", "wordpress")
     image_webroot = config.get("webroot", "/var/www/html")
     dest = destination.resolve()
     repo = ROOT.resolve()
@@ -97,7 +98,11 @@ def restore(scenario: str, destination: Path) -> int:
                     container,
                     "sh",
                     "-c",
-                    "test -f /var/www/html/wp-config.php -a -f /var/www/html/.htaccess",
+                    (
+                        "test -f /var/www/html/wp-config.php -a -f /var/www/html/.htaccess"
+                        if app_type == "wordpress"
+                        else "test -f /var/www/html/index.php"
+                    ),
                 ],
                 stdout=subprocess.DEVNULL,
                 stderr=subprocess.DEVNULL,
@@ -114,6 +119,46 @@ def restore(scenario: str, destination: Path) -> int:
         )
     finally:
         subprocess.run(["docker", "rm", "-f", container], check=False, stdout=subprocess.DEVNULL)
+
+    overlay_value = config.get("setup_overlay")
+    if overlay_value:
+        setup_overlay = (scenario_dir / overlay_value).resolve()
+        if not is_inside(setup_overlay, scenario_dir.resolve()):
+            raise ValueError("setup overlay must stay inside the scenario directory")
+        if setup_overlay.is_dir():
+            for source in setup_overlay.rglob("*"):
+                if not source.is_file() or source.is_symlink():
+                    continue
+                rel = source.relative_to(setup_overlay)
+                target = dest / rel
+                target.parent.mkdir(parents=True, exist_ok=True)
+                shutil.copyfile(source, target)
+
+    if app_type == "phpmyfaq":
+        def php_quote(value: str) -> str:
+            return value.replace("\\", "\\\\").replace("'", "\\'")
+
+        values = {
+            "server": "pgdb",
+            "port": "5432",
+            "user": local_env.get("MYSQL_USER", "benchv2"),
+            "password": local_env.get("MYSQL_PASSWORD", "benchv2"),
+            "db": local_env.get("MYSQL_DATABASE", "benchv2"),
+            "prefix": "",
+            "type": "pgsql",
+        }
+        config_dir = dest / "config"
+        config_dir.mkdir(exist_ok=True)
+        config_path = config_dir / "database.php"
+        if not config_path.exists():
+            config_path.write_text(
+                ("<?php\n" + "".join(
+                    f"$DB['{key}'] = '{php_quote(value)}';\n"
+                    for key, value in values.items()
+                )).rstrip("\n"),
+                encoding="utf-8",
+                newline="\n",
+            )
 
     checked = 0
     for rel, row in manifest.items():

@@ -10,7 +10,7 @@ listed as a candidate is not evidence that a scenario has been replayed.
 | WordPress | 5.5.3, Docker Hub `linux/amd64` manifest `sha256:07fffd786a81e5f23fe4f5f58a181b43084ed232e1db732415023848937b9c73` | GPL-2.0-or-later | [official image](https://hub.docker.com/_/wordpress), [5.5.3 archive](https://wordpress.org/wordpress-5.5.3.tar.gz) |
 | WordPress File Manager | 6.0, archive SHA-256 `f70dd0e72d030795639e3c59e4a0c73005cabf07e1c91efaa34d0808a5995c9d` | GPLv2 (plugin header) | [version archive](https://downloads.wordpress.org/plugin/wp-file-manager.6.0.zip), [CVE-2020-25213](https://nvd.nist.gov/vuln/detail/CVE-2020-25213) |
 | s01 WordPress app image | Docker image content digest `sha256:9f583315107a756a0398b1d7b556afdc054230c5320f6b07291a3d2744e120d8` | WordPress and plugin licenses above | `replay/restore.json` |
-| phpMyFAQ | 3.2.5 source tag `ee05654763ef0f16137d3bd21ec50e2f21ffb8f8`; codeload archive SHA-256 `282b638d7ecda25d6a803d16d9865c6b8aa0516ec9ed6d24bfadabdc6800d05f`; local image `sha256:962795cb0306b92d462b7b5c987bc2128966e3b63c5a2082830c5d4a8a451507` | MPL-2.0 (`LICENSE` at the 3.2.5 tag) | [license](https://github.com/thorsten/phpMyFAQ/blob/3.2.5/LICENSE), [GitHub advisory](https://github.com/thorsten/phpMyFAQ/security/advisories/GHSA-qgxx-4xv5-6hcw), [fix commit](https://github.com/thorsten/phpMyFAQ/commit/1b68a5f89fb65996c56285fa636b818de8608011) |
+| phpMyFAQ | 3.2.5 source tag `ee05654763ef0f16137d3bd21ec50e2f21ffb8f8`; codeload archive SHA-256 `282b638d7ecda25d6a803d16d9865c6b8aa0516ec9ed6d24bfadabdc6800d05f`; s03 image `sha256:ad332294411c32cded91f9bdb2f650652ada270b20e07db6927dfa368d65f390` | MPL-2.0 (`LICENSE` at the 3.2.5 tag) | [license](https://github.com/thorsten/phpMyFAQ/blob/3.2.5/LICENSE), [GitHub advisory](https://github.com/thorsten/phpMyFAQ/security/advisories/GHSA-qgxx-4xv5-6hcw), [fix commit](https://github.com/thorsten/phpMyFAQ/commit/1b68a5f89fb65996c56285fa636b818de8608011) |
 | Contact Form 7 | 5.3.1, WordPress.org version archive | GPL-2.0-or-later | [version archive](https://downloads.wordpress.org/plugin/contact-form-7.5.3.1.zip), [CVE-2020-35489 advisory](https://nvd.nist.gov/vuln/detail/CVE-2020-35489) |
 | MariaDB | 10.5.27, Docker Hub `linux/amd64` manifest `sha256:6a12617127de7ad42895232407abf403ae79f465bb818a8ac7ffbb97b8b18937` | GPL-2.0 | [official image](https://hub.docker.com/_/mariadb) |
 | PostgreSQL | 16.6-alpine, manifest digest `sha256:1d04b9ba1d4996401f2552b51beda8187f175c0645c091e4781134fc9c9a3eef` | PostgreSQL License | [official image](https://hub.docker.com/_/postgres) |
@@ -26,13 +26,14 @@ listed as a candidate is not evidence that a scenario has been replayed.
 | THC Hydra | commit `a247d063e35f24218f55cc3c705e20073d1379eb` | AGPL-3.0 | [pinned source](https://github.com/vanhauser-thc/thc-hydra/tree/a247d063e35f24218f55cc3c705e20073d1379eb) |
 | Python cryptography | 50.0.2 | Apache-2.0 OR BSD-3-Clause | [PyPI release](https://pypi.org/project/cryptography/50.0.2/) |
 | Python attacker base | 3.13.18 slim-bookworm, `linux/amd64` digest `sha256:70bda1e795ded2a684ef9815955e05829b14ee5bb5c3eb2a940648e88f10fce9` | PSF-2.0 | [official image](https://hub.docker.com/_/python) |
-| Weevely/sqlmap attacker image | local image ID `sha256:689d381250cc5367c1d12fdd2f6888ce797006200f3c35488722a91d235dd7a3` | GPL-3.0 / GPL-2.0 | [pinned Weevely3](https://github.com/epinna/weevely3/tree/3d62e889871a62a344365b6a2d02b35c5ac1e946), [pinned sqlmap](https://github.com/sqlmapproject/sqlmap/tree/c42ebd7acf47c88b6407995dd9842a2eb5d6534d) |
+| Weevely/sqlmap attacker image | s03 local image ID `sha256:6b46cd5ed803cbc6e3d5692a8aa9f3fbf0f5e2de55b87dd3d608b141215dc376` | GPL-3.0 / GPL-2.0 | [pinned Weevely3](https://github.com/epinna/weevely3/tree/3d62e889871a62a344365b6a2d02b35c5ac1e946), [pinned sqlmap](https://github.com/sqlmapproject/sqlmap/tree/c42ebd7acf47c88b6407995dd9842a2eb5d6534d) |
 | WordPress app image | local image ID `sha256:9f583315107a756a0398b1d7b556afdc054230c5320f6b07291a3d2744e120d8` | GPL-2.0-or-later | built from the pinned WordPress image and File Manager archive above |
-| Collector image | local image ID `sha256:432cbd4daf7b64945aa11be4d91c12df270800e2a4684514adbfe458a504fd8e` | MIT (project code) | built from the pinned Python base and `cryptography` 50.0.2 |
+| Collector image | s03 local image ID `sha256:063261e260ea4a1691855a693c5f88fc719e12c278933872167adabdc383731b` | MIT (project code) | built from the pinned Python base and `cryptography` 50.0.2 |
 | requests | 2.32.4 | Apache-2.0 | [PyPI release](https://pypi.org/project/requests/2.32.4/) |
 
 The external image digests above are pinned for this Docker Desktop `linux/amd64` host.
-The locally built image IDs identify the artifacts used for s01. The Zenodo API metadata
+The locally built image IDs identify the artifacts used for each scenario as recorded in
+its `replay/restore.json`. The Zenodo API metadata
 reports MIT and describes Organization X/Y web-server logs. Organization X supplies
 real methods, request targets, statuses, and User-Agent values for v2 background rows.
 Its public access log anonymizes nearly all client addresses to the same value, so the
@@ -46,7 +47,6 @@ The exact transformation and resulting diversity counts are recorded per scenari
 |---|---|---|
 | PHPGurukul Student Record System | 3.20; CVE-2024-44640 (`add-course.php`, SQL injection) | NVD confirms the affected version and endpoint. No redistribution license was found during this check. Do not commit its source snapshot until the license is verified. |
 | PHPGurukul Small CRM | 3.0; CVE-2024-44644 (`manage-tickets.php`, SQL injection) | The published advisory names the endpoint, but no explicit OSI-approved license or source release with that license was verified. Not eligible for redistribution. |
-| phpMyFAQ | 3.2.5; CVE-2024-27299 (`phpmyfaq/src/phpMyFAQ/News.php`) | Selected for s03 per the final resumable task, which makes “small app” a preference. Runtime setup is underway; no replay is claimed yet. |
 | curl | exact package version not yet pinned | Tool and license verification still required. |
 | Docker attacker/app images | final image digests | Build and pin only after tool versions and application set are fixed. |
 
@@ -56,7 +56,9 @@ The exact transformation and resulting diversity counts are recorded per scenari
   phpMyFAQ 3.2.5 is affected and 3.2.6 is patched. The maintainer's fix commit names
   `phpmyfaq/src/phpMyFAQ/News.php` and changes the vulnerable `authorEmail` value at
   lines 289 and 335. The 3.2.5 source tag has an explicit MPL-2.0 license. This verifies
-  the source and line provenance for a possible s03 record; no s03 attack has been run.
+  the source and line provenance recorded in s03. The isolated s03 replay confirmed the
+  authenticated Save News SQL injection with a short database-delay check; it created no
+  attacker file and ran no operating-system command.
 
 - [CVE-2020-35489](https://nvd.nist.gov/vuln/detail/CVE-2020-35489): Contact Form 7
   releases before 5.3.2 are affected. CERT-In's [advisory](https://www.cert-in.org.in/s2cMainServlet?VLCODE=CIVN-2020-0442&pageid=PUBVLNOTES01)
@@ -83,6 +85,8 @@ served by the Apache/PHP WordPress image, and the pinned Weevely 4.0.3 agent com
 three commands. This is the in-lab execution check for the CVE selected for s01. The
 pilot did not use Contact Form 7 or claim an in-lab result for CVE-2020-35489.
 
-Weevely and requests were installed in the initial attacker image. The image now also
-pins sqlmap commit `c42ebd7acf47c88b6407995dd9842a2eb5d6534d` for s03 preparation; sqlmap
-has not yet been run against phpMyFAQ. Other listed attack tools remain unverified.
+Weevely and requests were installed in the initial attacker image. The image also pins
+sqlmap commit `c42ebd7acf47c88b6407995dd9842a2eb5d6534d`; its generic s03 check ran and
+did not identify the documented cross-field condition. A separate short-delay request
+confirmed the vulnerability in the isolated lab. Other listed attack tools remain
+unverified.

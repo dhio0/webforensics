@@ -18,7 +18,7 @@ ADD --checksum=sha256:282b638d7ecda25d6a803d16d9865c6b8aa0516ec9ed6d24bfadabdc68
 
 RUN unzip -q /tmp/phpmyfaq.zip -d /opt \
     && cd /opt/phpMyFAQ-3.2.5 \
-    && composer install --no-dev --no-interaction --prefer-dist --classmap-authoritative \
+    && composer install --no-dev --no-interaction --prefer-dist \
     && cp -a phpmyfaq/. /var/www/html/ \
     && chown -R www-data:www-data /var/www/html \
     && rm -rf /opt/phpMyFAQ-3.2.5 /tmp/phpmyfaq.zip

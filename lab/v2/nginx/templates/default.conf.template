@@ -20,6 +20,8 @@ access_log /var/log/v2/replay/labels.log replay_labels;
 server {
     listen 80;
     server_name _;
+    resolver 127.0.0.11 valid=10s ipv6=off;
+    set $lab_app_upstream ${APP_UPSTREAM};
 
     location / {
         proxy_set_header Host edge;
@@ -38,6 +40,6 @@ server {
         proxy_set_header X-Requested-With $http_x_requested_with;
         proxy_set_header Connection "";
         proxy_pass_request_headers off;
-        proxy_pass http://${APP_UPSTREAM};
+        proxy_pass http://$lab_app_upstream;
     }
 }

@@ -49,7 +49,9 @@ def check_scenario(root: Path, scenario_id: str) -> dict[str, Any]:
     with tempfile.TemporaryDirectory(prefix="v2-self-check-") as temporary:
         generated_path = Path(temporary) / "ground_truth.json"
         generated_path.write_text(
-            json.dumps(generated, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
+            json.dumps(generated, ensure_ascii=False, indent=2) + "\n",
+            encoding="utf-8",
+            newline="\n",
         )
         regenerated = generated_path.read_bytes()
     if regenerated != truth_path.read_bytes():
@@ -177,7 +179,7 @@ def main() -> None:
     result = check_scenario(args.root.resolve(), args.scenario)
     output = json.dumps(result, indent=2) + "\n"
     if args.output:
-        args.output.write_text(output, encoding="utf-8")
+        args.output.write_text(output, encoding="utf-8", newline="\n")
     print(output, end="")
 
 

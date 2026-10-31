@@ -1,0 +1,8 @@
+{
+  "application": "phpMyFAQ 3.2.5",
+  "database": "PostgreSQL",
+  "admin_created": true,
+  "setup_response": 200,
+  "vulnerable_source_sha256": "b5bc9846390989799935252d07ba16ce480b0ca4a5ef7a1d9fc8de758421cd2a",
+  "vulnerable_source_line": 289
+}

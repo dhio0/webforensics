@@ -119,7 +119,7 @@ services:
       - ./background.py:/opt/v2/background.py:ro
       - ./crawl_app.py:/opt/crawl_app.py:ro
       - ../../benchmark/v2/${SCENARIO:-s01}/replay:/replay
-      - ../../benchmark/v2/${SCENARIO:-s01}/replay/background.log.gz:/source/background.log.gz:ro
+      - ${APP_DATA_VOLUME:-wpdata}:/app-webroot:ro
     depends_on:
       - edge
     networks:
@@ -133,7 +133,6 @@ services:
       - ./background.py:/opt/v2/background.py:ro
       - ./crawl_app.py:/opt/crawl_app.py:ro
       - ../../benchmark/v2/${SCENARIO:-s01}/replay:/replay
-      - ../../benchmark/v2/${SCENARIO:-s01}/replay/background.log.gz:/source/background.log.gz:ro
     depends_on:
       - edge
     networks:

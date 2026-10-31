@@ -285,7 +285,11 @@ def write_ground_truth(records_path: Path, evidence: Path, labels_path: Path, ou
     scenario_id = records["scenario_id"]
     truth = make_ground_truth(records, evidence, labels_path, scenario_id)
     output.parent.mkdir(parents=True, exist_ok=True)
-    output.write_text(json.dumps(truth, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    output.write_text(
+        json.dumps(truth, ensure_ascii=False, indent=2) + "\n",
+        encoding="utf-8",
+        newline="\n",
+    )
     print(f"{output}: sha256={hashlib.sha256(output.read_bytes()).hexdigest()}")
 
 

@@ -27,7 +27,7 @@ NASA = re.compile(
     r'"(?P<method>[A-Z]+) (?P<target>\S+) (?P<protocol>HTTP/[^\"]+)" '
     r"(?P<status>\d{3}) \S+"
 )
-ALLOWED_TARGETS = {"wp", "smallapp", "dvwa"}
+ALLOWED_TARGETS = {"wp", "smallapp", "dvwa", "phpfaq"}
 ATTACKER_NETWORK = ipaddress.ip_network("192.0.2.128/25")
 LAB_NETWORKS = (
     ipaddress.ip_network("172.31.0.0/16"),

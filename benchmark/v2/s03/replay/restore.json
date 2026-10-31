@@ -1,0 +1,7 @@
+{
+  "application": "phpMyFAQ 3.2.5",
+  "app_type": "phpmyfaq",
+  "image": "sha256:ad332294411c32cded91f9bdb2f650652ada270b20e07db6927dfa368d65f390",
+  "webroot": "/var/www/html",
+  "setup_overlay": "replay/restore-overlay"
+}

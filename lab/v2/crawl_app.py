@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-import re
 import argparse
+import re
 import xml.etree.ElementTree as ET
 from collections import deque
 from html.parser import HTMLParser
@@ -102,8 +102,6 @@ def crawl(output: Path, base: str = BASE) -> int:
 
 
 if __name__ == "__main__":
-    import sys
-
     parser = argparse.ArgumentParser()
     parser.add_argument("output", type=Path)
     parser.add_argument("--base", default=BASE)
