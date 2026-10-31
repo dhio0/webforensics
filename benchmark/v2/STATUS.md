@@ -25,9 +25,11 @@
 
 - **s02 (held-out, adapted)** uses DVWA at pinned commit `a1978a2fed195acd093010af6395f86a281537ca`. Authenticated sqlmap confirmed the `id` SQLi and attempted a user-table dump, but no dump file was produced. DVWA requires login before the SQLi module, so the configured admin login came first; the later agent upload at line 10,591 is truthfully marked as the root cause. Steps span lines 10,351–10,591 in a 15,247-row log with 15,000 background rows. The collector defanged one PHP agent. Schema, byte-identical regeneration, evidence parse, self-check, restore of 252 entries, and Defender scan pass with zero detections. Ground-truth SHA-256 is `d7ac3c02f0de620bed382caeb3930fd92c9eda4edfe6cc8c8dc508403d9a413c`. The scenario is 2,098,342 bytes. Full adaptation details are in `s02/notes.md`; it does not claim a hash dump or a CVE.
 
+- **s06 (held-out, adapted)** records a DVWA LFI read of the isolated container's `/etc/passwd`. The marked file-read request is line 4,505; no RCE or CVE is claimed because a repeatable log/session poisoning path was not verified. The 15,000 background rows accompany 15,005 total access rows; no file was changed or defanged. Ground-truth SHA-256 is `83863843daa1c18bfd5df5800265fa6ec3c535a03755e226746598d1a50f8eaf`; scenario folder size is 2,079,385 bytes. Schema, byte-identical regeneration, parser validation, self-check, restore, and Defender scan pass with zero detections. See `s06/notes.md` for the adaptation.
+
 ## Next exact step
 
-Record held-out scenario s06 from an isolated LFI candidate, commit the verified evidence or document a skip if the execution path cannot be made safe and repeatable. Then handle s09, add `HELDOUT.md`, update README/SOURCES, and run all requested final acceptance checks. s11 was recorded first among held-outs; s02 follows it, then s06 and s09.
+Record held-out scenario s09 for timestamp changes with the pinned Weevely tool if its file timestamp module works in the isolated WordPress app. If it cannot be verified, document the skip and why. Then finish `HELDOUT.md`, README/SOURCES, and final acceptance checks. s11 was recorded first among held-outs; s02 and s06 are now recorded.
 
 ## Remaining plan
 
@@ -44,6 +46,7 @@ Record held-out scenario s06 from an isolated LFI candidate, commit the verified
 - The encrypted s08 full capture remains outside Git in the directory configured by `lab/v2/.env`.
 - The encrypted s10 full capture remains outside Git in the directory configured by `lab/v2/.env`.
 - The encrypted s02 full capture remains outside Git in the directory configured by `lab/v2/.env`.
+- The encrypted s06 full capture remains outside Git in the directory configured by `lab/v2/.env`.
 - s01's restored tree remains at `C:\Windows\Temp\m8v2-restore-s01-51b317c261f04798a7d4ca714451702a`. s03 restore-validation trees remain under `%TEMP%` from failed attempts; the successful verification tree is `%TEMP%\m8v2-restore-s03-benchv2-final-11`.
 - s04 restore-validation scratch trees from failed and successful path-format checks remain under `%TEMP%`: `m8v2-restore-s04-benchv2-final-01` through `-04`.
 - The s05 restore-validation tree remains at `%TEMP%\m8v2-restore-s05-benchv2-final-01`.
@@ -51,7 +54,9 @@ Record held-out scenario s06 from an isolated LFI candidate, commit the verified
 - The s08 restore-validation tree remains at `%TEMP%\m8v2-restore-s08-benchv2-final-01`.
 - The s10 restore-validation tree remains at `%TEMP%\m8v2-restore-s10-benchv2-final-01`.
 - The s02 restore-validation tree remains at `%TEMP%\m8v2-restore-s02-benchv2-final-01`.
+- The s06 restore-validation tree remains at `%TEMP%\m8v2-restore-s06-benchv2-final-01`.
 - The s11 restore-validation tree remains at `%TEMP%\m8v2-restore-s11-benchv2-final-01`.
 - The s12 restore-validation tree remains at `%TEMP%\m8v2-restore-s12-benchv2-final-01`.
 - The encrypted s12 full capture remains outside Git in the directory configured by `lab/v2/.env`.
+
 
