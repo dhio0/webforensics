@@ -38,7 +38,7 @@ from webforensics.report.document import (
     shown_gaps,
     timeline_runs,
 )
-from webforensics.report.text import Texts, clean
+from webforensics.report.text import Texts, clean, zone_short
 
 # Which tab shows which section of the static document. The timeline tab is built from
 # the events themselves, so the document's timeline table is not reused.
@@ -79,10 +79,18 @@ CATEGORY: dict[str, str] = {
 }
 CATEGORIES = ("recon", "exploit", "login", "write", "file", "use", "other")
 MAX_LANES = 10  # attackers first, then the busiest actors; the rest share one lane
+EN_DASH = chr(0x2013)
+MONTHS = ("Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Sep", "Okt", "Nov", "Des")
 
 
 def _ms(value: datetime) -> int:
     return int(value.timestamp() * 1000)
+
+
+def _clock(texts: Texts, value: datetime) -> tuple[str, str]:
+    """('29 Okt 2026', '12:19:55') in the report's zone, for the ledger's date rows."""
+    local = value.astimezone(texts.tz)
+    return f"{local.day} {MONTHS[local.month - 1]} {local.year}", f"{local:%H:%M:%S}"
 
 
 def _block(block: Block) -> dict[str, Any]:
@@ -163,12 +171,17 @@ def _events(report: Report, texts: Texts, cites: _Citations) -> tuple[list, list
                 rules=_counts([texts.rule(e.description.params.get("rule_id", "")) for e in run]))
             runs.append({"first": numbers[run[0].event_id], "last": numbers[run[-1].event_id],
                          "count": len(run), "text": text,
-                         "time": f"{texts.time(run[0].ts)} s.d. {texts.time(run[-1].ts)}"})
+                         "time": f"{texts.time(run[0].ts)} s.d. {texts.time(run[-1].ts)}",
+                         "clock": _clock(texts, run[0].ts)[1] + EN_DASH
+                         + _clock(texts, run[-1].ts)[1]})
         for e in run:
             text = texts.message(e.description)
+            day, clock = _clock(texts, e.ts)
             events.append({
                 "n": numbers[e.event_id],
                 "time": texts.time(e.ts),
+                "day": day,
+                "clock": clock,
                 "ms": _ms(e.ts),
                 "basis": m.TIME_BASIS.get(e.ts_basis.value, ""),
                 "phase": texts.tactic(e.mitre_tactic, e.mitre_technique),
@@ -204,6 +217,7 @@ def build_view(report: Report, texts: Texts) -> dict[str, Any]:
     if result.root_cause is not None:
         event = next(e for e in events if e["root"])
         root = {"n": event["n"], "text": event["text"], "time": event["time"],
+                "day": event["day"], "clock": event["clock"], "actor": event["actor"],
                 "vuln": texts.vuln(result.root_cause.vuln_class),
                 "conf": result.root_cause.confidence.value,
                 "confLabel": texts.confidence(result.root_cause.confidence.value)}
@@ -212,6 +226,10 @@ def build_view(report: Report, texts: Texts) -> dict[str, Any]:
         "title": doc.title,
         "subtitle": doc.subtitle,
         "zone": texts.zone,
+        "zoneShort": zone_short(texts.tz),
+        "caseId": clean(report.case.case_id),
+        "generated": texts.time(report.run.generated_at),
+        "tool": clean(report.run.tool_version),
         "offsetMin": int(offset.total_seconds() // 60),
         "verdict": {"compromised": compromised, "root": root,
                     "stats": {"events": len(result.timeline),

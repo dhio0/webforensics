@@ -2,146 +2,218 @@
 <html lang="id">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-tu6q8+G9zWigc0eyZU1RJOVueSkOjHQHNUvrjyqLx8E='; style-src 'unsafe-inline'; img-src 'none'; connect-src 'none'; form-action 'none'; base-uri 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-0ECkTEbgNI5QACBgIV+XsKNV+vSaAwF+51QaubWetPs='; style-src 'unsafe-inline'; img-src 'none'; connect-src 'none'; form-action 'none'; base-uri 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="referrer" content="no-referrer">
 <title>Laporan Insiden Website</title>
-<style>:root{
---bg:#f6f7f9;--card:#fff;--fg:#1b2130;--muted:#5d6678;--line:#dde1e8;--soft:#eef1f5;
---accent:#2457c5;--root:#fff1cc;--rootline:#c98a00;--bad:#b42318;--badbg:#fdecea;
---ok:#1f7a3d;--okbg:#e7f5ec;--high:#1f7a3d;--medium:#9a6700;--low:#b42318;--gap:rgba(110,118,135,.16);
---c-recon:#5470c6;--c-exploit:#d1453b;--c-login:#c98a00;--c-write:#8e44ad;--c-file:#0f8b8d;
---c-use:#2f9e44;--c-other:#7b8394;--code:#f3f5f8;--shadow:0 1px 2px rgba(16,24,40,.06)}
+<style>/* webforensics viewer. Quiet on purpose: white space, thin rules, one signal colour (red)
+   kept for the compromise and the root cause. System fonts only: the page works offline. */
+:root{
+--bg:#ffffff;--soft:#f6f7f8;--ink:#16181d;--ink-2:#454b54;--muted:#6b717b;
+--rule:#e4e6e9;--rule-2:#cfd3d8;
+--red:#c42b1c;--red-soft:#fbeeed;--sel:#f1f3f5;
+--high:#2f7d4f;--medium:#9a6b00;--low:#c42b1c;
+--c-recon:#7b8794;--c-exploit:#c42b1c;--c-login:#8a6d1f;--c-write:#5b4a8a;
+--c-file:#2d6f6a;--c-use:#4a6b3a;--c-other:#9aa1aa;
+--gap:#eef0f2;
+--sans:"Segoe UI Variable Text","Segoe UI",system-ui,-apple-system,"Helvetica Neue",Roboto,sans-serif;
+--mono:"Cascadia Mono","SF Mono",ui-monospace,Menlo,Consolas,"Liberation Mono",monospace;
+color-scheme:light}
 @media (prefers-color-scheme:dark){:root{
---bg:#101318;--card:#171b22;--fg:#e4e7ec;--muted:#98a2b3;--line:#2b313c;--soft:#1f242d;
---accent:#7aa2ff;--root:#3a3115;--rootline:#e3b341;--bad:#f97066;--badbg:#3b1d1b;
---ok:#6cc58a;--okbg:#16301f;--high:#6cc58a;--medium:#e3b341;--low:#f97066;--gap:rgba(152,162,179,.14);
---c-recon:#7f9cf5;--c-exploit:#f2706a;--c-login:#e3b341;--c-write:#c084fc;--c-file:#38c1c3;
---c-use:#6cc58a;--c-other:#98a2b3;--code:#1d2129;--shadow:none}}
+--bg:#131416;--soft:#1a1c1f;--ink:#e8e9eb;--ink-2:#b9bdc3;--muted:#8a9099;
+--rule:#26292d;--rule-2:#363a40;
+--red:#ff6b5e;--red-soft:#2a1716;--sel:#1e2124;
+--high:#6cc48e;--medium:#d9b25a;--low:#ff6b5e;
+--c-recon:#8d99a6;--c-exploit:#ff6b5e;--c-login:#cfae5c;--c-write:#a596d6;
+--c-file:#6fb7af;--c-use:#93b87f;--c-other:#7d838c;
+--gap:#1c1f22;color-scheme:dark}}
 *{box-sizing:border-box}
-:root{color-scheme:light dark}
 html{-webkit-text-size-adjust:100%}
-body{margin:0;background:var(--bg);color:var(--fg);
-font:15px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.6 var(--sans)}
 button,input,select{font:inherit;color:inherit}
-a{color:var(--accent)}
-.wrap{max-width:1280px;margin:0 auto;padding:20px 16px 56px}
-header h1{font-size:1.5rem;margin:0}
-header .sub{color:var(--muted);margin:2px 0 16px;overflow-wrap:anywhere}
-.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:16px;
-box-shadow:var(--shadow)}
-.verdict{display:grid;grid-template-columns:1fr auto;gap:16px;align-items:start;
-border-left:5px solid var(--bad)}
-.verdict.clean{border-left-color:var(--ok)}
-.verdict .state{font-weight:700;font-size:1.1rem;color:var(--bad)}
-.verdict.clean .state{color:var(--ok)}
-.verdict .root{margin-top:6px;overflow-wrap:anywhere}
-.verdict .root b{color:var(--muted);font-weight:600}
-.stats{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
-.stat{background:var(--soft);border-radius:8px;padding:6px 10px;min-width:92px;text-align:center}
-.stat strong{display:block;font-size:1.25rem;line-height:1.2}
-.stat span{font-size:.75rem;color:var(--muted)}
-nav.tabs{display:flex;gap:4px;margin:18px 0 14px;overflow-x:auto;border-bottom:1px solid var(--line)}
-nav.tabs button{background:none;border:0;border-bottom:2px solid transparent;padding:8px 12px;
-cursor:pointer;white-space:nowrap;color:var(--muted)}
-nav.tabs button[aria-selected="true"]{color:var(--fg);border-bottom-color:var(--accent);font-weight:600}
-nav.tabs button:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
-section.doc{margin-bottom:16px}
-section.doc h2{font-size:1.1rem;margin:0 0 10px}
-section.doc h3{font-size:.95rem;margin:16px 0 6px}
+a{color:inherit;text-decoration-color:var(--rule-2);text-underline-offset:3px}
+a:hover{text-decoration-color:currentColor}
+.wrap{max-width:1180px;margin:0 auto;padding:40px 24px 72px}
+.label{font-size:.75rem;color:var(--muted)}
+
+/* header */
+.cover{display:flex;justify-content:space-between;align-items:flex-start;gap:12px 32px;flex-wrap:wrap}
+.cover h1{font-size:1.6rem;font-weight:600;line-height:1.25;margin:2px 0 0;letter-spacing:-.01em}
+.meta{display:flex;flex-wrap:wrap;gap:4px 24px;margin-top:10px;font-size:.82rem;color:var(--muted)}
+.meta div{display:flex;gap:6px}
+.meta span:last-child{color:var(--ink-2);font-family:var(--mono);font-size:.8rem}
+.stamp{display:inline-flex;align-items:center;gap:8px;font-size:.9rem;font-weight:600;color:var(--red);
+padding-top:6px;white-space:nowrap}
+.stamp::before{content:"";width:8px;height:8px;border-radius:50%;background:currentColor}
+.stamp.clean{color:var(--high)}
+
+/* main finding */
+.finding{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:16px 48px;align-items:end;
+margin-top:28px;padding:22px 0;border-top:1px solid var(--rule);border-bottom:1px solid var(--rule)}
+.entry{margin:6px 0 6px;font-size:1.15rem;line-height:1.45;overflow-wrap:anywhere}
+.entry .n{font-family:var(--mono);font-size:.95rem;color:var(--red);margin-right:8px;text-decoration:none}
+.entry .when{font-family:var(--mono);font-size:.85rem;color:var(--muted);margin-right:8px}
+.entry-sub{margin:0;color:var(--ink-2);font-size:.9rem;display:flex;flex-wrap:wrap;gap:4px 16px;align-items:center}
+.ledger{display:flex;gap:32px;margin:0}
+.ledger div{display:flex;flex-direction:column-reverse;gap:2px}
+.ledger dd{margin:0;font-size:1.6rem;font-weight:600;line-height:1.1;font-variant-numeric:tabular-nums}
+
+/* confidence */
+.meter{display:inline-flex;align-items:center;gap:6px;font-size:.85rem;white-space:nowrap;color:var(--ink-2)}
+.meter i{width:7px;height:7px;border-radius:50%;background:var(--muted);display:inline-block}
+.c-high i{background:var(--high)}.c-medium i{background:var(--medium)}.c-low i{background:var(--low)}
+
+/* tabs */
+nav.tabs{display:flex;gap:4px;margin:28px 0 24px;overflow-x:auto;border-bottom:1px solid var(--rule)}
+nav.tabs button{background:none;border:0;border-bottom:2px solid transparent;margin-bottom:-1px;
+padding:8px 12px;cursor:pointer;white-space:nowrap;color:var(--muted);font-size:.92rem}
+nav.tabs button .i{display:none}
+nav.tabs button:hover{color:var(--ink)}
+nav.tabs button[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--ink);font-weight:600}
+nav.tabs button:focus-visible{outline:2px solid var(--ink-2);outline-offset:-2px}
+
+/* static sections */
+.sheet{margin-bottom:36px}
+section.doc h2{font-size:1.15rem;font-weight:600;margin:0 0 12px}
+section.doc h3{font-size:.85rem;font-weight:600;color:var(--ink-2);margin:24px 0 8px}
 section.doc p,section.doc ul{margin:6px 0}
-section.doc li{margin:3px 0;overflow-wrap:anywhere}
+section.doc ul{padding-left:20px}
+section.doc li{margin:4px 0;overflow-wrap:anywhere}
+section.doc li::marker{color:var(--muted)}
 .tw{overflow-x:auto}
-table{border-collapse:collapse;width:100%;font-size:.86rem}
-th,td{border:1px solid var(--line);padding:6px 8px;text-align:left;vertical-align:top;overflow-wrap:anywhere}
-th{background:var(--soft)}
-tr.hl td{background:var(--root)}
-dl{display:grid;grid-template-columns:max-content 1fr;gap:4px 16px;margin:6px 0}
-dt{font-weight:600;color:var(--muted)}dd{margin:0;overflow-wrap:anywhere}
-pre{background:var(--code);border:1px solid var(--line);border-radius:6px;padding:10px;
-overflow-x:auto;font-size:.82rem;margin:6px 0;white-space:pre-wrap;overflow-wrap:anywhere}
-.badge{display:inline-block;font-size:.72rem;font-weight:600;padding:1px 7px;border-radius:999px;
-white-space:nowrap;border:1px solid currentColor}
-.conf-high{color:var(--high)}.conf-medium{color:var(--medium)}.conf-low{color:var(--low)}
-.mark-root{font-weight:600}
+table{border-collapse:collapse;width:100%;font-size:.88rem}
+th{font-weight:600;font-size:.78rem;color:var(--muted);text-align:left;padding:8px 10px;border-bottom:1px solid var(--rule-2)}
+td{padding:9px 10px;border-bottom:1px solid var(--rule);vertical-align:top;overflow-wrap:anywhere}
+tr.hl td{background:var(--red-soft)}
+td.mark-root{font-weight:600}
+dl.fields{display:grid;grid-template-columns:max-content 1fr;gap:6px 28px;margin:8px 0}
+dl.fields dt{color:var(--muted);font-size:.85rem}
+dl.fields dd{margin:0;overflow-wrap:anywhere}
+pre{font:.8rem/1.6 var(--mono);background:var(--soft);border-radius:4px;padding:10px 12px;margin:8px 0;
+white-space:pre-wrap;overflow-wrap:anywhere}
+
 /* timeline */
-.tl>div>.card+.card{margin-top:14px}
-.tl{display:grid;grid-template-columns:minmax(0,1fr) 380px;gap:14px;align-items:start}
-.chart h2{font-size:1rem;margin:0}
-.chart .hint{color:var(--muted);font-size:.82rem;margin:2px 0 8px}
-.chart .bar{display:flex;justify-content:space-between;gap:8px;align-items:center;flex-wrap:wrap}
+.tl{display:grid;grid-template-columns:minmax(0,1fr) 360px;gap:36px;align-items:start}
+.chart-head{display:flex;justify-content:space-between;gap:12px;align-items:baseline;flex-wrap:wrap}
+.chart-head h2{font-size:1.05rem;font-weight:600;margin:0}
+.hint{color:var(--muted);font-size:.85rem;margin:2px 0 12px}
 .chart svg{display:block;width:100%;touch-action:none;user-select:none}
-.chart .lane-label{font-size:11px;fill:var(--muted)}
-.chart .axis{font-size:10px;fill:var(--muted)}
-.chart .grid{stroke:var(--line)}
+.chart .lane{font:11px var(--mono);fill:var(--muted)}
+.chart .lane.att{fill:var(--ink)}
+.chart .axis{font:10px var(--mono);fill:var(--muted)}
+.chart .base{stroke:var(--rule);stroke-width:1}
+.chart .tick{stroke:var(--rule);stroke-width:1}
 .chart .gapband{fill:var(--gap)}
-.chart .gaplabel{font-size:9px;fill:var(--muted)}
-.chart .dot{cursor:pointer;stroke:var(--card);stroke-width:1}
-.chart .dot.sel{stroke:var(--fg);stroke-width:2.5}
-.chart .rootring{fill:none;stroke:var(--rootline);stroke-width:2.5;pointer-events:none}
-.chart .brush{fill:var(--accent);opacity:.15}
-.legend{display:flex;flex-wrap:wrap;gap:6px 12px;font-size:.78rem;color:var(--muted);margin-top:8px}
-.legend i{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:4px;vertical-align:-1px}
-.filters{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:12px 0 8px}
-.filters input[type=search]{flex:1 1 220px;min-width:0;padding:7px 10px;border:1px solid var(--line);
-border-radius:8px;background:var(--card)}
-.filters select{padding:7px 8px;border:1px solid var(--line);border-radius:8px;background:var(--card);max-width:100%}
-.chip{border:1px solid var(--line);background:var(--card);border-radius:999px;padding:3px 10px;
-cursor:pointer;font-size:.8rem}
-.chip[aria-pressed="false"]{opacity:.45}
-.chip i{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:5px}
-.toggle{display:flex;gap:6px;align-items:center;font-size:.85rem}
-.count{color:var(--muted);font-size:.82rem;margin-left:auto}
-.btn{border:1px solid var(--line);background:var(--card);border-radius:8px;padding:4px 10px;cursor:pointer;font-size:.82rem;white-space:nowrap;flex-shrink:0}
-.btn:hover{border-color:var(--accent)}
+.chart .hatchline{stroke:none}
+.chart .gaplabel{font:9px var(--mono);fill:var(--muted)}
+.chart .ev{cursor:pointer}
+.chart .ev.sel{stroke:var(--ink);stroke-width:2}
+.chart .rootline{stroke:var(--red);stroke-width:1;stroke-dasharray:2 3}
+.chart .roottagbg{display:none}
+.chart .roottag{font:10px var(--mono);fill:var(--red)}
+.chart .brush{fill:var(--ink);opacity:.06}
+.legend{display:flex;flex-wrap:wrap;gap:4px 18px;font-size:.8rem;color:var(--muted);margin-top:10px}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.btn{border:1px solid var(--rule-2);background:var(--bg);border-radius:4px;padding:2px 10px;cursor:pointer;
+font-size:.8rem;white-space:nowrap;flex-shrink:0;color:var(--ink-2)}
+.btn:hover{border-color:var(--ink-2);color:var(--ink)}
+
+/* glyphs: a shape per kind, so colour is never the only cue */
+.g{display:inline-block;width:9px;height:9px;flex-shrink:0}
+.g-recon{border:1.5px solid var(--c-recon);border-radius:50%}
+.g-exploit{background:var(--c-exploit);clip-path:polygon(50% 0,100% 100%,0 100%)}
+.g-login{background:var(--c-login);clip-path:polygon(50% 0,100% 50%,50% 100%,0 50%)}
+.g-write{background:var(--c-write)}
+.g-file{border:1.5px solid var(--c-file)}
+.g-use{background:var(--c-use);border-radius:50%}
+.g-other{background:var(--c-other);width:5px;height:5px;margin:2px}
+
+/* filters */
+.filters{display:flex;flex-wrap:wrap;gap:8px 10px;align-items:center;margin:28px 0 4px}
+.filters input[type=search]{flex:1 1 220px;min-width:0;padding:6px 10px;border:1px solid var(--rule-2);
+border-radius:4px;background:var(--bg)}
+.filters input[type=search]:focus,.filters select:focus{outline:2px solid var(--ink-2);outline-offset:-1px}
+.filters select{padding:6px 8px;border:1px solid var(--rule-2);border-radius:4px;background:var(--bg);max-width:100%}
+.chip{display:inline-flex;align-items:center;gap:6px;border:0;background:none;padding:3px 6px;cursor:pointer;
+font-size:.82rem;color:var(--ink-2)}
+.chip[aria-pressed="false"]{opacity:.35}
+.toggle{display:flex;gap:6px;align-items:center;font-size:.85rem;color:var(--ink-2)}
+.toggle input{accent-color:var(--ink)}
+.count{color:var(--muted);font-size:.8rem;margin-left:auto}
+
+/* register */
+.reg-head,ol.events li{display:grid;grid-template-columns:48px 72px 124px minmax(0,1fr) 84px;
+gap:12px;align-items:baseline}
+.reg-head{padding:10px 8px 8px;border-bottom:1px solid var(--rule-2)}
 ol.events{list-style:none;margin:0;padding:0}
-ol.events li{display:grid;grid-template-columns:48px 172px 120px minmax(0,1fr) auto;gap:8px;
-padding:8px 10px;border-bottom:1px solid var(--line);cursor:pointer;align-items:baseline;font-size:.86rem}
+ol.events li{padding:10px 8px;border-bottom:1px solid var(--rule);cursor:pointer;font-size:.9rem}
 ol.events li:hover{background:var(--soft)}
-ol.events li.sel{background:var(--soft);box-shadow:inset 3px 0 0 var(--accent)}
-ol.events li.root{background:var(--root)}
-ol.events li.sub{padding-left:28px;font-size:.82rem}
-ol.events li.runrow .text{font-style:italic}
-ol.events .n{color:var(--muted);font-variant-numeric:tabular-nums}
-ol.events .time{font-variant-numeric:tabular-nums;color:var(--muted)}
-ol.events .actor{overflow-wrap:anywhere}
-ol.events .text{overflow-wrap:anywhere}
-ol.events .cat{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:6px}
-ol.events li.empty{display:block;cursor:default}
-.more{margin:10px 0;text-align:center}
-.empty{color:var(--muted);padding:16px;text-align:center}
-.detail{position:sticky;top:12px;max-height:calc(100vh - 24px);overflow:auto}
-.detail h2{font-size:1rem;margin:0 0 8px;display:flex;justify-content:space-between;gap:8px}
-.detail .text{margin:0 0 10px;overflow-wrap:anywhere}
-.detail .rootnote{background:var(--root);border-left:3px solid var(--rootline);padding:6px 8px;
-border-radius:4px;margin-bottom:10px;font-weight:600}
-.detail .cite{margin:8px 0}
-.detail .cite .ref{display:flex;justify-content:space-between;gap:8px;align-items:center;
-font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:.8rem;overflow-wrap:anywhere}
+ol.events li.sel{background:var(--sel)}
+ol.events li.root{box-shadow:inset 2px 0 0 var(--red)}
+ol.events li.day{display:block;cursor:default;padding:18px 8px 6px;font-size:.78rem;color:var(--muted);
+border-bottom:1px solid var(--rule);background:none}
+ol.events li.sub{font-size:.86rem}
+ol.events li.sub .n{padding-left:10px}
+ol.events li.runrow .text{color:var(--ink-2)}
+ol.events .n{font:.8rem var(--mono);color:var(--muted);font-variant-numeric:tabular-nums}
+ol.events li.root .n{color:var(--red)}
+ol.events .time{font:.82rem var(--mono);color:var(--ink-2);font-variant-numeric:tabular-nums}
+ol.events .actor{font:.8rem var(--mono);color:var(--muted);overflow-wrap:anywhere}
+ol.events .text{display:flex;gap:9px;align-items:baseline;overflow-wrap:anywhere;min-width:0}
+ol.events .text .g{position:relative;top:0}
+ol.events .tag{font-size:.75rem;font-weight:600;color:var(--red);margin-right:6px}
+ol.events li.empty{display:block;cursor:default;color:var(--muted);text-align:center;padding:28px}
+.more{margin:16px 0;text-align:center}
+
+/* detail */
+.detail{position:sticky;top:20px;max-height:calc(100vh - 40px);overflow:auto;
+border-left:1px solid var(--rule);padding:0 0 16px 24px}
+.detail .head{display:flex;justify-content:space-between;align-items:flex-start;gap:8px;padding:2px 0 10px}
+.detail .head .no{font:600 1.1rem var(--mono);margin-top:2px}
+.detail .body{padding:0}
+.detail .rootnote{font-size:.8rem;font-weight:600;color:var(--red);margin-top:4px}
+.detail .text{margin:10px 0 14px;font-size:1rem;line-height:1.5;overflow-wrap:anywhere}
+.detail .text .g{margin-right:4px}
+.detail dl.fields{grid-template-columns:96px 1fr;font-size:.88rem}
+.detail h3{font-size:.8rem;font-weight:600;color:var(--muted);margin:20px 0 6px}
+.detail ul{margin:0;padding-left:18px;font-size:.88rem;color:var(--ink-2)}
+.detail li{margin:4px 0}
+.cite{margin:10px 0}
+.cite .ref{display:flex;justify-content:space-between;align-items:center;gap:8px;font:.78rem var(--mono);
+color:var(--ink-2);overflow-wrap:anywhere;margin-bottom:4px}
+.cite pre{margin:0}
+.detail .empty{color:var(--muted);margin:8px 0;font-size:.9rem}
 .detail .close{display:none}
-footer{color:var(--muted);font-size:.78rem;margin-top:28px}
-@media (max-width:960px){
+footer{color:var(--muted);font-size:.78rem;margin-top:48px;padding-top:14px;border-top:1px solid var(--rule)}
+
+@media (max-width:980px){
 .tl{grid-template-columns:1fr}
-.detail{position:fixed;left:0;right:0;bottom:0;top:auto;max-height:60vh;border-radius:12px 12px 0 0;
-z-index:5;display:none;box-shadow:0 -6px 24px rgba(0,0,0,.25)}
+.detail{position:fixed;left:0;right:0;bottom:0;top:auto;max-height:62vh;z-index:5;display:none;
+background:var(--bg);border:0;border-top:1px solid var(--rule-2);padding:14px 20px 20px;
+box-shadow:0 -8px 24px rgba(0,0,0,.12)}
 .detail.open{display:block}
 .detail .close{display:inline-block}
-ol.events li{grid-template-columns:auto minmax(0,1fr) auto;
+.reg-head{display:none}
+ol.events li{grid-template-columns:auto auto minmax(0,1fr);
 grid-template-areas:"n time conf" "actor actor actor" "text text text";row-gap:2px}
-ol.events .n{grid-area:n}ol.events .time{grid-area:time}ol.events .actor{grid-area:actor;color:var(--muted);font-size:.8rem}
-ol.events .text{grid-area:text}ol.events li>:last-child{grid-area:conf}
+ol.events .n{grid-area:n}ol.events .time{grid-area:time}ol.events .actor{grid-area:actor}
+ol.events .text{grid-area:text}ol.events li>:last-child{grid-area:conf;justify-self:end}
+.finding{grid-template-columns:1fr}
 }
 @media (max-width:640px){
-.verdict{grid-template-columns:1fr}
-.stats{justify-content:flex-start}
-dl{grid-template-columns:1fr}
+.wrap{padding:24px 16px 56px}
+.cover h1{font-size:1.35rem}
+.ledger{gap:20px}
+.ledger dd{font-size:1.3rem}
+dl.fields{grid-template-columns:1fr;gap:0}
+dl.fields dd{margin-bottom:6px}
 }
-@media print{nav.tabs,.filters,.chart .bar button,.detail{display:none}}
+@media print{nav.tabs,.filters,.chart-head .btn,.detail{display:none}}
 </style>
 </head>
 <body>
 <div id="app"></div>
-<script type="application/json" id="data">{"attackers":["172.30.0.1"],"categories":[{"id":"recon","label":"Pengintaian"},{"id":"exploit","label":"Eksploitasi"},{"id":"login","label":"Login"},{"id":"write","label":"Penulisan"},{"id":"file","label":"Perubahan file"},{"id":"use","label":"Pemakaian file"},{"id":"other","label":"Lainnya"}],"cites":[{"ex":"172.30.0.1 - - [29/Oct/2026:05:19:47 +0000] \"GET / HTTP/1.1\" 200 298 \"-\" \"webforensics-lab/1.0 scenario-f\" \"-\"","ref":"access.log:1"},{"ex":"172.30.0.1 - - [29/Oct/2026:05:19:53 +0000] \"GET /admin/login.php?username=admin\u0026password=wrong-lab-password HTTP/1.1\" 401 355 \"-\" \"webforensics-lab/1.0 scenario-f\" \"-\"","ref":"access.log:4"},{"ex":"172.30.0.1 - - [29/Oct/2026:05:19:55 +0000] \"GET /admin/login.php?username=admin%27+OR+%271%27%3D%271+--+\u0026password= HTTP/1.1\" 200 359 \"-\" \"webforensics-lab/1.0 scenario-f\" \"-\"","ref":"access.log:5"},{"ex":"172.30.0.1 - - [29/Oct/2026:05:19:57 +0000] \"POST /admin/auth_upload.php HTTP/1.1\" 200 51 \"-\" \"webforensics-lab/1.0 scenario-f\" \"-\"","ref":"access.log:6"},{"ex":"SHA-256 c2f45202f02ab18a6ad3965db67be368436a3a245819798ad1601464405f838c","ref":"uploads/scenario-f-marker.php @c2f45202f02a"},{"ex":"172.30.0.1 - - [29/Oct/2026:05:19:59 +0000] \"GET /uploads/scenario-f-marker.php HTTP/1.1\" 200 37 \"-\" \"webforensics-lab/1.0 scenario-f\" \"-\"","ref":"access.log:7"}],"events":[{"actor":"172.30.0.1","basis":"log","cat":"recon","cites":[0],"conf":"high","confLabel":"tinggi","ms":1793251187000,"n":1,"notes":[],"phase":"-","root":false,"run":null,"story":false,"text":"Request pertama aktor ini di log: GET / → 200.","time":"2026-10-29 12:19:47 WIB"},{"actor":"172.30.0.1","basis":"log","cat":"login","cites":[1],"conf":"high","confLabel":"tinggi","ms":1793251193000,"n":2,"notes":["Server membalas 401."],"phase":"-","root":false,"run":null,"story":false,"text":"Login gagal: GET /admin/login.php → 401.","time":"2026-10-29 12:19:53 WIB"},{"actor":"172.30.0.1","basis":"log","cat":"exploit","cites":[2],"conf":"medium","confLabel":"sedang","ms":1793251195000,"n":3,"notes":["Login dengan payload SQL injection berhasil, lalu aktor yang sama menulis file di area yang sama.","Respons berbeda dari login yang gagal dan tidak diikuti percobaan ulang.","Kaitan login dan upload disimpulkan dari IP dan area yang sama, karena cookie sesi tidak tercatat."],"phase":"Initial Access (akses awal) · T1190","root":true,"run":null,"story":true,"text":"Bypass login dengan SQL injection: GET /admin/login.php → 200.","time":"2026-10-29 12:19:55 WIB"},{"actor":"172.30.0.1","basis":"log","cat":"write","cites":[3,4],"conf":"high","confLabel":"tinggi","ms":1793251197000,"n":4,"notes":["Hanya satu request penulis yang cocok dengan waktu file dibuat.","Aktor yang sama kemudian mengakses file ini.","Isi POST tidak tercatat di access log, jadi nama file yang diupload tidak terbukti dari log."],"phase":"Persistence (bertahan) · T1505.003","root":false,"run":null,"story":true,"text":"Request yang menulis uploads/scenario-f-marker.php: POST /admin/auth_upload.php → 200.","time":"2026-10-29 12:19:57 WIB"},{"actor":"","basis":"btime","cat":"file","cites":[4],"conf":"high","confLabel":"tinggi","ms":1793251197000,"n":5,"notes":["Waktu dari btime (waktu file lahir), yang tidak bisa diubah dengan touch."],"phase":"Persistence (bertahan) · T1505.003","root":false,"run":null,"story":true,"text":"File uploads/scenario-f-marker.php dibuat (SHA-256 c2f45202f02a…).","time":"2026-10-29 12:19:57 WIB"},{"actor":"172.30.0.1","basis":"log","cat":"use","cites":[5],"conf":"high","confLabel":"tinggi","ms":1793251199000,"n":6,"notes":[],"phase":"Persistence (bertahan) · T1505.003","root":false,"run":null,"story":true,"text":"File uploads/scenario-f-marker.php diakses: GET /uploads/scenario-f-marker.php → 200.","time":"2026-10-29 12:19:59 WIB"}],"gaps":[],"labels":{"noActor":"-","rootMarker":"AKAR MASALAH"},"lanes":["172.30.0.1",""],"offsetMin":420,"runs":[],"subtitle":"WF-E887DEB66B · 2026-10-28 09:00:00 WIB","tabs":[{"id":"overview","label":"Ringkasan","sections":[{"blocks":[{"items":["Ditemukan 1 file mencurigakan yang terkait dengan 1 alamat IP. Aktivitas pertama aktor pada 2026-10-29 12:19:47 WIB, terakhir pada 2026-10-29 12:19:59 WIB.","Titik masuk yang paling mungkin: SQL injection pada login (bypass autentikasi) lewat GET /admin/login.php pada 2026-10-29 12:19:55 WIB (keyakinan sedang)."],"t":"ul"},{"t":"h","text":"Alur serangan"},{"items":["#3 2026-10-29 12:19:55 WIB: Bypass login dengan SQL injection: GET /admin/login.php → 200.","#4 2026-10-29 12:19:57 WIB: Request yang menulis uploads/scenario-f-marker.php: POST /admin/auth_upload.php → 200.","#5 2026-10-29 12:19:57 WIB: File uploads/scenario-f-marker.php dibuat (SHA-256 c2f45202f02a…).","#6 2026-10-29 12:19:59 WIB: File uploads/scenario-f-marker.php diakses: GET /uploads/scenario-f-marker.php → 200."],"t":"ul"}],"title":"1. Ringkasan"}]},{"id":"timeline","label":"Kronologi","sections":[]},{"id":"root","label":"Akar masalah","sections":[{"blocks":[{"pairs":[["Kejadian","#3 Bypass login dengan SQL injection: GET /admin/login.php → 200."],["Jenis kelemahan","SQL injection pada login (bypass autentikasi)"],["Keyakinan","sedang"],["Bukti","access.log:5"]],"t":"dl"},{"t":"h","text":"Baris log asli"},{"lines":["172.30.0.1 - - [29/Oct/2026:05:19:55 +0000] \"GET /admin/login.php?username=admin%27+OR+%271%27%3D%271+--+\u0026password= HTTP/1.1\" 200 359 \"-\" \"webforensics-lab/1.0 scenario-f\" \"-\""],"t":"code"},{"t":"h","text":"Alasan"},{"items":["Login dengan payload SQL injection berhasil, lalu aktor yang sama menulis file di area yang sama.","Respons berbeda dari login yang gagal dan tidak diikuti percobaan ulang.","Kaitan login dan upload disimpulkan dari IP dan area yang sama, karena cookie sesi tidak tercatat."],"t":"ul"},{"t":"h","text":"Baris kode yang rentan"},{"pairs":[["Lokasi","admin/login.php:13"],["Kenapa dianalisis","endpoint titik masuk (akar masalah atau kandidatnya)"],["Keyakinan","tinggi"],["Input dari","$_GET, $_POST"],["Query dijalankan di","admin/login.php:14 ($pdo-\u003equery)"],["Bukti","admin/login.php @fa2a9d556bc9"]],"t":"dl"},{"lines":["$query = \"SELECT id, username FROM users WHERE username = '$username' AND password = '$password'\";"],"t":"code"},{"t":"p","text":"Contoh perbaikan (prepared statement)"},{"lines":["$stmt = $pdo-\u003eprepare(\"SELECT id, username FROM users WHERE username = ? AND password = ?\");","$stmt-\u003eexecute([$username, $password]);"],"t":"code"},{"pairs":[["File yang dianalisis","admin/auth_upload.php, admin/login.php"]],"t":"dl"}],"title":"4. Akar Masalah"}]},{"id":"files","label":"File","sections":[{"blocks":[{"t":"h","text":"uploads/scenario-f-marker.php"},{"pairs":[["SHA-256","c2f45202f02ab18a6ad3965db67be368436a3a245819798ad1601464405f838c"],["Ukuran","26 byte"],["Status baseline","tidak diketahui (tanpa baseline)"],["Timestamp","btime 2026-10-29 12:19:57 WIB; ctime 2026-10-29 12:19:57 WIB; mtime 2026-10-29 12:19:57 WIB"],["Sumber timestamp","manifest webroot"],["URL","/uploads/scenario-f-marker.php"]],"t":"dl"},{"t":"p","text":"Temuan"},{"items":["File skrip di folder yang bisa ditulis: uploads/scenario-f-marker.php (FILE-WEBSHELL-WRITABLE-EXEC, keyakinan sedang)"],"t":"ul"}],"title":"5. File Terdampak"},{"blocks":[{"t":"p","text":"Tidak ada."}],"title":"6. Perubahan yang Perlu Ditinjau"}]},{"id":"iocs","label":"IOC","sections":[{"blocks":[{"t":"h","text":"Alamat IP"},{"lines":["172.30.0.1"],"t":"code"},{"t":"h","text":"User agent"},{"lines":["webforensics-lab/1.0 scenario-f"],"t":"code"},{"t":"h","text":"Hash SHA-256"},{"lines":["c2f45202f02ab18a6ad3965db67be368436a3a245819798ad1601464405f838c"],"t":"code"},{"t":"h","text":"Path file"},{"lines":["uploads/scenario-f-marker.php"],"t":"code"},{"t":"h","text":"URL"},{"lines":["/uploads/scenario-f-marker.php"],"t":"code"}],"title":"7. Indikator Kompromi (IOC)"},{"blocks":[{"t":"p","text":"Tidak ada."}],"title":"9. Aktivitas Serangan Lain (Tidak Terkait Insiden)"}]},{"id":"gaps","label":"Celah bukti","sections":[{"blocks":[{"headers":["ID","Jenis","Rentang waktu","Keterangan","Melemahkan"],"hl":[],"rows":[[{"mark":null,"text":"G1"},{"mark":null,"text":"Tanpa baseline"},{"mark":null,"text":"-"},{"mark":null,"text":"Tidak ada baseline (salinan bersih) untuk pembanding, jadi status file hanya dari heuristik."},{"mark":null,"text":"-"}]],"t":"table"}],"title":"8. Celah Bukti"}]},{"id":"actions","label":"Tindakan","sections":[{"blocks":[{"t":"h","text":"Penahanan (containment)"},{"items":["Amankan bukti dulu: salin log dan webroot beserta hash-nya sebelum mengubah apa pun di server.","Batasi akses ke situs (mode maintenance atau firewall) sampai file berbahaya dihapus.","Blokir sementara IP berikut: 172.30.0.1."],"t":"ul"},{"t":"h","text":"Pembersihan (eradication)"},{"items":["Karantina lalu hapus file berikut setelah disalin sebagai bukti: uploads/scenario-f-marker.php.","Perbaiki query login di /admin/login.php dengan prepared statement, lalu periksa query lain yang menyusun SQL dari input user.","Perbaiki endpoint /admin/auth_upload.php: batasi ekstensi dan tipe file, simpan upload di luar webroot, dan matikan eksekusi skrip di folder upload.","Ganti query di admin/login.php baris 13 dengan prepared statement (contoh perbaikan ada di bagian Akar Masalah)."],"t":"ul"},{"t":"h","text":"Pemulihan (recovery)"},{"items":["Ganti password admin aplikasi, database, dan semua kredensial yang tersimpan di file konfigurasi webroot.","Pulihkan webroot dari sumber yang terpercaya (git atau backup sebelum insiden), bukan dengan menghapus file satu per satu saja.","Setelah pemulihan, pantau akses ke /uploads/scenario-f-marker.php dan aktivitas dari IP di daftar IOC."],"t":"ul"},{"t":"h","text":"Pembelajaran (lessons learned)"},{"items":["Simpan baseline webroot (daftar hash file) secara berkala supaya file baru atau berubah bisa dipastikan.","Aktifkan pemantauan integritas file (FIM) pada webroot.","Catat nama file upload di log aplikasi, karena access log tidak mencatat isi POST."],"t":"ul"}],"title":"10. Tindakan yang Disarankan"},{"blocks":[{"items":["Laporan ini dibuat otomatis dengan aturan deterministik. Kesimpulannya perlu diverifikasi analis.","Isi request POST tidak tercatat di access log. Payload SQL injection lewat POST dan nama file upload tidak terlihat.","Penyerang dengan akses root bisa memalsukan timestamp file. Alat ini hanya mendeteksi ketidakkonsistenan, tidak bisa membuktikan keaslian.","Penyerang dengan akses root bisa menghapus baris log. Yang bisa dideteksi hanya celah waktu yang mencolok.","IP yang dipakai bersama (NAT, proxy, CDN tanpa X-Forwarded-For) bisa menggabungkan beberapa orang menjadi satu aktor.","Analisis kode hanya mencari SQL injection di file PHP yang terlibat dan file yang di-include-nya (satu tingkat, dari pola path include), per file dan per fungsi. Alur lewat pemanggilan fungsi, input dari framework, dan ORM tidak dilacak, jadi \"tidak ditemukan\" bukan berarti aman. Celah upload belum dilokalisasi di kode."],"t":"ul"}],"title":"11. Keterbatasan"}]},{"id":"case","label":"Info kasus","sections":[{"blocks":[{"pairs":[["ID kasus","WF-E887DEB66B"],["Analis","-"],["Host target","563daf0056be"],["Laporan dibuat","2026-10-28 09:00:00 WIB"],["Zona waktu laporan","WIB (UTC+07:00)"]],"t":"dl"},{"t":"h","text":"Cakupan bukti"},{"pairs":[["Periode access log","2026-10-29 12:19:47 WIB s.d. 2026-10-29 12:19:59 WIB"],["Access log","7 baris terbaca"],["Webroot","11 file"],["Bukti dikumpulkan","2026-10-29 12:20:10 WIB"],["Baseline","tidak ada"]],"t":"dl"}],"title":"2. Informasi Kasus"},{"blocks":[{"headers":["Rujukan","Kutipan"],"hl":[],"rows":[[{"mark":null,"text":"access.log:1"},{"mark":null,"text":"172.30.0.1 - - [29/Oct/2026:05:19:47 +0000] \"GET / HTTP/1.1\" 200 298 \"-\" \"webforensics-lab/1.0 scenario-f\" \"-\""}],[{"mark":null,"text":"access.log:4"},{"mark":null,"text":"172.30.0.1 - - [29/Oct/2026:05:19:53 +0000] \"GET /admin/login.php?username=admin\u0026password=wrong-lab-password HTTP/1.1\" 401 355 \"-\" \"webforensics-lab/1.0 scenario-f\" \"-\""}],[{"mark":null,"text":"access.log:5"},{"mark":null,"text":"172.30.0.1 - - [29/Oct/2026:05:19:55 +0000] \"GET /admin/login.php?username=admin%27+OR+%271%27%3D%271+--+\u0026password= HTTP/1.1\" 200 359 \"-\" \"webforensics-lab/1.0 scenario-f\" \"-\""}],[{"mark":null,"text":"access.log:6"},{"mark":null,"text":"172.30.0.1 - - [29/Oct/2026:05:19:57 +0000] \"POST /admin/auth_upload.php HTTP/1.1\" 200 51 \"-\" \"webforensics-lab/1.0 scenario-f\" \"-\""}],[{"mark":null,"text":"uploads/scenario-f-marker.php @c2f45202f02a"},{"mark":null,"text":"SHA-256 c2f45202f02ab18a6ad3965db67be368436a3a245819798ad1601464405f838c"}],[{"mark":null,"text":"access.log:7"},{"mark":null,"text":"172.30.0.1 - - [29/Oct/2026:05:19:59 +0000] \"GET /uploads/scenario-f-marker.php HTTP/1.1\" 200 37 \"-\" \"webforensics-lab/1.0 scenario-f\" \"-\""}],[{"mark":null,"text":"admin/login.php @fa2a9d556bc9"},{"mark":null,"text":"SHA-256 fa2a9d556bc98ba3751bc6f7eee860d187cd579c6658a6b962c0f32cbac77d45"}]],"t":"table"}],"title":"Lampiran A. Rujukan Bukti"},{"blocks":[{"pairs":[["Versi alat","0.1.0"],["Versi ruleset","0.1.0"],["Hash konfigurasi","7cabfdcdf016d39c2da7bcee773e1d9849ef20e55c633338b4fe17124069ca0d"]],"t":"dl"},{"t":"h","text":"File input"},{"headers":["File","SHA-256","Ukuran"],"hl":[],"rows":[[{"mark":null,"text":"access.log"},{"mark":null,"text":"d790e8e4e30e74b214ba5a76d631e9b48355ba6e2004189ffe7d72d01172bdb4"},{"mark":null,"text":"980 byte"}],[{"mark":null,"text":"manifest.tsv"},{"mark":null,"text":"dc514b240fa3667f9b7af0ce486c823e96b308dac532485ad6e4c45e91d98d7f"},{"mark":null,"text":"1987 byte"}]],"t":"table"},{"t":"p","text":"Input, versi, dan konfigurasi yang sama menghasilkan laporan yang sama persis."}],"title":"Lampiran B. Reproduksibilitas"}]}],"title":"Laporan Insiden Website","ui":{"cat.exploit":"Eksploitasi","cat.file":"Perubahan file","cat.login":"Login","cat.other":"Lainnya","cat.recon":"Pengintaian","cat.use":"Pemakaian file","cat.write":"Penulisan","chart.empty":"Kronologi kosong: tidak ada kejadian yang terkait insiden.","chart.files":"Bukti file","chart.hint":"Klik titik atau baris untuk melihat buktinya. Area abu-abu adalah celah bukti.","chart.others":"Aktor lain","chart.title":"Kronologi per aktor","copied":"Tersalin","copy":"Salin","detail.actor":"Aktor","detail.basis":"Dasar waktu","detail.close":"Tutup","detail.confidence":"Keyakinan","detail.empty":"Pilih kejadian di grafik atau daftar.","detail.evidence":"Bukti","detail.notes":"Catatan keyakinan","detail.phase":"Fase ATT\u0026CK","detail.root":"Ini kejadian akar masalah.","detail.title":"Detail kejadian","filter.actor":"Semua aktor","filter.count":"{shown} dari {total} kejadian","filter.more":"Tampilkan {count} lagi","filter.none":"Tidak ada kejadian yang cocok dengan filter.","filter.search":"Cari path, IP, atau kata","filter.story":"Hanya alur serangan","generated_by":"Dibuat oleh webforensics dari report.json. Halaman ini offline dan tidak memuat apa pun dari internet.","run.collapse":"Sembunyikan","run.expand":"Lihat {count} request","run.summary":"Rentetan {count} request yang ditandai dari aktor ini: {endpoints}. Jenis: {rules}.","stat.actors":"aktor penyerang","stat.events":"kejadian di kronologi","stat.files":"file terdampak","stat.gaps":"celah bukti","story.none":"Tidak ada alur serangan: tidak ada file atau skrip yang terkait penyerang.","tab.actions":"Tindakan","tab.case":"Info kasus","tab.files":"File","tab.gaps":"Celah bukti","tab.iocs":"IOC","tab.overview":"Ringkasan","tab.root":"Akar masalah","tab.timeline":"Kronologi","verdict.clean":"Tidak ada kompromi yang terdeteksi","verdict.compromised":"Kompromi terdeteksi","verdict.no_root":"Titik masuk belum bisa ditentukan dari bukti yang ada.","verdict.root":"Titik masuk"},"verdict":{"compromised":true,"root":{"conf":"medium","confLabel":"sedang","n":3,"text":"Bypass login dengan SQL injection: GET /admin/login.php → 200.","time":"2026-10-29 12:19:55 WIB","vuln":"SQL injection pada login (bypass autentikasi)"},"stats":{"actors":1,"events":6,"files":1,"gaps":1}},"zone":"WIB (UTC+07:00)"}</script>
+<script type="application/json" id="data">{"attackers":["172.30.0.1"],"caseId":"WF-E887DEB66B","categories":[{"id":"recon","label":"Pengintaian"},{"id":"exploit","label":"Eksploitasi"},{"id":"login","label":"Login"},{"id":"write","label":"Penulisan"},{"id":"file","label":"Perubahan file"},{"id":"use","label":"Pemakaian file"},{"id":"other","label":"Lainnya"}],"cites":[{"ex":"172.30.0.1 - - [29/Oct/2026:05:19:47 +0000] \"GET / HTTP/1.1\" 200 298 \"-\" \"webforensics-lab/1.0 scenario-f\" \"-\"","ref":"access.log:1"},{"ex":"172.30.0.1 - - [29/Oct/2026:05:19:53 +0000] \"GET /admin/login.php?username=admin\u0026password=wrong-lab-password HTTP/1.1\" 401 355 \"-\" \"webforensics-lab/1.0 scenario-f\" \"-\"","ref":"access.log:4"},{"ex":"172.30.0.1 - - [29/Oct/2026:05:19:55 +0000] \"GET /admin/login.php?username=admin%27+OR+%271%27%3D%271+--+\u0026password= HTTP/1.1\" 200 359 \"-\" \"webforensics-lab/1.0 scenario-f\" \"-\"","ref":"access.log:5"},{"ex":"172.30.0.1 - - [29/Oct/2026:05:19:57 +0000] \"POST /admin/auth_upload.php HTTP/1.1\" 200 51 \"-\" \"webforensics-lab/1.0 scenario-f\" \"-\"","ref":"access.log:6"},{"ex":"SHA-256 c2f45202f02ab18a6ad3965db67be368436a3a245819798ad1601464405f838c","ref":"uploads/scenario-f-marker.php @c2f45202f02a"},{"ex":"172.30.0.1 - - [29/Oct/2026:05:19:59 +0000] \"GET /uploads/scenario-f-marker.php HTTP/1.1\" 200 37 \"-\" \"webforensics-lab/1.0 scenario-f\" \"-\"","ref":"access.log:7"}],"events":[{"actor":"172.30.0.1","basis":"log","cat":"recon","cites":[0],"clock":"12:19:47","conf":"high","confLabel":"tinggi","day":"29 Okt 2026","ms":1793251187000,"n":1,"notes":[],"phase":"-","root":false,"run":null,"story":false,"text":"Request pertama aktor ini di log: GET / → 200.","time":"2026-10-29 12:19:47 WIB"},{"actor":"172.30.0.1","basis":"log","cat":"login","cites":[1],"clock":"12:19:53","conf":"high","confLabel":"tinggi","day":"29 Okt 2026","ms":1793251193000,"n":2,"notes":["Server membalas 401."],"phase":"-","root":false,"run":null,"story":false,"text":"Login gagal: GET /admin/login.php → 401.","time":"2026-10-29 12:19:53 WIB"},{"actor":"172.30.0.1","basis":"log","cat":"exploit","cites":[2],"clock":"12:19:55","conf":"medium","confLabel":"sedang","day":"29 Okt 2026","ms":1793251195000,"n":3,"notes":["Login dengan payload SQL injection berhasil, lalu aktor yang sama menulis file di area yang sama.","Respons berbeda dari login yang gagal dan tidak diikuti percobaan ulang.","Kaitan login dan upload disimpulkan dari IP dan area yang sama, karena cookie sesi tidak tercatat."],"phase":"Initial Access (akses awal) · T1190","root":true,"run":null,"story":true,"text":"Bypass login dengan SQL injection: GET /admin/login.php → 200.","time":"2026-10-29 12:19:55 WIB"},{"actor":"172.30.0.1","basis":"log","cat":"write","cites":[3,4],"clock":"12:19:57","conf":"high","confLabel":"tinggi","day":"29 Okt 2026","ms":1793251197000,"n":4,"notes":["Hanya satu request penulis yang cocok dengan waktu file dibuat.","Aktor yang sama kemudian mengakses file ini.","Isi POST tidak tercatat di access log, jadi nama file yang diupload tidak terbukti dari log."],"phase":"Persistence (bertahan) · T1505.003","root":false,"run":null,"story":true,"text":"Request yang menulis uploads/scenario-f-marker.php: POST /admin/auth_upload.php → 200.","time":"2026-10-29 12:19:57 WIB"},{"actor":"","basis":"btime","cat":"file","cites":[4],"clock":"12:19:57","conf":"high","confLabel":"tinggi","day":"29 Okt 2026","ms":1793251197000,"n":5,"notes":["Waktu dari btime (waktu file lahir), yang tidak bisa diubah dengan touch."],"phase":"Persistence (bertahan) · T1505.003","root":false,"run":null,"story":true,"text":"File uploads/scenario-f-marker.php dibuat (SHA-256 c2f45202f02a…).","time":"2026-10-29 12:19:57 WIB"},{"actor":"172.30.0.1","basis":"log","cat":"use","cites":[5],"clock":"12:19:59","conf":"high","confLabel":"tinggi","day":"29 Okt 2026","ms":1793251199000,"n":6,"notes":[],"phase":"Persistence (bertahan) · T1505.003","root":false,"run":null,"story":true,"text":"File uploads/scenario-f-marker.php diakses: GET /uploads/scenario-f-marker.php → 200.","time":"2026-10-29 12:19:59 WIB"}],"gaps":[],"generated":"2026-10-28 09:00:00 WIB","labels":{"noActor":"-","rootMarker":"AKAR MASALAH"},"lanes":["172.30.0.1",""],"offsetMin":420,"runs":[],"subtitle":"WF-E887DEB66B · 2026-10-28 09:00:00 WIB","tabs":[{"id":"overview","label":"Ringkasan","sections":[{"blocks":[{"items":["Ditemukan 1 file mencurigakan yang terkait dengan 1 alamat IP. Aktivitas pertama aktor pada 2026-10-29 12:19:47 WIB, terakhir pada 2026-10-29 12:19:59 WIB.","Titik masuk yang paling mungkin: SQL injection pada login (bypass autentikasi) lewat GET /admin/login.php pada 2026-10-29 12:19:55 WIB (keyakinan sedang)."],"t":"ul"},{"t":"h","text":"Alur serangan"},{"items":["#3 2026-10-29 12:19:55 WIB: Bypass login dengan SQL injection: GET /admin/login.php → 200.","#4 2026-10-29 12:19:57 WIB: Request yang menulis uploads/scenario-f-marker.php: POST /admin/auth_upload.php → 200.","#5 2026-10-29 12:19:57 WIB: File uploads/scenario-f-marker.php dibuat (SHA-256 c2f45202f02a…).","#6 2026-10-29 12:19:59 WIB: File uploads/scenario-f-marker.php diakses: GET /uploads/scenario-f-marker.php → 200."],"t":"ul"}],"title":"1. Ringkasan"}]},{"id":"timeline","label":"Kronologi","sections":[]},{"id":"root","label":"Akar masalah","sections":[{"blocks":[{"pairs":[["Kejadian","#3 Bypass login dengan SQL injection: GET /admin/login.php → 200."],["Jenis kelemahan","SQL injection pada login (bypass autentikasi)"],["Keyakinan","sedang"],["Bukti","access.log:5"]],"t":"dl"},{"t":"h","text":"Baris log asli"},{"lines":["172.30.0.1 - - [29/Oct/2026:05:19:55 +0000] \"GET /admin/login.php?username=admin%27+OR+%271%27%3D%271+--+\u0026password= HTTP/1.1\" 200 359 \"-\" \"webforensics-lab/1.0 scenario-f\" \"-\""],"t":"code"},{"t":"h","text":"Alasan"},{"items":["Login dengan payload SQL injection berhasil, lalu aktor yang sama menulis file di area yang sama.","Respons berbeda dari login yang gagal dan tidak diikuti percobaan ulang.","Kaitan login dan upload disimpulkan dari IP dan area yang sama, karena cookie sesi tidak tercatat."],"t":"ul"},{"t":"h","text":"Baris kode yang rentan"},{"pairs":[["Lokasi","admin/login.php:13"],["Kenapa dianalisis","endpoint titik masuk (akar masalah atau kandidatnya)"],["Keyakinan","tinggi"],["Input dari","$_GET, $_POST"],["Query dijalankan di","admin/login.php:14 ($pdo-\u003equery)"],["Bukti","admin/login.php @fa2a9d556bc9"]],"t":"dl"},{"lines":["$query = \"SELECT id, username FROM users WHERE username = '$username' AND password = '$password'\";"],"t":"code"},{"t":"p","text":"Contoh perbaikan (prepared statement)"},{"lines":["$stmt = $pdo-\u003eprepare(\"SELECT id, username FROM users WHERE username = ? AND password = ?\");","$stmt-\u003eexecute([$username, $password]);"],"t":"code"},{"pairs":[["File yang dianalisis","admin/auth_upload.php, admin/login.php"]],"t":"dl"}],"title":"4. Akar Masalah"}]},{"id":"files","label":"File","sections":[{"blocks":[{"t":"h","text":"uploads/scenario-f-marker.php"},{"pairs":[["SHA-256","c2f45202f02ab18a6ad3965db67be368436a3a245819798ad1601464405f838c"],["Ukuran","26 byte"],["Status baseline","tidak diketahui (tanpa baseline)"],["Timestamp","btime 2026-10-29 12:19:57 WIB; ctime 2026-10-29 12:19:57 WIB; mtime 2026-10-29 12:19:57 WIB"],["Sumber timestamp","manifest webroot"],["URL","/uploads/scenario-f-marker.php"]],"t":"dl"},{"t":"p","text":"Temuan"},{"items":["File skrip di folder yang bisa ditulis: uploads/scenario-f-marker.php (FILE-WEBSHELL-WRITABLE-EXEC, keyakinan sedang)"],"t":"ul"}],"title":"5. File Terdampak"},{"blocks":[{"t":"p","text":"Tidak ada."}],"title":"6. Perubahan yang Perlu Ditinjau"}]},{"id":"iocs","label":"IOC","sections":[{"blocks":[{"t":"h","text":"Alamat IP"},{"lines":["172.30.0.1"],"t":"code"},{"t":"h","text":"User agent"},{"lines":["webforensics-lab/1.0 scenario-f"],"t":"code"},{"t":"h","text":"Hash SHA-256"},{"lines":["c2f45202f02ab18a6ad3965db67be368436a3a245819798ad1601464405f838c"],"t":"code"},{"t":"h","text":"Path file"},{"lines":["uploads/scenario-f-marker.php"],"t":"code"},{"t":"h","text":"URL"},{"lines":["/uploads/scenario-f-marker.php"],"t":"code"}],"title":"7. Indikator Kompromi (IOC)"},{"blocks":[{"t":"p","text":"Tidak ada."}],"title":"9. Aktivitas Serangan Lain (Tidak Terkait Insiden)"}]},{"id":"gaps","label":"Celah bukti","sections":[{"blocks":[{"headers":["ID","Jenis","Rentang waktu","Keterangan","Melemahkan"],"hl":[],"rows":[[{"mark":null,"text":"G1"},{"mark":null,"text":"Tanpa baseline"},{"mark":null,"text":"-"},{"mark":null,"text":"Tidak ada baseline (salinan bersih) untuk pembanding, jadi status file hanya dari heuristik."},{"mark":null,"text":"-"}]],"t":"table"}],"title":"8. Celah Bukti"}]},{"id":"actions","label":"Tindakan","sections":[{"blocks":[{"t":"h","text":"Penahanan (containment)"},{"items":["Amankan bukti dulu: salin log dan webroot beserta hash-nya sebelum mengubah apa pun di server.","Batasi akses ke situs (mode maintenance atau firewall) sampai file berbahaya dihapus.","Blokir sementara IP berikut: 172.30.0.1."],"t":"ul"},{"t":"h","text":"Pembersihan (eradication)"},{"items":["Karantina lalu hapus file berikut setelah disalin sebagai bukti: uploads/scenario-f-marker.php.","Perbaiki query login di /admin/login.php dengan prepared statement, lalu periksa query lain yang menyusun SQL dari input user.","Perbaiki endpoint /admin/auth_upload.php: batasi ekstensi dan tipe file, simpan upload di luar webroot, dan matikan eksekusi skrip di folder upload.","Ganti query di admin/login.php baris 13 dengan prepared statement (contoh perbaikan ada di bagian Akar Masalah)."],"t":"ul"},{"t":"h","text":"Pemulihan (recovery)"},{"items":["Ganti password admin aplikasi, database, dan semua kredensial yang tersimpan di file konfigurasi webroot.","Pulihkan webroot dari sumber yang terpercaya (git atau backup sebelum insiden), bukan dengan menghapus file satu per satu saja.","Setelah pemulihan, pantau akses ke /uploads/scenario-f-marker.php dan aktivitas dari IP di daftar IOC."],"t":"ul"},{"t":"h","text":"Pembelajaran (lessons learned)"},{"items":["Simpan baseline webroot (daftar hash file) secara berkala supaya file baru atau berubah bisa dipastikan.","Aktifkan pemantauan integritas file (FIM) pada webroot.","Catat nama file upload di log aplikasi, karena access log tidak mencatat isi POST."],"t":"ul"}],"title":"10. Tindakan yang Disarankan"},{"blocks":[{"items":["Laporan ini dibuat otomatis dengan aturan deterministik. Kesimpulannya perlu diverifikasi analis.","Isi request POST tidak tercatat di access log. Payload SQL injection lewat POST dan nama file upload tidak terlihat.","Penyerang dengan akses root bisa memalsukan timestamp file. Alat ini hanya mendeteksi ketidakkonsistenan, tidak bisa membuktikan keaslian.","Penyerang dengan akses root bisa menghapus baris log. Yang bisa dideteksi hanya celah waktu yang mencolok.","IP yang dipakai bersama (NAT, proxy, CDN tanpa X-Forwarded-For) bisa menggabungkan beberapa orang menjadi satu aktor.","Analisis kode hanya mencari SQL injection di file PHP yang terlibat dan file yang di-include-nya (satu tingkat, dari pola path include), per file dan per fungsi. Alur lewat pemanggilan fungsi, input dari framework, dan ORM tidak dilacak, jadi \"tidak ditemukan\" bukan berarti aman. Celah upload belum dilokalisasi di kode."],"t":"ul"}],"title":"11. Keterbatasan"}]},{"id":"case","label":"Info kasus","sections":[{"blocks":[{"pairs":[["ID kasus","WF-E887DEB66B"],["Analis","-"],["Host target","563daf0056be"],["Laporan dibuat","2026-10-28 09:00:00 WIB"],["Zona waktu laporan","WIB (UTC+07:00)"]],"t":"dl"},{"t":"h","text":"Cakupan bukti"},{"pairs":[["Periode access log","2026-10-29 12:19:47 WIB s.d. 2026-10-29 12:19:59 WIB"],["Access log","7 baris terbaca"],["Webroot","11 file"],["Bukti dikumpulkan","2026-10-29 12:20:10 WIB"],["Baseline","tidak ada"]],"t":"dl"}],"title":"2. Informasi Kasus"},{"blocks":[{"headers":["Rujukan","Kutipan"],"hl":[],"rows":[[{"mark":null,"text":"access.log:1"},{"mark":null,"text":"172.30.0.1 - - [29/Oct/2026:05:19:47 +0000] \"GET / HTTP/1.1\" 200 298 \"-\" \"webforensics-lab/1.0 scenario-f\" \"-\""}],[{"mark":null,"text":"access.log:4"},{"mark":null,"text":"172.30.0.1 - - [29/Oct/2026:05:19:53 +0000] \"GET /admin/login.php?username=admin\u0026password=wrong-lab-password HTTP/1.1\" 401 355 \"-\" \"webforensics-lab/1.0 scenario-f\" \"-\""}],[{"mark":null,"text":"access.log:5"},{"mark":null,"text":"172.30.0.1 - - [29/Oct/2026:05:19:55 +0000] \"GET /admin/login.php?username=admin%27+OR+%271%27%3D%271+--+\u0026password= HTTP/1.1\" 200 359 \"-\" \"webforensics-lab/1.0 scenario-f\" \"-\""}],[{"mark":null,"text":"access.log:6"},{"mark":null,"text":"172.30.0.1 - - [29/Oct/2026:05:19:57 +0000] \"POST /admin/auth_upload.php HTTP/1.1\" 200 51 \"-\" \"webforensics-lab/1.0 scenario-f\" \"-\""}],[{"mark":null,"text":"uploads/scenario-f-marker.php @c2f45202f02a"},{"mark":null,"text":"SHA-256 c2f45202f02ab18a6ad3965db67be368436a3a245819798ad1601464405f838c"}],[{"mark":null,"text":"access.log:7"},{"mark":null,"text":"172.30.0.1 - - [29/Oct/2026:05:19:59 +0000] \"GET /uploads/scenario-f-marker.php HTTP/1.1\" 200 37 \"-\" \"webforensics-lab/1.0 scenario-f\" \"-\""}],[{"mark":null,"text":"admin/login.php @fa2a9d556bc9"},{"mark":null,"text":"SHA-256 fa2a9d556bc98ba3751bc6f7eee860d187cd579c6658a6b962c0f32cbac77d45"}]],"t":"table"}],"title":"Lampiran A. Rujukan Bukti"},{"blocks":[{"pairs":[["Versi alat","0.1.0"],["Versi ruleset","0.1.0"],["Hash konfigurasi","7cabfdcdf016d39c2da7bcee773e1d9849ef20e55c633338b4fe17124069ca0d"]],"t":"dl"},{"t":"h","text":"File input"},{"headers":["File","SHA-256","Ukuran"],"hl":[],"rows":[[{"mark":null,"text":"access.log"},{"mark":null,"text":"d790e8e4e30e74b214ba5a76d631e9b48355ba6e2004189ffe7d72d01172bdb4"},{"mark":null,"text":"980 byte"}],[{"mark":null,"text":"manifest.tsv"},{"mark":null,"text":"dc514b240fa3667f9b7af0ce486c823e96b308dac532485ad6e4c45e91d98d7f"},{"mark":null,"text":"1987 byte"}]],"t":"table"},{"t":"p","text":"Input, versi, dan konfigurasi yang sama menghasilkan laporan yang sama persis."}],"title":"Lampiran B. Reproduksibilitas"}]}],"title":"Laporan Insiden Website","tool":"0.1.0","ui":{"cat.exploit":"Eksploitasi","cat.file":"Perubahan file","cat.login":"Login","cat.other":"Lainnya","cat.recon":"Pengintaian","cat.use":"Pemakaian file","cat.write":"Penulisan","chart.empty":"Kronologi kosong: tidak ada kejadian yang terkait insiden.","chart.files":"bukti file","chart.hint":"Klik tanda atau baris untuk membuka lembar buktinya. Seret di grafik untuk memperbesar. Area abu-abu adalah celah bukti.","chart.others":"aktor lain","chart.reset":"Kembalikan","chart.root":"akar","chart.title":"Kronologi per aktor","col.actor":"Aktor","col.confidence":"Keyakinan","col.event":"Kejadian","col.n":"No.","col.time":"Jam","copied":"Tersalin","copy":"Salin","detail.actor":"Aktor","detail.basis":"Dasar waktu","detail.close":"Tutup","detail.confidence":"Keyakinan","detail.empty":"Pilih kejadian di grafik atau di register untuk membuka lembar buktinya.","detail.evidence":"Kutipan bukti","detail.notes":"Catatan keyakinan","detail.phase":"Fase ATT\u0026CK","detail.root":"Akar masalah","detail.time":"Waktu","detail.title":"Lembar bukti","filter.actor":"Semua aktor","filter.count":"{shown} dari {total} kejadian","filter.more":"Tampilkan {count} lagi","filter.none":"Tidak ada kejadian yang cocok dengan filter.","filter.search":"Cari path, IP, atau kata","filter.story":"Hanya alur serangan","generated_by":"Dibuat oleh webforensics dari report.json. Halaman ini offline dan tidak memuat apa pun dari internet.","kicker":"Berkas insiden","meta.case":"No. kasus","meta.generated":"Dibuat","meta.tool":"Alat","meta.zone":"Zona waktu","run.collapse":"Tutup","run.expand":"Buka {count}","run.summary":"Rentetan {count} request yang ditandai dari aktor ini: {endpoints}. Jenis: {rules}.","stamp.clean":"Tidak ada kompromi terdeteksi","stamp.compromised":"Terkompromi","stat.actors":"aktor","stat.events":"kejadian","stat.files":"file terdampak","stat.gaps":"celah bukti","tab.actions":"Tindakan","tab.case":"Info kasus","tab.files":"File","tab.gaps":"Celah bukti","tab.iocs":"IOC","tab.overview":"Ringkasan","tab.root":"Akar masalah","tab.timeline":"Kronologi","verdict.clean":"Tidak ada file atau skrip yang terkait penyerang. Lihat celah bukti sebelum menyimpulkan situs ini bersih.","verdict.from":"dari","verdict.no_root":"Titik masuk belum bisa ditentukan dari bukti yang ada.","verdict.result":"Hasil","verdict.root":"Titik masuk"},"verdict":{"compromised":true,"root":{"actor":"172.30.0.1","clock":"12:19:55","conf":"medium","confLabel":"sedang","day":"29 Okt 2026","n":3,"text":"Bypass login dengan SQL injection: GET /admin/login.php → 200.","time":"2026-10-29 12:19:55 WIB","vuln":"SQL injection pada login (bypass autentikasi)"},"stats":{"actors":1,"events":6,"files":1,"gaps":1}},"zone":"WIB (UTC+07:00)","zoneShort":"WIB"}</script>
 <script>"use strict";
 (function () {
   // Every string comes from the embedded JSON (often attacker-controlled log text).
@@ -150,6 +222,7 @@ dl{grid-template-columns:1fr}
   var U = D.ui;
   var SVGNS = "http://www.w3.org/2000/svg";
   var PAGE = 200;
+  var DIGITS = Math.max(2, String(D.events.length).length);
 
   function fmt(template, values) {
     return template.replace(/\{(\w+)\}/g, function (_, k) {
@@ -186,7 +259,22 @@ dl{grid-template-columns:1fr}
     return node;
   }
 
-  function catVar(cat) { return "var(--c-" + cat + ")"; }
+  function no(n) {
+    var s = String(n);
+    while (s.length < DIGITS) s = "0" + s;
+    return "#" + s;
+  }
+
+  function glyph(cat) { return el("i", { cls: "g g-" + cat, "aria-hidden": "true" }); }
+
+  function meter(conf, label) {
+    return el("span", { cls: "meter c-" + conf }, el("i", { "aria-hidden": "true" }), label);
+  }
+
+  function field(dl, label, value) {
+    dl.appendChild(el("dt", { text: label }));
+    dl.appendChild(typeof value === "string" ? el("dd", { text: value }) : el("dd", null, value));
+  }
 
   // --- state -----------------------------------------------------------------------------
 
@@ -199,6 +287,8 @@ dl{grid-template-columns:1fr}
   });
   var laneOf = {};
   D.lanes.forEach(function (a, i) { laneOf[a] = i; });
+  var attacker = {};
+  D.attackers.forEach(function (a) { attacker[a] = true; });
   var hasOthers = events.some(function (e) { return !(e.actor in laneOf); });
 
   var state = {
@@ -212,19 +302,17 @@ dl{grid-template-columns:1fr}
   var app = document.getElementById("app");
   var wrap = el("div", { cls: "wrap" });
   app.appendChild(wrap);
-
-  wrap.appendChild(el("header", null,
-    el("h1", { text: D.title }), el("p", { cls: "sub", text: D.subtitle })));
-  wrap.appendChild(verdictCard());
+  wrap.appendChild(cover());
+  wrap.appendChild(finding());
 
   var nav = el("nav", { cls: "tabs", role: "tablist" });
   var panels = {};
   wrap.appendChild(nav);
-  D.tabs.forEach(function (tab) {
+  D.tabs.forEach(function (tab, i) {
     var btn = el("button", {
       role: "tab", id: "tab-" + tab.id, "aria-controls": "panel-" + tab.id,
-      text: tab.label, onclick: function () { showTab(tab.id, true); }
-    });
+      onclick: function () { showTab(tab.id, true); }
+    }, el("span", { cls: "i", text: (i < 9 ? "0" : "") + (i + 1) }), tab.label);
     nav.appendChild(btn);
     var panel = el("div", { role: "tabpanel", id: "panel-" + tab.id, "aria-labelledby": "tab-" + tab.id });
     panel.hidden = true;
@@ -259,39 +347,51 @@ dl{grid-template-columns:1fr}
 
   window.addEventListener("hashchange", function () { showTab(location.hash.slice(1), false); });
 
-  // --- verdict ---------------------------------------------------------------------------
+  // --- cover and main finding ------------------------------------------------------------
 
-  function verdictCard() {
-    var v = D.verdict;
-    var left = el("div", null, el("div", {
-      cls: "state", text: v.compromised ? U["verdict.compromised"] : U["verdict.clean"]
-    }));
+  function cover() {
+    var meta = el("div", { cls: "meta" });
+    [[U["meta.case"], D.caseId], [U["meta.generated"], D.generated], [U["meta.zone"], D.zone],
+      [U["meta.tool"], "webforensics " + D.tool]].forEach(function (p) {
+      meta.appendChild(el("div", null, el("span", { cls: "label", text: p[0] }), el("span", { text: p[1] })));
+    });
+    var bad = D.verdict.compromised;
+    return el("header", { cls: "cover" },
+      el("div", null, el("div", { cls: "label", text: U.kicker }), el("h1", { text: D.title }), meta),
+      el("div", { cls: "stamp" + (bad ? "" : " clean"), role: "img",
+        "aria-label": bad ? U["stamp.compromised"] : U["stamp.clean"],
+        text: bad ? U["stamp.compromised"] : U["stamp.clean"] }));
+  }
+
+  function finding() {
+    var v = D.verdict, left = el("div");
     if (v.root) {
-      var link = el("a", {
-        href: "#timeline", text: "#" + v.root.n,
-        onclick: function (ev) { ev.preventDefault(); showTab("timeline", true); select(v.root.n, true); }
-      });
-      left.appendChild(el("div", { cls: "root" },
-        el("b", { text: U["verdict.root"] + ": " }), link, " " + v.root.time + " · " + v.root.text));
-      left.appendChild(el("div", { cls: "root" },
-        el("b", { text: v.root.vuln + " · " }),
-        el("span", { cls: "badge conf-" + v.root.conf, text: v.root.confLabel })));
-    } else if (v.compromised) {
-      left.appendChild(el("div", { cls: "root", text: U["verdict.no_root"] }));
+      var r = v.root;
+      left.appendChild(el("div", { cls: "label", text: U["verdict.root"] }));
+      left.appendChild(el("p", { cls: "entry" },
+        el("a", { cls: "n", href: "#timeline", text: no(r.n),
+          onclick: function (ev) { ev.preventDefault(); showTab("timeline", true); select(r.n, true); } }),
+        el("span", { cls: "when", text: r.day + " " + r.clock + " " + D.zoneShort }), r.text));
+      left.appendChild(el("p", { cls: "entry-sub" }, el("span", { text: r.vuln }),
+        meter(r.conf, r.confLabel),
+        r.actor ? el("span", { text: U["verdict.from"] + " " + r.actor }) : null));
+    } else {
+      left.appendChild(el("div", { cls: "label", text: v.compromised ? U["verdict.root"] : U["verdict.result"] }));
+      left.appendChild(el("p", { cls: "entry-sub", text: v.compromised ? U["verdict.no_root"] : U["verdict.clean"] }));
     }
-    var stats = el("div", { cls: "stats" });
+    var ledger = el("dl", { cls: "ledger" });
     [["events", v.stats.events], ["files", v.stats.files], ["actors", v.stats.actors],
       ["gaps", v.stats.gaps]].forEach(function (s) {
-      stats.appendChild(el("div", { cls: "stat" },
-        el("strong", { text: String(s[1]) }), el("span", { text: U["stat." + s[0]] })));
+      ledger.appendChild(el("div", null, el("dt", { cls: "label", text: U["stat." + s[0]] }),
+        el("dd", { text: String(s[1]) })));
     });
-    return el("div", { cls: "card verdict" + (v.compromised ? "" : " clean") }, left, stats);
+    return el("section", { cls: "finding" }, left, ledger);
   }
 
   // --- static sections (same content as the HTML report) ---------------------------------
 
   function docSection(section) {
-    var node = el("section", { cls: "card doc" }, el("h2", { text: section.title }));
+    var node = el("section", { cls: "sheet doc" }, el("h2", { text: section.title }));
     section.blocks.forEach(function (b) { node.appendChild(docBlock(b)); });
     return node;
   }
@@ -306,8 +406,8 @@ dl{grid-template-columns:1fr}
     }
     if (b.t === "code") return el("pre", { text: b.lines.join("\n") });
     if (b.t === "dl") {
-      var dl = el("dl");
-      b.pairs.forEach(function (p) { dl.appendChild(el("dt", { text: p[0] })); dl.appendChild(el("dd", { text: p[1] })); });
+      var dl = el("dl", { cls: "fields" });
+      b.pairs.forEach(function (p) { field(dl, p[0], p[1]); });
       return dl;
     }
     if (b.t === "table") {
@@ -317,8 +417,8 @@ dl{grid-template-columns:1fr}
       b.rows.forEach(function (row, i) {
         var tr = el("tr", { cls: b.hl.indexOf(i) >= 0 ? "hl" : null });
         row.forEach(function (c) {
-          var cls = c.mark === "root" ? "mark-root" : c.mark ? "conf-" + c.mark : null;
-          tr.appendChild(el("td", { cls: cls, text: c.text }));
+          if (c.mark && c.mark !== "root") tr.appendChild(el("td", null, meter(c.mark, c.text)));
+          else tr.appendChild(el("td", { cls: c.mark === "root" ? "mark-root" : null, text: c.text }));
         });
         body.appendChild(tr);
       });
@@ -329,20 +429,18 @@ dl{grid-template-columns:1fr}
 
   // --- timeline --------------------------------------------------------------------------
 
-  var chartBox, svgHost, resetBtn, listEl, countEl, moreBox, detailEl, dots = {}, rows = {};
+  var svgHost, resetBtn, listEl, countEl, moreBox, detailEl, marks = {}, rows = {};
 
   function buildTimeline(panel) {
     resetBtn = el("button", {
-      cls: "btn", text: "Reset zoom", hidden: true,
+      cls: "btn", text: U["chart.reset"], hidden: true,
       onclick: function () { state.zoom = null; refresh(); }
     });
     svgHost = el("div");
     var legend = el("div", { cls: "legend" });
-    present().forEach(function (c) {
-      legend.appendChild(el("span", null, el("i", { style: "background:" + catVar(c.id) }), c.label));
-    });
-    chartBox = el("div", { cls: "card chart" },
-      el("div", { cls: "bar" }, el("h2", { text: U["chart.title"] }), resetBtn),
+    present().forEach(function (c) { legend.appendChild(el("span", null, glyph(c.id), c.label)); });
+    var chart = el("div", { cls: "chart" },
+      el("div", { cls: "chart-head" }, el("h2", { text: U["chart.title"] }), resetBtn),
       el("p", { cls: "hint", text: U["chart.hint"] }), svgHost, legend);
 
     var search = el("input", {
@@ -356,7 +454,13 @@ dl{grid-template-columns:1fr}
     actorList().forEach(function (a) {
       actor.appendChild(el("option", { value: a, text: a || U["chart.files"] }));
     });
-    var chips = present().map(function (c) {
+    var story = el("input", {
+      type: "checkbox", id: "story-only",
+      onchange: function () { state.story = story.checked; state.limit = PAGE; refresh(); }
+    });
+    countEl = el("span", { cls: "count", "aria-live": "polite" });
+    var filters = el("div", { cls: "filters" }, search, actor);
+    present().forEach(function (c) {
       var chip = el("button", {
         cls: "chip", "aria-pressed": "true",
         onclick: function () {
@@ -364,23 +468,22 @@ dl{grid-template-columns:1fr}
           chip.setAttribute("aria-pressed", state.cats[c.id] ? "true" : "false");
           state.limit = PAGE; refresh();
         }
-      }, el("i", { style: "background:" + catVar(c.id) }), c.label);
-      return chip;
+      }, glyph(c.id), c.label);
+      filters.appendChild(chip);
     });
-    var story = el("input", {
-      type: "checkbox", id: "story-only",
-      onchange: function () { state.story = story.checked; state.limit = PAGE; refresh(); }
-    });
-    countEl = el("span", { cls: "count", "aria-live": "polite" });
-    var filters = el("div", { cls: "filters" }, search, actor);
-    chips.forEach(function (c) { filters.appendChild(c); });
     filters.appendChild(el("label", { cls: "toggle", for: "story-only" }, story, U["filter.story"]));
     filters.appendChild(countEl);
 
+    var head = el("div", { cls: "reg-head", "aria-hidden": "true" },
+      el("span", { cls: "label", text: U["col.n"] }),
+      el("span", { cls: "label", text: U["col.time"] + " " + D.zoneShort }),
+      el("span", { cls: "label", text: U["col.actor"] }),
+      el("span", { cls: "label", text: U["col.event"] }),
+      el("span", { cls: "label", text: U["col.confidence"] }));
     listEl = el("ol", { cls: "events" });
     moreBox = el("div", { cls: "more" });
-    detailEl = el("aside", { cls: "card detail", "aria-live": "polite" });
-    var main = el("div", null, chartBox, el("div", { cls: "card" }, filters, listEl, moreBox));
+    detailEl = el("aside", { cls: "detail", "aria-live": "polite" });
+    var main = el("div", null, chart, filters, head, listEl, moreBox);
     panel.appendChild(el("div", { cls: "tl" }, main, detailEl));
     renderDetail();
     renderList();
@@ -426,24 +529,36 @@ dl{grid-template-columns:1fr}
     renderList();
   }
 
-  // Chart: one lane per actor, x = time in the report's zone, grey bands = evidence gaps.
+  // One SVG mark per event: the shape says what kind of event it is.
+  function mark(cat, x, y, root) {
+    var r = root ? 6.5 : 5, color = "var(--c-" + cat + ")", node;
+    if (cat === "recon") node = sv("circle", { cx: x, cy: y, r: r - 1, fill: "var(--bg)", stroke: color, "stroke-width": 2 });
+    else if (cat === "exploit") node = sv("polygon", { points: [x, y - r - 1, x + r + 1, y + r, x - r - 1, y + r].join(" "), fill: color });
+    else if (cat === "login") node = sv("polygon", { points: [x, y - r - 1, x + r + 1, y, x, y + r + 1, x - r - 1, y].join(" "), fill: color });
+    else if (cat === "write") node = sv("rect", { x: x - r + 0.5, y: y - r + 0.5, width: 2 * r - 1, height: 2 * r - 1, fill: color });
+    else if (cat === "file") node = sv("rect", { x: x - r + 1, y: y - r + 1, width: 2 * r - 2, height: 2 * r - 2, fill: "var(--bg)", stroke: color, "stroke-width": 2 });
+    else if (cat === "use") node = sv("circle", { cx: x, cy: y, r: r - 0.5, fill: color });
+    else node = sv("circle", { cx: x, cy: y, r: 2.5, fill: color });
+    return node;
+  }
+
   function drawChart() {
     if (!svgHost || state.tab !== "timeline") return;
     if (!events.length) {
       svgHost.textContent = "";
-      svgHost.appendChild(el("p", { cls: "empty", text: U["chart.empty"] }));
+      svgHost.appendChild(el("p", { cls: "hint", text: U["chart.empty"] }));
       return;
     }
     var width = Math.max(320, svgHost.clientWidth || 800);
-    var left = width < 520 ? 92 : 140, right = 14, top = 6, laneH = 26, axisH = 24;
+    var left = width < 520 ? 96 : 138, right = 16, top = 20, laneH = 28, axisH = 24;
     var lanes = D.lanes.slice();
     var othersLane = hasOthers ? lanes.length : -1;
     var laneCount = lanes.length + (hasOthers ? 1 : 0);
-    var height = top + laneCount * laneH + axisH;
+    var plotH = laneCount * laneH;
+    var height = top + plotH + axisH;
     var shown = events.filter(matches);
-    var all = events;
-    var lo = state.zoom ? state.zoom[0] : all[0].ms;
-    var hi = state.zoom ? state.zoom[1] : all[all.length - 1].ms;
+    var lo = state.zoom ? state.zoom[0] : events[0].ms;
+    var hi = state.zoom ? state.zoom[1] : events[events.length - 1].ms;
     if (hi - lo < 10000) { var mid = (hi + lo) / 2; lo = mid - 5000; hi = mid + 5000; }
     var pad = state.zoom ? 0 : (hi - lo) * 0.04;
     lo -= pad; hi += pad;
@@ -452,51 +567,67 @@ dl{grid-template-columns:1fr}
 
     var svg = sv("svg", { viewBox: "0 0 " + width + " " + height, height: height, role: "img",
       "aria-label": U["chart.title"] });
-    var plotH = laneCount * laneH;
+    var defs = sv("defs", {});
+    var hatch = sv("pattern", { id: "hatch", patternUnits: "userSpaceOnUse", width: 6, height: 6,
+      patternTransform: "rotate(45)" });
+    hatch.appendChild(sv("line", { "class": "hatchline", x1: 0, y1: 0, x2: 0, y2: 6 }));
+    defs.appendChild(hatch);
+    svg.appendChild(defs);
+
     D.gaps.forEach(function (g) {
       if (g.to < lo || g.from > hi) return;
       var x0 = x(Math.max(g.from, lo)), x1 = x(Math.min(g.to, hi));
-      var band = sv("rect", { "class": "gapband", x: x0, y: top, width: Math.max(1, x1 - x0), height: plotH });
+      var band = sv("rect", { "class": "gapband", x: x0, y: top, width: Math.max(2, x1 - x0),
+        height: plotH, fill: "url(#hatch)" });
       band.appendChild(titleNode(g.label + " · " + g.kind));
       svg.appendChild(band);
       if (x1 - x0 > 18) {
-        var gl = sv("text", { "class": "gaplabel", x: x0 + 3, y: top + 9 });
+        var gl = sv("text", { "class": "gaplabel", x: x0 + 3, y: top - 6 });
         gl.textContent = g.label;
         svg.appendChild(gl);
       }
     });
-    for (var i = 0; i < laneCount; i++) {
-      var y = top + i * laneH + laneH / 2;
-      svg.appendChild(sv("line", { "class": "grid", x1: left, x2: width - right, y1: y, y2: y }));
-      var name = i === othersLane ? U["chart.others"] : (lanes[i] || U["chart.files"]);
-      var label = sv("text", { "class": "lane-label", x: left - 8, y: y + 4, "text-anchor": "end" });
-      label.textContent = name.length > 18 ? name.slice(0, 17) + "…" : name;
-      label.appendChild(titleNode(name));
-      svg.appendChild(label);
-    }
     ticks(lo, hi).forEach(function (t) {
       var tx = x(t.ms);
-      svg.appendChild(sv("line", { "class": "grid", x1: tx, x2: tx, y1: top, y2: top + plotH, "stroke-dasharray": "2 3" }));
-      var tl = sv("text", { "class": "axis", x: tx, y: top + plotH + 15, "text-anchor": "middle" });
+      svg.appendChild(sv("line", { "class": "tick", x1: tx, x2: tx, y1: top, y2: top + plotH + 4 }));
+      var tl = sv("text", { "class": "axis", x: tx, y: top + plotH + 16, "text-anchor": "middle" });
       tl.textContent = t.label;
       svg.appendChild(tl);
     });
+    for (var i = 0; i < laneCount; i++) {
+      var y = top + i * laneH + laneH / 2;
+      svg.appendChild(sv("line", { "class": "base", x1: left, x2: width - right, y1: y, y2: y }));
+      var name = i === othersLane ? U["chart.others"] : (lanes[i] || U["chart.files"]);
+      var label = sv("text", { "class": "lane" + (attacker[lanes[i]] ? " att" : ""), x: left - 10,
+        y: y + 4, "text-anchor": "end" });
+      label.textContent = name.length > 17 ? name.slice(0, 16) + "…" : name;
+      label.appendChild(titleNode(name));
+      svg.appendChild(label);
+    }
+
+    var root = events.filter(function (e) { return e.root; })[0];
+    if (root && root.ms >= lo && root.ms <= hi && matches(root)) {
+      var rx = x(root.ms);
+      svg.appendChild(sv("line", { "class": "rootline", x1: rx, x2: rx, y1: top - 4, y2: top + plotH }));
+      var tagText = U["chart.root"].toUpperCase() + " " + no(root.n);
+      var tagW = tagText.length * 6.2 + 8, tagX = Math.min(rx, width - right - tagW);
+      svg.appendChild(sv("rect", { "class": "roottagbg", x: tagX, y: top - 19, width: tagW, height: 14 }));
+      var tag = sv("text", { "class": "roottag", x: tagX + 4, y: top - 8 });
+      tag.textContent = tagText;
+      svg.appendChild(tag);
+    }
 
     var brush = sv("rect", { "class": "brush", x: 0, y: top, width: 0, height: plotH, visibility: "hidden" });
     svg.appendChild(brush);
-    dots = {};
+    marks = {};
     shown.forEach(function (e) {
       var lane = e.actor in laneOf ? laneOf[e.actor] : othersLane;
-      var cy = top + lane * laneH + laneH / 2, cx = x(e.ms);
-      if (e.root) svg.appendChild(sv("circle", { "class": "rootring", cx: cx, cy: cy, r: 9 }));
-      var dot = sv("circle", {
-        "class": "dot" + (state.sel === e.n ? " sel" : ""), cx: cx, cy: cy, r: e.root ? 6 : 4.5,
-        fill: catVar(e.cat), tabindex: "-1"
-      });
-      dot.appendChild(titleNode("#" + e.n + " " + e.time + " · " + (e.actor || U["chart.files"]) + "\n" + e.text));
-      dot.addEventListener("click", function (ev) { ev.stopPropagation(); select(e.n, true); });
-      dots[e.n] = dot;
-      svg.appendChild(dot);
+      var node = mark(e.cat, x(e.ms), top + lane * laneH + laneH / 2, e.root);
+      node.setAttribute("class", "ev" + (state.sel === e.n ? " sel" : ""));
+      node.appendChild(titleNode(no(e.n) + " " + e.clock + " · " + (e.actor || U["chart.files"]) + "\n" + e.text));
+      node.addEventListener("click", function (ev) { ev.stopPropagation(); select(e.n, true); });
+      marks[e.n] = node;
+      svg.appendChild(node);
     });
 
     // Drag across the chart to zoom into that time range.
@@ -506,7 +637,7 @@ dl{grid-template-columns:1fr}
       return (ev.clientX - r.left) * (width / r.width);
     }
     svg.addEventListener("pointerdown", function (ev) {
-      if (ev.target.classList && ev.target.classList.contains("dot")) return;
+      if (ev.target.getAttribute && /\bev\b/.test(ev.target.getAttribute("class") || "")) return;
       var p = px(ev);
       if (p < left || p > width - right) return;
       start = p;
@@ -564,7 +695,7 @@ dl{grid-template-columns:1fr}
 
   function pad2(n) { return (n < 10 ? "0" : "") + n; }
 
-  // List: bursts from one actor collapse into one row until opened.
+  // Register: bursts from one actor collapse into one row until opened.
   function visibleRows() {
     var out = [], seenRun = {};
     events.forEach(function (e) {
@@ -584,8 +715,12 @@ dl{grid-template-columns:1fr}
     listEl.textContent = "";
     rows = {};
     if (!all.length) listEl.appendChild(el("li", { cls: "empty", text: U["filter.none"] }));
-    var openedRun = {};
+    var openedRun = {}, day = null;
     all.slice(0, state.limit).forEach(function (r) {
+      if (r.e.day !== day) {
+        day = r.e.day;
+        listEl.appendChild(el("li", { cls: "day", text: day }));
+      }
       if (r.run !== undefined) { listEl.appendChild(runRow(r.run, false)); return; }
       if (r.sub && !openedRun[r.e.run]) { openedRun[r.e.run] = true; listEl.appendChild(runRow(r.e.run, true)); }
       listEl.appendChild(eventRow(r.e, r.sub));
@@ -602,32 +737,31 @@ dl{grid-template-columns:1fr}
   function runRow(id, opened) {
     var run = D.runs[id], first = byN[run.first];
     var toggle = function () { state.open[id] = !state.open[id]; renderList(); };
-    var li = el("li", {
+    return el("li", {
       cls: "runrow", tabindex: "0", role: "button", "aria-expanded": opened ? "true" : "false",
       onclick: toggle,
       onkeydown: function (ev) { if (ev.key === "Enter" || ev.key === " ") { ev.preventDefault(); toggle(); } }
     },
-      el("span", { cls: "n", text: "#" + run.first }),
-      el("span", { cls: "time", text: run.time }),
+      el("span", { cls: "n", text: no(run.first) }),
+      el("span", { cls: "time", text: run.clock }),
       el("span", { cls: "actor", text: first.actor || D.labels.noActor }),
-      el("span", { cls: "text" }, el("i", { cls: "cat", style: "background:" + catVar(first.cat) }), run.text),
-      el("span", { cls: "btn", text: opened ? U["run.collapse"] : fmt(U["run.expand"], { count: run.count }) }));
-    return li;
+      el("span", { cls: "text" }, glyph(first.cat), el("span", { text: run.text })),
+      el("span", null, el("span", { cls: "btn", text: opened ? U["run.collapse"] : fmt(U["run.expand"], { count: run.count }) })));
   }
 
   function eventRow(e, sub) {
     var cls = [sub ? "sub" : "", e.root ? "root" : "", state.sel === e.n ? "sel" : ""].join(" ").trim();
+    var text = el("span", null, e.root ? el("span", { cls: "tag", text: D.labels.rootMarker }) : null, e.text);
     var li = el("li", {
       cls: cls || null, tabindex: "0", "data-n": String(e.n),
       onclick: function () { select(e.n, false); },
       onkeydown: function (ev) { onRowKey(ev, e.n); }
     },
-      el("span", { cls: "n", text: "#" + e.n }),
-      el("span", { cls: "time", text: e.time }),
+      el("span", { cls: "n", text: no(e.n) }),
+      el("span", { cls: "time", text: e.clock }),
       el("span", { cls: "actor", text: e.actor || D.labels.noActor }),
-      el("span", { cls: "text" }, el("i", { cls: "cat", style: "background:" + catVar(e.cat) }),
-        (e.root ? D.labels.rootMarker + ": " : "") + e.text),
-      el("span", { cls: "badge conf-" + e.conf, text: e.confLabel }));
+      el("span", { cls: "text" }, glyph(e.cat), text),
+      el("span", null, meter(e.conf, e.confLabel)));
     rows[e.n] = li;
     return li;
   }
@@ -641,7 +775,7 @@ dl{grid-template-columns:1fr}
     if (items[i]) items[i].focus();
   }
 
-  // Selecting from the chart or the verdict may need to open a burst, clear filters that
+  // Selecting from the chart or the finding may need to open a burst, clear filters that
   // hide the event, or show more rows before the row exists.
   function select(n, reveal) {
     var e = byN[n];
@@ -659,7 +793,7 @@ dl{grid-template-columns:1fr}
       if (idx >= state.limit) state.limit = Math.ceil((idx + 1) / PAGE) * PAGE;
     }
     renderList();
-    for (var k in dots) dots[k].setAttribute("class", "dot" + (Number(k) === n ? " sel" : ""));
+    for (var k in marks) marks[k].setAttribute("class", "ev" + (Number(k) === n ? " sel" : ""));
     renderDetail();
     detailEl.classList.add("open");
     if (rows[n] && reveal) rows[n].scrollIntoView({ block: "nearest" });
@@ -681,34 +815,36 @@ dl{grid-template-columns:1fr}
     var e = state.sel !== null ? byN[state.sel] : null;
     var close = el("button", { cls: "btn close", text: U["detail.close"],
       onclick: function () { detailEl.classList.remove("open"); } });
-    detailEl.appendChild(el("h2", null,
-      el("span", { text: U["detail.title"] + (e ? " #" + e.n : "") }), close));
+    detailEl.appendChild(el("div", { cls: "head" },
+      el("div", null, el("div", { cls: "label", text: U["detail.title"] }),
+        el("div", { cls: "no", text: e ? no(e.n) : "—" })), close));
     if (!e) { detailEl.appendChild(el("p", { cls: "empty", text: U["detail.empty"] })); return; }
-    if (e.root) detailEl.appendChild(el("div", { cls: "rootnote", text: U["detail.root"] }));
-    detailEl.appendChild(el("p", { cls: "text", text: e.text }));
-    var dl = el("dl");
-    [[U["detail.basis"], e.time + " (" + e.basis + ")"], [U["detail.phase"], e.phase],
-      [U["detail.actor"], e.actor || D.labels.noActor]].forEach(function (p) {
-      dl.appendChild(el("dt", { text: p[0] })); dl.appendChild(el("dd", { text: p[1] }));
-    });
-    dl.appendChild(el("dt", { text: U["detail.confidence"] }));
-    dl.appendChild(el("dd", null, el("span", { cls: "badge conf-" + e.conf, text: e.confLabel })));
-    detailEl.appendChild(dl);
+    var body = el("div", { cls: "body" });
+    if (e.root) body.appendChild(el("div", { cls: "rootnote", text: U["detail.root"] }));
+    body.appendChild(el("p", { cls: "text" }, glyph(e.cat), " ", e.text));
+    var dl = el("dl", { cls: "fields" });
+    field(dl, U["detail.time"], e.day + " " + e.clock + " " + D.zoneShort);
+    field(dl, U["detail.basis"], e.basis);
+    field(dl, U["detail.phase"], e.phase);
+    field(dl, U["detail.actor"], e.actor || D.labels.noActor);
+    field(dl, U["detail.confidence"], meter(e.conf, e.confLabel));
+    body.appendChild(dl);
     if (e.notes.length) {
-      detailEl.appendChild(el("h3", { text: U["detail.notes"] }));
+      body.appendChild(el("h3", { text: U["detail.notes"] }));
       var ul = el("ul");
       e.notes.forEach(function (t) { ul.appendChild(el("li", { text: t })); });
-      detailEl.appendChild(ul);
+      body.appendChild(ul);
     }
-    detailEl.appendChild(el("h3", { text: U["detail.evidence"] }));
+    body.appendChild(el("h3", { text: U["detail.evidence"] }));
     e.cites.forEach(function (i) {
       var c = D.cites[i];
       var btn = el("button", { cls: "btn", text: U.copy });
       btn.addEventListener("click", function () { copy(c.ref + "\n" + c.ex, btn); });
-      detailEl.appendChild(el("div", { cls: "cite" },
+      body.appendChild(el("div", { cls: "cite" },
         el("div", { cls: "ref" }, el("span", { text: c.ref }), btn),
         c.ex ? el("pre", { text: c.ex }) : null));
     });
+    detailEl.appendChild(body);
   }
 
   function copy(text, btn) {

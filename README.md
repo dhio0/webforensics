@@ -73,10 +73,10 @@ The evidence formats are described in [docs/evidence-format.md](docs/evidence-fo
 webforensics view case01/report/report.json          # writes case01/report/viewer.html
 ```
 `view` turns a `report.json` into one offline HTML page for exploring the case, next to the static report for reading and printing:
-- a verdict card (compromise or not, entry point, counts) with a link to the root-cause event;
-- a timeline chart with one lane per actor, coloured by kind of event (reconnaissance, exploit, login, write, file change, file use), evidence gaps shaded; drag across it to zoom;
-- a filterable event list (search, actor, kind, "attack story only"), with scanner bursts collapsed into one row until opened;
-- a detail panel per event with its time basis, ATT&CK phase, confidence notes and every cited log line or file hash, each with a copy button;
+- a header with the verdict, the entry point (linked to its event) and the counts;
+- a timeline chart with one lane per actor and one shape per kind of event (reconnaissance, exploit, login, write, file change, file use), so colour is never the only cue; evidence gaps are shaded and the root cause is marked; drag across it to zoom;
+- an evidence register (search, actor, kind, "attack story only") grouped by day, with scanner bursts collapsed into one row until opened;
+- an evidence sheet per event with its time basis, ATT&CK phase, confidence notes and every cited log line or file hash, each with a copy button;
 - the other report sections (root cause and vulnerable code, files, IOCs, gaps, actions, case info) as tabs.
 
 All text is the same Indonesian text as the static report, produced by the same code. The page loads nothing from anywhere: its Content-Security-Policy allows only its own script (by SHA-256) and no network, and evidence strings are only ever set as text. It works at phone width and in dark mode, and the same `report.json` gives the same bytes. A real-scale report (10,083 timeline events, 5,235 gaps) gives a 7.6 MB page (D91).

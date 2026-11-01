@@ -6,6 +6,7 @@
   var U = D.ui;
   var SVGNS = "http://www.w3.org/2000/svg";
   var PAGE = 200;
+  var DIGITS = Math.max(2, String(D.events.length).length);
 
   function fmt(template, values) {
     return template.replace(/\{(\w+)\}/g, function (_, k) {
@@ -42,7 +43,22 @@
     return node;
   }
 
-  function catVar(cat) { return "var(--c-" + cat + ")"; }
+  function no(n) {
+    var s = String(n);
+    while (s.length < DIGITS) s = "0" + s;
+    return "#" + s;
+  }
+
+  function glyph(cat) { return el("i", { cls: "g g-" + cat, "aria-hidden": "true" }); }
+
+  function meter(conf, label) {
+    return el("span", { cls: "meter c-" + conf }, el("i", { "aria-hidden": "true" }), label);
+  }
+
+  function field(dl, label, value) {
+    dl.appendChild(el("dt", { text: label }));
+    dl.appendChild(typeof value === "string" ? el("dd", { text: value }) : el("dd", null, value));
+  }
 
   // --- state -----------------------------------------------------------------------------
 
@@ -55,6 +71,8 @@
   });
   var laneOf = {};
   D.lanes.forEach(function (a, i) { laneOf[a] = i; });
+  var attacker = {};
+  D.attackers.forEach(function (a) { attacker[a] = true; });
   var hasOthers = events.some(function (e) { return !(e.actor in laneOf); });
 
   var state = {
@@ -68,19 +86,17 @@
   var app = document.getElementById("app");
   var wrap = el("div", { cls: "wrap" });
   app.appendChild(wrap);
-
-  wrap.appendChild(el("header", null,
-    el("h1", { text: D.title }), el("p", { cls: "sub", text: D.subtitle })));
-  wrap.appendChild(verdictCard());
+  wrap.appendChild(cover());
+  wrap.appendChild(finding());
 
   var nav = el("nav", { cls: "tabs", role: "tablist" });
   var panels = {};
   wrap.appendChild(nav);
-  D.tabs.forEach(function (tab) {
+  D.tabs.forEach(function (tab, i) {
     var btn = el("button", {
       role: "tab", id: "tab-" + tab.id, "aria-controls": "panel-" + tab.id,
-      text: tab.label, onclick: function () { showTab(tab.id, true); }
-    });
+      onclick: function () { showTab(tab.id, true); }
+    }, el("span", { cls: "i", text: (i < 9 ? "0" : "") + (i + 1) }), tab.label);
     nav.appendChild(btn);
     var panel = el("div", { role: "tabpanel", id: "panel-" + tab.id, "aria-labelledby": "tab-" + tab.id });
     panel.hidden = true;
@@ -115,39 +131,51 @@
 
   window.addEventListener("hashchange", function () { showTab(location.hash.slice(1), false); });
 
-  // --- verdict ---------------------------------------------------------------------------
+  // --- cover and main finding ------------------------------------------------------------
 
-  function verdictCard() {
-    var v = D.verdict;
-    var left = el("div", null, el("div", {
-      cls: "state", text: v.compromised ? U["verdict.compromised"] : U["verdict.clean"]
-    }));
+  function cover() {
+    var meta = el("div", { cls: "meta" });
+    [[U["meta.case"], D.caseId], [U["meta.generated"], D.generated], [U["meta.zone"], D.zone],
+      [U["meta.tool"], "webforensics " + D.tool]].forEach(function (p) {
+      meta.appendChild(el("div", null, el("span", { cls: "label", text: p[0] }), el("span", { text: p[1] })));
+    });
+    var bad = D.verdict.compromised;
+    return el("header", { cls: "cover" },
+      el("div", null, el("div", { cls: "label", text: U.kicker }), el("h1", { text: D.title }), meta),
+      el("div", { cls: "stamp" + (bad ? "" : " clean"), role: "img",
+        "aria-label": bad ? U["stamp.compromised"] : U["stamp.clean"],
+        text: bad ? U["stamp.compromised"] : U["stamp.clean"] }));
+  }
+
+  function finding() {
+    var v = D.verdict, left = el("div");
     if (v.root) {
-      var link = el("a", {
-        href: "#timeline", text: "#" + v.root.n,
-        onclick: function (ev) { ev.preventDefault(); showTab("timeline", true); select(v.root.n, true); }
-      });
-      left.appendChild(el("div", { cls: "root" },
-        el("b", { text: U["verdict.root"] + ": " }), link, " " + v.root.time + " · " + v.root.text));
-      left.appendChild(el("div", { cls: "root" },
-        el("b", { text: v.root.vuln + " · " }),
-        el("span", { cls: "badge conf-" + v.root.conf, text: v.root.confLabel })));
-    } else if (v.compromised) {
-      left.appendChild(el("div", { cls: "root", text: U["verdict.no_root"] }));
+      var r = v.root;
+      left.appendChild(el("div", { cls: "label", text: U["verdict.root"] }));
+      left.appendChild(el("p", { cls: "entry" },
+        el("a", { cls: "n", href: "#timeline", text: no(r.n),
+          onclick: function (ev) { ev.preventDefault(); showTab("timeline", true); select(r.n, true); } }),
+        el("span", { cls: "when", text: r.day + " " + r.clock + " " + D.zoneShort }), r.text));
+      left.appendChild(el("p", { cls: "entry-sub" }, el("span", { text: r.vuln }),
+        meter(r.conf, r.confLabel),
+        r.actor ? el("span", { text: U["verdict.from"] + " " + r.actor }) : null));
+    } else {
+      left.appendChild(el("div", { cls: "label", text: v.compromised ? U["verdict.root"] : U["verdict.result"] }));
+      left.appendChild(el("p", { cls: "entry-sub", text: v.compromised ? U["verdict.no_root"] : U["verdict.clean"] }));
     }
-    var stats = el("div", { cls: "stats" });
+    var ledger = el("dl", { cls: "ledger" });
     [["events", v.stats.events], ["files", v.stats.files], ["actors", v.stats.actors],
       ["gaps", v.stats.gaps]].forEach(function (s) {
-      stats.appendChild(el("div", { cls: "stat" },
-        el("strong", { text: String(s[1]) }), el("span", { text: U["stat." + s[0]] })));
+      ledger.appendChild(el("div", null, el("dt", { cls: "label", text: U["stat." + s[0]] }),
+        el("dd", { text: String(s[1]) })));
     });
-    return el("div", { cls: "card verdict" + (v.compromised ? "" : " clean") }, left, stats);
+    return el("section", { cls: "finding" }, left, ledger);
   }
 
   // --- static sections (same content as the HTML report) ---------------------------------
 
   function docSection(section) {
-    var node = el("section", { cls: "card doc" }, el("h2", { text: section.title }));
+    var node = el("section", { cls: "sheet doc" }, el("h2", { text: section.title }));
     section.blocks.forEach(function (b) { node.appendChild(docBlock(b)); });
     return node;
   }
@@ -162,8 +190,8 @@
     }
     if (b.t === "code") return el("pre", { text: b.lines.join("\n") });
     if (b.t === "dl") {
-      var dl = el("dl");
-      b.pairs.forEach(function (p) { dl.appendChild(el("dt", { text: p[0] })); dl.appendChild(el("dd", { text: p[1] })); });
+      var dl = el("dl", { cls: "fields" });
+      b.pairs.forEach(function (p) { field(dl, p[0], p[1]); });
       return dl;
     }
     if (b.t === "table") {
@@ -173,8 +201,8 @@
       b.rows.forEach(function (row, i) {
         var tr = el("tr", { cls: b.hl.indexOf(i) >= 0 ? "hl" : null });
         row.forEach(function (c) {
-          var cls = c.mark === "root" ? "mark-root" : c.mark ? "conf-" + c.mark : null;
-          tr.appendChild(el("td", { cls: cls, text: c.text }));
+          if (c.mark && c.mark !== "root") tr.appendChild(el("td", null, meter(c.mark, c.text)));
+          else tr.appendChild(el("td", { cls: c.mark === "root" ? "mark-root" : null, text: c.text }));
         });
         body.appendChild(tr);
       });
@@ -185,20 +213,18 @@
 
   // --- timeline --------------------------------------------------------------------------
 
-  var chartBox, svgHost, resetBtn, listEl, countEl, moreBox, detailEl, dots = {}, rows = {};
+  var svgHost, resetBtn, listEl, countEl, moreBox, detailEl, marks = {}, rows = {};
 
   function buildTimeline(panel) {
     resetBtn = el("button", {
-      cls: "btn", text: "Reset zoom", hidden: true,
+      cls: "btn", text: U["chart.reset"], hidden: true,
       onclick: function () { state.zoom = null; refresh(); }
     });
     svgHost = el("div");
     var legend = el("div", { cls: "legend" });
-    present().forEach(function (c) {
-      legend.appendChild(el("span", null, el("i", { style: "background:" + catVar(c.id) }), c.label));
-    });
-    chartBox = el("div", { cls: "card chart" },
-      el("div", { cls: "bar" }, el("h2", { text: U["chart.title"] }), resetBtn),
+    present().forEach(function (c) { legend.appendChild(el("span", null, glyph(c.id), c.label)); });
+    var chart = el("div", { cls: "chart" },
+      el("div", { cls: "chart-head" }, el("h2", { text: U["chart.title"] }), resetBtn),
       el("p", { cls: "hint", text: U["chart.hint"] }), svgHost, legend);
 
     var search = el("input", {
@@ -212,7 +238,13 @@
     actorList().forEach(function (a) {
       actor.appendChild(el("option", { value: a, text: a || U["chart.files"] }));
     });
-    var chips = present().map(function (c) {
+    var story = el("input", {
+      type: "checkbox", id: "story-only",
+      onchange: function () { state.story = story.checked; state.limit = PAGE; refresh(); }
+    });
+    countEl = el("span", { cls: "count", "aria-live": "polite" });
+    var filters = el("div", { cls: "filters" }, search, actor);
+    present().forEach(function (c) {
       var chip = el("button", {
         cls: "chip", "aria-pressed": "true",
         onclick: function () {
@@ -220,23 +252,22 @@
           chip.setAttribute("aria-pressed", state.cats[c.id] ? "true" : "false");
           state.limit = PAGE; refresh();
         }
-      }, el("i", { style: "background:" + catVar(c.id) }), c.label);
-      return chip;
+      }, glyph(c.id), c.label);
+      filters.appendChild(chip);
     });
-    var story = el("input", {
-      type: "checkbox", id: "story-only",
-      onchange: function () { state.story = story.checked; state.limit = PAGE; refresh(); }
-    });
-    countEl = el("span", { cls: "count", "aria-live": "polite" });
-    var filters = el("div", { cls: "filters" }, search, actor);
-    chips.forEach(function (c) { filters.appendChild(c); });
     filters.appendChild(el("label", { cls: "toggle", for: "story-only" }, story, U["filter.story"]));
     filters.appendChild(countEl);
 
+    var head = el("div", { cls: "reg-head", "aria-hidden": "true" },
+      el("span", { cls: "label", text: U["col.n"] }),
+      el("span", { cls: "label", text: U["col.time"] + " " + D.zoneShort }),
+      el("span", { cls: "label", text: U["col.actor"] }),
+      el("span", { cls: "label", text: U["col.event"] }),
+      el("span", { cls: "label", text: U["col.confidence"] }));
     listEl = el("ol", { cls: "events" });
     moreBox = el("div", { cls: "more" });
-    detailEl = el("aside", { cls: "card detail", "aria-live": "polite" });
-    var main = el("div", null, chartBox, el("div", { cls: "card" }, filters, listEl, moreBox));
+    detailEl = el("aside", { cls: "detail", "aria-live": "polite" });
+    var main = el("div", null, chart, filters, head, listEl, moreBox);
     panel.appendChild(el("div", { cls: "tl" }, main, detailEl));
     renderDetail();
     renderList();
@@ -282,24 +313,36 @@
     renderList();
   }
 
-  // Chart: one lane per actor, x = time in the report's zone, grey bands = evidence gaps.
+  // One SVG mark per event: the shape says what kind of event it is.
+  function mark(cat, x, y, root) {
+    var r = root ? 6.5 : 5, color = "var(--c-" + cat + ")", node;
+    if (cat === "recon") node = sv("circle", { cx: x, cy: y, r: r - 1, fill: "var(--bg)", stroke: color, "stroke-width": 2 });
+    else if (cat === "exploit") node = sv("polygon", { points: [x, y - r - 1, x + r + 1, y + r, x - r - 1, y + r].join(" "), fill: color });
+    else if (cat === "login") node = sv("polygon", { points: [x, y - r - 1, x + r + 1, y, x, y + r + 1, x - r - 1, y].join(" "), fill: color });
+    else if (cat === "write") node = sv("rect", { x: x - r + 0.5, y: y - r + 0.5, width: 2 * r - 1, height: 2 * r - 1, fill: color });
+    else if (cat === "file") node = sv("rect", { x: x - r + 1, y: y - r + 1, width: 2 * r - 2, height: 2 * r - 2, fill: "var(--bg)", stroke: color, "stroke-width": 2 });
+    else if (cat === "use") node = sv("circle", { cx: x, cy: y, r: r - 0.5, fill: color });
+    else node = sv("circle", { cx: x, cy: y, r: 2.5, fill: color });
+    return node;
+  }
+
   function drawChart() {
     if (!svgHost || state.tab !== "timeline") return;
     if (!events.length) {
       svgHost.textContent = "";
-      svgHost.appendChild(el("p", { cls: "empty", text: U["chart.empty"] }));
+      svgHost.appendChild(el("p", { cls: "hint", text: U["chart.empty"] }));
       return;
     }
     var width = Math.max(320, svgHost.clientWidth || 800);
-    var left = width < 520 ? 92 : 140, right = 14, top = 6, laneH = 26, axisH = 24;
+    var left = width < 520 ? 96 : 138, right = 16, top = 20, laneH = 28, axisH = 24;
     var lanes = D.lanes.slice();
     var othersLane = hasOthers ? lanes.length : -1;
     var laneCount = lanes.length + (hasOthers ? 1 : 0);
-    var height = top + laneCount * laneH + axisH;
+    var plotH = laneCount * laneH;
+    var height = top + plotH + axisH;
     var shown = events.filter(matches);
-    var all = events;
-    var lo = state.zoom ? state.zoom[0] : all[0].ms;
-    var hi = state.zoom ? state.zoom[1] : all[all.length - 1].ms;
+    var lo = state.zoom ? state.zoom[0] : events[0].ms;
+    var hi = state.zoom ? state.zoom[1] : events[events.length - 1].ms;
     if (hi - lo < 10000) { var mid = (hi + lo) / 2; lo = mid - 5000; hi = mid + 5000; }
     var pad = state.zoom ? 0 : (hi - lo) * 0.04;
     lo -= pad; hi += pad;
@@ -308,51 +351,67 @@
 
     var svg = sv("svg", { viewBox: "0 0 " + width + " " + height, height: height, role: "img",
       "aria-label": U["chart.title"] });
-    var plotH = laneCount * laneH;
+    var defs = sv("defs", {});
+    var hatch = sv("pattern", { id: "hatch", patternUnits: "userSpaceOnUse", width: 6, height: 6,
+      patternTransform: "rotate(45)" });
+    hatch.appendChild(sv("line", { "class": "hatchline", x1: 0, y1: 0, x2: 0, y2: 6 }));
+    defs.appendChild(hatch);
+    svg.appendChild(defs);
+
     D.gaps.forEach(function (g) {
       if (g.to < lo || g.from > hi) return;
       var x0 = x(Math.max(g.from, lo)), x1 = x(Math.min(g.to, hi));
-      var band = sv("rect", { "class": "gapband", x: x0, y: top, width: Math.max(1, x1 - x0), height: plotH });
+      var band = sv("rect", { "class": "gapband", x: x0, y: top, width: Math.max(2, x1 - x0),
+        height: plotH, fill: "url(#hatch)" });
       band.appendChild(titleNode(g.label + " · " + g.kind));
       svg.appendChild(band);
       if (x1 - x0 > 18) {
-        var gl = sv("text", { "class": "gaplabel", x: x0 + 3, y: top + 9 });
+        var gl = sv("text", { "class": "gaplabel", x: x0 + 3, y: top - 6 });
         gl.textContent = g.label;
         svg.appendChild(gl);
       }
     });
-    for (var i = 0; i < laneCount; i++) {
-      var y = top + i * laneH + laneH / 2;
-      svg.appendChild(sv("line", { "class": "grid", x1: left, x2: width - right, y1: y, y2: y }));
-      var name = i === othersLane ? U["chart.others"] : (lanes[i] || U["chart.files"]);
-      var label = sv("text", { "class": "lane-label", x: left - 8, y: y + 4, "text-anchor": "end" });
-      label.textContent = name.length > 18 ? name.slice(0, 17) + "…" : name;
-      label.appendChild(titleNode(name));
-      svg.appendChild(label);
-    }
     ticks(lo, hi).forEach(function (t) {
       var tx = x(t.ms);
-      svg.appendChild(sv("line", { "class": "grid", x1: tx, x2: tx, y1: top, y2: top + plotH, "stroke-dasharray": "2 3" }));
-      var tl = sv("text", { "class": "axis", x: tx, y: top + plotH + 15, "text-anchor": "middle" });
+      svg.appendChild(sv("line", { "class": "tick", x1: tx, x2: tx, y1: top, y2: top + plotH + 4 }));
+      var tl = sv("text", { "class": "axis", x: tx, y: top + plotH + 16, "text-anchor": "middle" });
       tl.textContent = t.label;
       svg.appendChild(tl);
     });
+    for (var i = 0; i < laneCount; i++) {
+      var y = top + i * laneH + laneH / 2;
+      svg.appendChild(sv("line", { "class": "base", x1: left, x2: width - right, y1: y, y2: y }));
+      var name = i === othersLane ? U["chart.others"] : (lanes[i] || U["chart.files"]);
+      var label = sv("text", { "class": "lane" + (attacker[lanes[i]] ? " att" : ""), x: left - 10,
+        y: y + 4, "text-anchor": "end" });
+      label.textContent = name.length > 17 ? name.slice(0, 16) + "…" : name;
+      label.appendChild(titleNode(name));
+      svg.appendChild(label);
+    }
+
+    var root = events.filter(function (e) { return e.root; })[0];
+    if (root && root.ms >= lo && root.ms <= hi && matches(root)) {
+      var rx = x(root.ms);
+      svg.appendChild(sv("line", { "class": "rootline", x1: rx, x2: rx, y1: top - 4, y2: top + plotH }));
+      var tagText = U["chart.root"].toUpperCase() + " " + no(root.n);
+      var tagW = tagText.length * 6.2 + 8, tagX = Math.min(rx, width - right - tagW);
+      svg.appendChild(sv("rect", { "class": "roottagbg", x: tagX, y: top - 19, width: tagW, height: 14 }));
+      var tag = sv("text", { "class": "roottag", x: tagX + 4, y: top - 8 });
+      tag.textContent = tagText;
+      svg.appendChild(tag);
+    }
 
     var brush = sv("rect", { "class": "brush", x: 0, y: top, width: 0, height: plotH, visibility: "hidden" });
     svg.appendChild(brush);
-    dots = {};
+    marks = {};
     shown.forEach(function (e) {
       var lane = e.actor in laneOf ? laneOf[e.actor] : othersLane;
-      var cy = top + lane * laneH + laneH / 2, cx = x(e.ms);
-      if (e.root) svg.appendChild(sv("circle", { "class": "rootring", cx: cx, cy: cy, r: 9 }));
-      var dot = sv("circle", {
-        "class": "dot" + (state.sel === e.n ? " sel" : ""), cx: cx, cy: cy, r: e.root ? 6 : 4.5,
-        fill: catVar(e.cat), tabindex: "-1"
-      });
-      dot.appendChild(titleNode("#" + e.n + " " + e.time + " · " + (e.actor || U["chart.files"]) + "\n" + e.text));
-      dot.addEventListener("click", function (ev) { ev.stopPropagation(); select(e.n, true); });
-      dots[e.n] = dot;
-      svg.appendChild(dot);
+      var node = mark(e.cat, x(e.ms), top + lane * laneH + laneH / 2, e.root);
+      node.setAttribute("class", "ev" + (state.sel === e.n ? " sel" : ""));
+      node.appendChild(titleNode(no(e.n) + " " + e.clock + " · " + (e.actor || U["chart.files"]) + "\n" + e.text));
+      node.addEventListener("click", function (ev) { ev.stopPropagation(); select(e.n, true); });
+      marks[e.n] = node;
+      svg.appendChild(node);
     });
 
     // Drag across the chart to zoom into that time range.
@@ -362,7 +421,7 @@
       return (ev.clientX - r.left) * (width / r.width);
     }
     svg.addEventListener("pointerdown", function (ev) {
-      if (ev.target.classList && ev.target.classList.contains("dot")) return;
+      if (ev.target.getAttribute && /\bev\b/.test(ev.target.getAttribute("class") || "")) return;
       var p = px(ev);
       if (p < left || p > width - right) return;
       start = p;
@@ -420,7 +479,7 @@
 
   function pad2(n) { return (n < 10 ? "0" : "") + n; }
 
-  // List: bursts from one actor collapse into one row until opened.
+  // Register: bursts from one actor collapse into one row until opened.
   function visibleRows() {
     var out = [], seenRun = {};
     events.forEach(function (e) {
@@ -440,8 +499,12 @@
     listEl.textContent = "";
     rows = {};
     if (!all.length) listEl.appendChild(el("li", { cls: "empty", text: U["filter.none"] }));
-    var openedRun = {};
+    var openedRun = {}, day = null;
     all.slice(0, state.limit).forEach(function (r) {
+      if (r.e.day !== day) {
+        day = r.e.day;
+        listEl.appendChild(el("li", { cls: "day", text: day }));
+      }
       if (r.run !== undefined) { listEl.appendChild(runRow(r.run, false)); return; }
       if (r.sub && !openedRun[r.e.run]) { openedRun[r.e.run] = true; listEl.appendChild(runRow(r.e.run, true)); }
       listEl.appendChild(eventRow(r.e, r.sub));
@@ -458,32 +521,31 @@
   function runRow(id, opened) {
     var run = D.runs[id], first = byN[run.first];
     var toggle = function () { state.open[id] = !state.open[id]; renderList(); };
-    var li = el("li", {
+    return el("li", {
       cls: "runrow", tabindex: "0", role: "button", "aria-expanded": opened ? "true" : "false",
       onclick: toggle,
       onkeydown: function (ev) { if (ev.key === "Enter" || ev.key === " ") { ev.preventDefault(); toggle(); } }
     },
-      el("span", { cls: "n", text: "#" + run.first }),
-      el("span", { cls: "time", text: run.time }),
+      el("span", { cls: "n", text: no(run.first) }),
+      el("span", { cls: "time", text: run.clock }),
       el("span", { cls: "actor", text: first.actor || D.labels.noActor }),
-      el("span", { cls: "text" }, el("i", { cls: "cat", style: "background:" + catVar(first.cat) }), run.text),
-      el("span", { cls: "btn", text: opened ? U["run.collapse"] : fmt(U["run.expand"], { count: run.count }) }));
-    return li;
+      el("span", { cls: "text" }, glyph(first.cat), el("span", { text: run.text })),
+      el("span", null, el("span", { cls: "btn", text: opened ? U["run.collapse"] : fmt(U["run.expand"], { count: run.count }) })));
   }
 
   function eventRow(e, sub) {
     var cls = [sub ? "sub" : "", e.root ? "root" : "", state.sel === e.n ? "sel" : ""].join(" ").trim();
+    var text = el("span", null, e.root ? el("span", { cls: "tag", text: D.labels.rootMarker }) : null, e.text);
     var li = el("li", {
       cls: cls || null, tabindex: "0", "data-n": String(e.n),
       onclick: function () { select(e.n, false); },
       onkeydown: function (ev) { onRowKey(ev, e.n); }
     },
-      el("span", { cls: "n", text: "#" + e.n }),
-      el("span", { cls: "time", text: e.time }),
+      el("span", { cls: "n", text: no(e.n) }),
+      el("span", { cls: "time", text: e.clock }),
       el("span", { cls: "actor", text: e.actor || D.labels.noActor }),
-      el("span", { cls: "text" }, el("i", { cls: "cat", style: "background:" + catVar(e.cat) }),
-        (e.root ? D.labels.rootMarker + ": " : "") + e.text),
-      el("span", { cls: "badge conf-" + e.conf, text: e.confLabel }));
+      el("span", { cls: "text" }, glyph(e.cat), text),
+      el("span", null, meter(e.conf, e.confLabel)));
     rows[e.n] = li;
     return li;
   }
@@ -497,7 +559,7 @@
     if (items[i]) items[i].focus();
   }
 
-  // Selecting from the chart or the verdict may need to open a burst, clear filters that
+  // Selecting from the chart or the finding may need to open a burst, clear filters that
   // hide the event, or show more rows before the row exists.
   function select(n, reveal) {
     var e = byN[n];
@@ -515,7 +577,7 @@
       if (idx >= state.limit) state.limit = Math.ceil((idx + 1) / PAGE) * PAGE;
     }
     renderList();
-    for (var k in dots) dots[k].setAttribute("class", "dot" + (Number(k) === n ? " sel" : ""));
+    for (var k in marks) marks[k].setAttribute("class", "ev" + (Number(k) === n ? " sel" : ""));
     renderDetail();
     detailEl.classList.add("open");
     if (rows[n] && reveal) rows[n].scrollIntoView({ block: "nearest" });
@@ -537,34 +599,36 @@
     var e = state.sel !== null ? byN[state.sel] : null;
     var close = el("button", { cls: "btn close", text: U["detail.close"],
       onclick: function () { detailEl.classList.remove("open"); } });
-    detailEl.appendChild(el("h2", null,
-      el("span", { text: U["detail.title"] + (e ? " #" + e.n : "") }), close));
+    detailEl.appendChild(el("div", { cls: "head" },
+      el("div", null, el("div", { cls: "label", text: U["detail.title"] }),
+        el("div", { cls: "no", text: e ? no(e.n) : "—" })), close));
     if (!e) { detailEl.appendChild(el("p", { cls: "empty", text: U["detail.empty"] })); return; }
-    if (e.root) detailEl.appendChild(el("div", { cls: "rootnote", text: U["detail.root"] }));
-    detailEl.appendChild(el("p", { cls: "text", text: e.text }));
-    var dl = el("dl");
-    [[U["detail.basis"], e.time + " (" + e.basis + ")"], [U["detail.phase"], e.phase],
-      [U["detail.actor"], e.actor || D.labels.noActor]].forEach(function (p) {
-      dl.appendChild(el("dt", { text: p[0] })); dl.appendChild(el("dd", { text: p[1] }));
-    });
-    dl.appendChild(el("dt", { text: U["detail.confidence"] }));
-    dl.appendChild(el("dd", null, el("span", { cls: "badge conf-" + e.conf, text: e.confLabel })));
-    detailEl.appendChild(dl);
+    var body = el("div", { cls: "body" });
+    if (e.root) body.appendChild(el("div", { cls: "rootnote", text: U["detail.root"] }));
+    body.appendChild(el("p", { cls: "text" }, glyph(e.cat), " ", e.text));
+    var dl = el("dl", { cls: "fields" });
+    field(dl, U["detail.time"], e.day + " " + e.clock + " " + D.zoneShort);
+    field(dl, U["detail.basis"], e.basis);
+    field(dl, U["detail.phase"], e.phase);
+    field(dl, U["detail.actor"], e.actor || D.labels.noActor);
+    field(dl, U["detail.confidence"], meter(e.conf, e.confLabel));
+    body.appendChild(dl);
     if (e.notes.length) {
-      detailEl.appendChild(el("h3", { text: U["detail.notes"] }));
+      body.appendChild(el("h3", { text: U["detail.notes"] }));
       var ul = el("ul");
       e.notes.forEach(function (t) { ul.appendChild(el("li", { text: t })); });
-      detailEl.appendChild(ul);
+      body.appendChild(ul);
     }
-    detailEl.appendChild(el("h3", { text: U["detail.evidence"] }));
+    body.appendChild(el("h3", { text: U["detail.evidence"] }));
     e.cites.forEach(function (i) {
       var c = D.cites[i];
       var btn = el("button", { cls: "btn", text: U.copy });
       btn.addEventListener("click", function () { copy(c.ref + "\n" + c.ex, btn); });
-      detailEl.appendChild(el("div", { cls: "cite" },
+      body.appendChild(el("div", { cls: "cite" },
         el("div", { cls: "ref" }, el("span", { text: c.ref }), btn),
         c.ex ? el("pre", { text: c.ex }) : null));
     });
+    detailEl.appendChild(body);
   }
 
   function copy(text, btn) {
