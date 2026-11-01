@@ -3,6 +3,7 @@
 from datetime import timezone
 
 from webforensics.models import Report
+from webforensics.report import viewer
 from webforensics.report.build import build_report
 from webforensics.report.document import build_document, gap_labels
 from webforensics.report.html import render_html
@@ -23,4 +24,10 @@ def render(report: Report, tz: timezone, *, strict: bool = False) -> dict[str, s
     }
 
 
-__all__ = ["FORMATS", "build_report", "render"]
+def render_viewer(report: Report, tz: timezone, *, strict: bool = False) -> str:
+    """The interactive offline viewer (`webforensics view`). Byte-identical across runs."""
+    texts = Texts(tz=tz, gap_labels=gap_labels(report.result.gaps), strict=strict)
+    return viewer.render_viewer(report, texts)
+
+
+__all__ = ["FORMATS", "build_report", "render", "render_viewer"]

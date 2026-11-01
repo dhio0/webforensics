@@ -22,11 +22,11 @@ from webforensics.adapters.wazuh.pull import pull as run_pull
 from webforensics.analysis import CaseOptions, EvidenceInputs
 from webforensics.analysis import analyze as run_analysis
 from webforensics.correlate import CorrelationConfig
-from webforensics.models import FileCollection, LogCollection, Report
+from webforensics.models import REPORT_FORMAT, FileCollection, LogCollection, Report
 from webforensics.parsers.access_log import AccessLogFormat
 from webforensics.parsers.error_log import ErrorLogFormat
 from webforensics.parsers.manifest import ManifestError
-from webforensics.report import FORMATS, render
+from webforensics.report import FORMATS, render, render_viewer
 from webforensics.report.build import root_event
 from webforensics.report.messages_id import LABELS
 from webforensics.report.text import parse_display_offset
@@ -279,6 +279,38 @@ def analyze(
             path.write_text(rendered[ext], encoding="utf-8", newline="\n")
             written.append(path)
     typer.echo("\n".join(report_lines(report, written)))
+
+
+def load_report(path: Path) -> Report:
+    """Read a report.json written by `analyze`; refuse other formats instead of guessing."""
+    data = json.loads(path.read_text(encoding="utf-8"))
+    if not isinstance(data, dict) or data.get("format") != REPORT_FORMAT:
+        found = data.get("format") if isinstance(data, dict) else None
+        raise ValueError(f"{path} is not a {REPORT_FORMAT} report (format: {found!r})")
+    return Report.model_validate(data)
+
+
+@app.command()
+def view(
+    report_json: Annotated[Path, typer.Argument(help="report.json written by `analyze`.")],
+    out: Annotated[
+        Path | None, typer.Option(help="Output HTML file (default: viewer.html next to it).")
+    ] = None,
+    display_offset: Annotated[
+        str, typer.Option(help="Time zone for times: +07:00 WIB, +08:00 WITA, +09:00 WIT.")
+    ] = "+07:00",
+) -> None:
+    """Write an interactive, offline HTML viewer for a report."""
+    try:
+        tz = parse_display_offset(display_offset)
+        report = load_report(report_json)
+    except (OSError, ValueError) as exc:  # pydantic's ValidationError is a ValueError
+        typer.echo(_ascii(f"error: {exc}"), err=True)
+        raise typer.Exit(code=2) from exc
+    target = out or report_json.with_name("viewer.html")
+    target.parent.mkdir(parents=True, exist_ok=True)
+    target.write_text(render_viewer(report, tz), encoding="utf-8", newline="\n")
+    typer.echo(_ascii(f"Wrote {target}"))
 
 
 @app.command("eval")

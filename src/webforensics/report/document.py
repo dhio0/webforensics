@@ -463,7 +463,7 @@ def _gaps(ctx: _Ctx) -> Section:
     if not gaps:
         return Section("celah-bukti", t.label("s.gaps"), (Para(t.label("gap.none")),))
     labels = t.gap_labels
-    shown = set(_shown_gaps(gaps, ctx))
+    shown = set(shown_gaps(gaps))
     rows = []
     for gap in sorted(gaps, key=lambda g: int(labels[g.gap_id][1:])):
         if gap.gap_id not in shown:
@@ -490,7 +490,7 @@ def _gaps(ctx: _Ctx) -> Section:
 MAX_SILENCE_ROWS = 15
 
 
-def _shown_gaps(gaps: tuple[EvidenceGap, ...], ctx: _Ctx) -> list[str]:
+def shown_gaps(gaps: tuple[EvidenceGap, ...]) -> list[str]:
     def silence(g: EvidenceGap) -> bool:
         return g.detail is not None and g.detail.key == "gap.log_silence" and not g.affects
 
