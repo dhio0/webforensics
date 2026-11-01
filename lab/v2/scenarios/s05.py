@@ -186,9 +186,10 @@ def attack() -> None:
             "user_token": login_fields.values.get("user_token", ""),
         },
         timeout=15,
-        allow_redirects=True,
+        allow_redirects=False,
     )
-    if auth.status_code != 200 or 'name="username"' in auth.text:
+    landing = session.get(f"{EDGE}/index.php", headers=headers, timeout=15)
+    if auth.status_code != 302 or landing.status_code != 200 or 'name="username"' in landing.text:
         raise RuntimeError("DVWA lab administrator login failed")
     steps.append(
         {

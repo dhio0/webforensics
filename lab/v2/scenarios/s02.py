@@ -72,9 +72,10 @@ def attack() -> None:
             "user_token": login_fields.values.get("user_token", ""),
         },
         timeout=15,
-        allow_redirects=True,
+        allow_redirects=False,
     )
-    if login.status_code != 200 or 'name="username"' in login.text:
+    landing = session.get(f"{EDGE}/index.php", headers=headers, timeout=15)
+    if login.status_code != 302 or landing.status_code != 200 or 'name="username"' in landing.text:
         raise RuntimeError("DVWA administrator login failed")
 
     security = session.get(f"{EDGE}/security.php", headers=headers, timeout=15)
