@@ -14,6 +14,7 @@ from urllib.error import HTTPError
 import pytest
 from lab.v2 import background, collect, crawl_app, pacing, portable, prepare_background
 from lab.v2 import restore_webroot as restore
+from lab.v2.recording import normalize_replay_metadata
 from lab.v2.self_check import analyst_proof, analyst_selection, timing_checks
 
 
@@ -275,3 +276,17 @@ def test_analyst_proof_binds_seeded_sample_window_and_log_hash(tmp_path: Path) -
     assert analyst_proof(path, selection, "a" * 64)["result"] == "PASS"
     with pytest.raises(ValueError, match="log hash"):
         analyst_proof(path, selection, "b" * 64)
+
+
+def test_metadata_normalization_never_rewrites_recorded_logs(tmp_path: Path) -> None:
+    metadata = tmp_path / "background.json"
+    metadata.write_bytes(b'{"started": "2026-11-01T00:00:00Z"}\r\n')
+    raw = tmp_path / "access.log"
+    raw.write_bytes(b"original recorded timestamp\r\n")
+    packed = tmp_path / "labels.log.gz"
+    content = gzip.compress(b"original recorded timestamp\r\n")
+    packed.write_bytes(content)
+    normalize_replay_metadata(tmp_path)
+    assert metadata.read_bytes() == b'{"started": "2026-11-01T00:00:00Z"}\n'
+    assert raw.read_bytes() == b"original recorded timestamp\r\n"
+    assert packed.read_bytes() == content

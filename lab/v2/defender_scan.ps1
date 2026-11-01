@@ -26,5 +26,7 @@ $lines = @(
     "real_time_protection_enabled=True"
     "detections=0"
 )
-Set-Content -LiteralPath $OutputPath -Value $lines -Encoding utf8
+[System.IO.File]::WriteAllText(
+    $OutputPath, (($lines -join "`n") + "`n"), [System.Text.UTF8Encoding]::new($false)
+)
 $lines

@@ -60,8 +60,19 @@ def finalize_restore(replay: Path, app: str) -> None:
     if "image" in config:
         config["recording_image"] = config.pop("image")
     config.update({"version": 2, "app_type": app, "inputs": "lab/v2/portable-inputs.json"})
-    path.write_text(json.dumps(config, indent=2) + "\n", encoding="utf-8")
+    path.write_text(json.dumps(config, indent=2) + "\n", encoding="utf-8", newline="\n")
     (replay / "public-hashes.json").unlink(missing_ok=True)
+    normalize_replay_metadata(replay)
+
+
+def normalize_replay_metadata(replay: Path) -> None:
+    """Keep host-authored metadata portable; never rewrite recorded logs or captures."""
+    for path in replay.iterdir():
+        if path.is_file() and path.suffix in {".json", ".tsv", ".txt"}:
+            content = path.read_bytes()
+            normalized = content.replace(b"\r\n", b"\n")
+            if normalized != content:
+                path.write_bytes(normalized)
 
 
 def validate_portable_restore(replay: Path) -> None:
@@ -120,4 +131,6 @@ def validate_portable_restore(replay: Path) -> None:
         "completed_at_utc": datetime.now(UTC).isoformat(),
         "inputs": "repository, public digest-pinned base, SHA-256-pinned source archives",
     }
-    (replay / "restore-validation.txt").write_text(json.dumps(proof, indent=2) + "\n")
+    (replay / "restore-validation.txt").write_text(
+        json.dumps(proof, indent=2) + "\n", encoding="utf-8", newline="\n"
+    )
