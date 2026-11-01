@@ -243,6 +243,9 @@ def scenario_capture(
     replaced = defang_snapshot(
         webroot, current, baseline, output / "webroot", roles_from_records(records_path)
     )
+    hashes_path = Path("/replay/public-hashes.json")
+    if hashes_path.is_file():
+        export_restore_overlay(webroot, current, output, set(json.loads(hashes_path.read_text())))
     tar_path = captured.parent / f"{scenario}-full-evidence.tar.gz"
     with raw_tar.open("rb") as source, gzip.open(tar_path, "wb", compresslevel=6) as compressed:
         shutil.copyfileobj(source, compressed)
@@ -250,6 +253,53 @@ def scenario_capture(
     encrypt_file(tar_path, full_dir / scenario / "full-evidence.tar.gz.enc", key)
     tar_path.unlink()
     print(f"captured={len(current)} defanged={len(replaced)} scenario={scenario}")
+
+
+def export_restore_overlay(
+    webroot: Path, current: dict[str, ManifestRow], output: Path, public_hashes: set[str]
+) -> None:
+    """Export generated install files in-container; secrets and executable files are inert."""
+    overlay = output.parent / "replay" / "restore-overlay"
+    if overlay.exists():
+        shutil.rmtree(overlay)
+    overlay.mkdir(parents=True)
+    table = output / "defanged.tsv"
+    secret_names = {"wp-config.php", "config/database.php", "config/config.inc.php"}
+    lines = table.read_text().splitlines()
+    for index, line in enumerate(lines[1:], 1):
+        fields = line.split("\t")
+        if fields[0] in secret_names:
+            fields[-1] = "secret install configuration; credentials and salts omitted"
+            lines[index] = "\t".join(fields)
+    table.write_text("\n".join(lines) + "\n", encoding="utf-8", newline="\n")
+    listed = {line.split("\t", 1)[0] for line in lines[1:]}
+    with table.open("a", encoding="utf-8", newline="\n") as rows:
+        for rel, row in sorted(current.items()):
+            if rel in listed or (row.sha256 in public_hashes and rel not in secret_names):
+                continue
+            snapshot_file = output / "webroot" / rel
+            if snapshot_file.is_file() and rel not in secret_names:
+                continue
+            if row.kind != "f":
+                raise ValueError(f"unsupported generated install entry: {rel}")
+            source = webroot / rel
+            content = source.read_bytes()
+            destination = overlay / rel
+            destination.parent.mkdir(parents=True, exist_ok=True)
+            if rel in secret_names or should_defang(source, content):
+                reason = (
+                    "secret install configuration; credentials and salts omitted"
+                    if rel in secret_names else "generated install executable; inert restore stub"
+                )
+                destination.write_text(
+                    f"DEFANGED {row.sha256} {row.fields[2]}\n", encoding="ascii", newline="\n"
+                )
+                rows.write(f"{rel}\t{row.sha256}\t{row.fields[2]}\tinstall_file\t{reason}\n")
+                # A secret may never remain in the public changed-file snapshot.
+                if snapshot_file.exists():
+                    snapshot_file.unlink()
+            else:
+                destination.write_bytes(content)
 
 
 def main() -> None:

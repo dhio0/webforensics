@@ -72,12 +72,16 @@ def isolate() -> None:
 def perform_benign_activity() -> None:
     ready = Path("/replay/background-halfway")
     continuation = Path("/replay/background-continue")
-    for _ in range(2400):
+    for _ in range(180000):
         if ready.exists():
             break
         time.sleep(0.05)
     else:
         raise TimeoutError("background replay did not reach its seeded pause")
+
+    from pacing import install_hand_pacing
+
+    install_hand_pacing(5012, scanner=False)
 
     records: dict[str, object] = {
         "scenario_id": "s12",

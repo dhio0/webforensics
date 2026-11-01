@@ -1,0 +1,264 @@
+{
+  "wordpress": {
+    "image": "wordpress@sha256:cf7c7a9c9cc8614a7357dac77d401612c67af5e0ab1ab19e0777f643af3d3a3c",
+    "tree": "/usr/src/wordpress",
+    "archives": [
+      {
+        "url": "https://downloads.wordpress.org/plugin/wp-file-manager.6.0.zip",
+        "sha256": "f70dd0e72d030795639e3c59e4a0c73005cabf07e1c91efaa34d0808a5995c9d",
+        "nested": "wp-file-manager/wp-file-manager-6.O.zip"
+      }
+    ]
+  },
+  "dvwa": {
+    "archives": [
+      {
+        "url": "https://codeload.github.com/digininja/DVWA/zip/a1978a2fed195acd093010af6395f86a281537ca",
+        "sha256": "4bd1cb5dda6bdb889055bf0bcdbaf8fd9562ac358bb61918f3c0cb5199a76258"
+      }
+    ]
+  },
+  "phpmyfaq": {
+    "archives": [
+      {
+        "url": "https://codeload.github.com/thorsten/phpMyFAQ/zip/refs/tags/3.2.5",
+        "sha256": "282b638d7ecda25d6a803d16d9865c6b8aa0516ec9ed6d24bfadabdc6800d05f"
+      },
+      {
+        "package": "abraham/twitteroauth",
+        "url": "https://codeload.github.com/abraham/twitteroauth/legacy.zip/6a68a5e53f72fbb31d4d304dc4752d3adefe0d10",
+        "sha256": "78aa0fa88c8c9a25e4144b5a498d5361d796215eab71595cd0f135930d739b8c"
+      },
+      {
+        "package": "composer/ca-bundle",
+        "url": "https://codeload.github.com/composer/ca-bundle/legacy.zip/b66d11b7479109ab547f9405b97205640b17d385",
+        "sha256": "43116aab9951ebd13e97b2716733e1529aad7e6d82ba82b459bce0c0639af905"
+      },
+      {
+        "package": "doctrine/lexer",
+        "url": "https://codeload.github.com/doctrine/lexer/legacy.zip/84a527db05647743d50373e0ec53a152f2cde568",
+        "sha256": "e07c83d6c4e96f758a3adc17388a19934f2f64ebbc363381fd180e2c37bac3f2"
+      },
+      {
+        "package": "egulias/email-validator",
+        "url": "https://codeload.github.com/egulias/EmailValidator/legacy.zip/ebaaf5be6c0286928352e054f2d5125608e5405e",
+        "sha256": "a6f12374a813ee4bb84bbf754ae4136afbf8308608276b08d51f73ff00d4c40a"
+      },
+      {
+        "package": "elastic/transport",
+        "url": "https://codeload.github.com/elastic/elastic-transport-php/legacy.zip/cdf9f63a16ec6bfb4c881ab89aa0e2a61fb7c20b",
+        "sha256": "b786134de2c148523b64d35d87853fd78c95c85c2179997d4526354656d53be1"
+      },
+      {
+        "package": "elasticsearch/elasticsearch",
+        "url": "https://codeload.github.com/elastic/elasticsearch-php/legacy.zip/6f4a2ee4ff2cb9f75a6ee00f574aa2d9c1bb14fd",
+        "sha256": "046eaf762fa366f1f89127cd9ddbcd0cd742d7a10302f14b50f4cf32d4bc9b1a"
+      },
+      {
+        "package": "erusev/parsedown",
+        "url": "https://codeload.github.com/erusev/parsedown/legacy.zip/cb17b6477dfff935958ba01325f2e8a2bfa6dab3",
+        "sha256": "ad7f955dd7d24acc009820964b58d12cb4aec5c2458dd7fbdda50ef0d04e34c6"
+      },
+      {
+        "package": "erusev/parsedown-extra",
+        "url": "https://codeload.github.com/erusev/parsedown-extra/legacy.zip/91ac3ff98f0cea243bdccc688df43810f044dcef",
+        "sha256": "8212e9e1de3122116f3dc10fa8b993eee5205a23948d0a98876cb513b86efea7"
+      },
+      {
+        "package": "guzzlehttp/guzzle",
+        "url": "https://codeload.github.com/guzzle/guzzle/legacy.zip/41042bc7ab002487b876a0683fc8dce04ddce104",
+        "sha256": "5b776e5d7f5a9da40f0b198f6e5b1311c6e53c50c08ab4af02731624d484902b"
+      },
+      {
+        "package": "guzzlehttp/promises",
+        "url": "https://codeload.github.com/guzzle/promises/legacy.zip/bbff78d96034045e58e13dedd6ad91b5d1253223",
+        "sha256": "ae9096dc5fe13f14f99f690267455b70ef66cf788aa23f218b74301482cf0bdc"
+      },
+      {
+        "package": "guzzlehttp/psr7",
+        "url": "https://codeload.github.com/guzzle/psr7/legacy.zip/45b30f99ac27b5ca93cb4831afe16285f57b8221",
+        "sha256": "b5d57791438ba8e8dd076c5e5d6e913c5508e4286ebd94610ed8b47eddbfc04c"
+      },
+      {
+        "package": "league/uri",
+        "url": "https://codeload.github.com/thephpleague/uri/legacy.zip/bf414ba956d902f5d98bf9385fcf63954f09dce5",
+        "sha256": "c3e3522bf0a184a8055ac820636e539c16f14b32977ad4cea75244a1cf719ce7"
+      },
+      {
+        "package": "league/uri-interfaces",
+        "url": "https://codeload.github.com/thephpleague/uri-interfaces/legacy.zip/bd8c487ec236930f7bbc42b8d374fa882fbba0f3",
+        "sha256": "f97e312a92b67e4b22ca7604a6a9e37340ca7bd35323b02b2b15de2ce625fe8f"
+      },
+      {
+        "package": "masterminds/html5",
+        "url": "https://codeload.github.com/Masterminds/html5-php/legacy.zip/f47dcf3c70c584de14f21143c55d9939631bc6cf",
+        "sha256": "402c5ff349f58941c43b154d1c91cfe2f11dbd178f06cbc97869f68abb8f5dd8"
+      },
+      {
+        "package": "monolog/monolog",
+        "url": "https://codeload.github.com/Seldaek/monolog/legacy.zip/c915e2634718dbc8a4a15c61b0e62e7a44e14448",
+        "sha256": "1aa2a86c462b8c61e9a55b6a76582314899466a5b39b9a3f3a85ed725e9318eb"
+      },
+      {
+        "package": "myclabs/deep-copy",
+        "url": "https://codeload.github.com/myclabs/DeepCopy/legacy.zip/7284c22080590fb39f2ffa3e9057f10a4ddd0e0c",
+        "sha256": "b2f08625012b095f143ec11a26e055d9d3ba3b2aa1d4ae571a24b3459227649a"
+      },
+      {
+        "package": "paragonie/constant_time_encoding",
+        "url": "https://codeload.github.com/paragonie/constant_time_encoding/legacy.zip/58c3f47f650c94ec05a151692652a868995d2938",
+        "sha256": "c49caaefa51d8a067eaea3a75af2fe371d03fcb8a13a544e72edb0fd29a83345"
+      },
+      {
+        "package": "paragonie/random_compat",
+        "url": "https://codeload.github.com/paragonie/random_compat/legacy.zip/996434e5492cb4c3edcb9168db6fbb1359ef965a",
+        "sha256": "ddcfc73490d9c864de6a52185058fb1f516cd2ba63869c4c7230b654a8a2c74f"
+      },
+      {
+        "package": "php-http/discovery",
+        "url": "https://codeload.github.com/php-http/discovery/legacy.zip/61e1a1eb69c92741f5896d9e05fb8e9d7e8bb0cb",
+        "sha256": "0c5edfa7c9493e79f5e2b2d3e5329f8f94d10cf410e93502e83cf51d40ebc0e5"
+      },
+      {
+        "package": "php-http/httplug",
+        "url": "https://codeload.github.com/php-http/httplug/legacy.zip/625ad742c360c8ac580fcc647a1541d29e257f67",
+        "sha256": "80d54f34459b3945bd22bcd2966a5fb98c74306f95e8b07a6c88eecb752885b5"
+      },
+      {
+        "package": "php-http/promise",
+        "url": "https://codeload.github.com/php-http/promise/legacy.zip/2916a606d3b390f4e9e8e2b8dd68581508be0f07",
+        "sha256": "59d75d659ea5ccc0f4b8e1e0547b24f41e1aa5666781c189804d87eeaa50b4c5"
+      },
+      {
+        "package": "phpseclib/phpseclib",
+        "url": "https://codeload.github.com/phpseclib/phpseclib/legacy.zip/4b1827beabce71953ca479485c0ae9c51287f2fe",
+        "sha256": "ca1a71ee2ff331df1953997207c8e1c5cf2a49192180676549094c3917ba0722"
+      },
+      {
+        "package": "psr/container",
+        "url": "https://codeload.github.com/php-fig/container/legacy.zip/c71ecc56dfe541dbd90c5360474fbc405f8d5963",
+        "sha256": "3111f5b69d3a0f690f5f92d7aeacfb247f5ebd3c175088cce4b098e5d1b06ad7"
+      },
+      {
+        "package": "psr/event-dispatcher",
+        "url": "https://codeload.github.com/php-fig/event-dispatcher/legacy.zip/dbefd12671e8a14ec7f180cab83036ed26714bb0",
+        "sha256": "4d6a674cfd89a9957ead82e31ee4df785b2b1d215693add73184729a9a66d116"
+      },
+      {
+        "package": "psr/http-client",
+        "url": "https://codeload.github.com/php-fig/http-client/legacy.zip/bb5906edc1c324c9a05aa0873d40117941e5fa90",
+        "sha256": "5d3fc583e721d451a0cc2073680476236199cd1680a0d9da1756e8152496deb5"
+      },
+      {
+        "package": "psr/http-factory",
+        "url": "https://codeload.github.com/php-fig/http-factory/legacy.zip/e616d01114759c4c489f93b099585439f795fe35",
+        "sha256": "a8cff2adbd84c58c0fe02ed401026c7364c893670352d025f88e060087adf1ef"
+      },
+      {
+        "package": "psr/http-message",
+        "url": "https://codeload.github.com/php-fig/http-message/legacy.zip/402d35bcb92c70c026d1a6a9883f06b2ead23d71",
+        "sha256": "d561d2c36e2e3c0ee8b54e0e9652b3bfa13cd763e5e6f93400969001f3a7968d"
+      },
+      {
+        "package": "psr/log",
+        "url": "https://codeload.github.com/php-fig/log/legacy.zip/fe5ea303b0887d5caefd3d431c3e61ad47037001",
+        "sha256": "bbc23516c85615f2f85b707bc10ba26e62033e2afd696e075575b68dc6e31928"
+      },
+      {
+        "package": "ralouphie/getallheaders",
+        "url": "https://codeload.github.com/ralouphie/getallheaders/legacy.zip/120b605dfeb996808c31b6477290a714d356e822",
+        "sha256": "ef0165da5690da666ab4cb88bb4cec0d50372e3e7c922532c5795a3567b367af"
+      },
+      {
+        "package": "robthree/twofactorauth",
+        "url": "https://codeload.github.com/RobThree/TwoFactorAuth/legacy.zip/ab93dd41ced7818ecda83a37c2741ee38bb72fb7",
+        "sha256": "9047d73a57351c4d6a7c664cfd0e9d6c0b3fb3a034ee4f51b27e667af89fab81"
+      },
+      {
+        "package": "symfony/deprecation-contracts",
+        "url": "https://codeload.github.com/symfony/deprecation-contracts/legacy.zip/7c3aff79d10325257a001fcf92d991f24fc967cf",
+        "sha256": "a986294f5e57bff601dd9af7b28b8dfa488c0d7f28266fc05a014b2e48120c5c"
+      },
+      {
+        "package": "symfony/event-dispatcher",
+        "url": "https://codeload.github.com/symfony/event-dispatcher/legacy.zip/e95216850555cd55e71b857eb9d6c2674124603a",
+        "sha256": "b7df8db2ba5681ae09a6ccb3e1d050c1af1adfa5295e848796fa457961f8ff85"
+      },
+      {
+        "package": "symfony/event-dispatcher-contracts",
+        "url": "https://codeload.github.com/symfony/event-dispatcher-contracts/legacy.zip/a76aed96a42d2b521153fb382d418e30d18b59df",
+        "sha256": "e898f70d9a20b66d150a605ce0addf1c68cfe37bd2cf3eda9b95c16e70d089f0"
+      },
+      {
+        "package": "symfony/html-sanitizer",
+        "url": "https://codeload.github.com/symfony/html-sanitizer/legacy.zip/9cc71f272eb62504872c80845074f236e8e43536",
+        "sha256": "90a83423047276a67c19fd9b52ae8465ac0d47e241083a0289fb4cebfc222fd1"
+      },
+      {
+        "package": "symfony/http-client",
+        "url": "https://codeload.github.com/symfony/http-client/legacy.zip/fc0944665bd932cf32a7b8a1d009466afc16528f",
+        "sha256": "757fd21fb9fd310d191b75b69c2aa6dac4b868acfcf91e9843729149f744c130"
+      },
+      {
+        "package": "symfony/http-client-contracts",
+        "url": "https://codeload.github.com/symfony/http-client-contracts/legacy.zip/1ee70e699b41909c209a0c930f11034b93578654",
+        "sha256": "8a89b9a31015e094cf25c7b8144a7782da40b6792008fb27473bc9aaa91235a0"
+      },
+      {
+        "package": "symfony/http-foundation",
+        "url": "https://codeload.github.com/symfony/http-foundation/legacy.zip/172d807f9ef3fc3fbed8377cc57c20d389269271",
+        "sha256": "9cccb31beceae7feae263625bfd342c53eae7fa44c0427dc9806c325a070c69b"
+      },
+      {
+        "package": "symfony/mailer",
+        "url": "https://codeload.github.com/symfony/mailer/legacy.zip/6da89e5c9202f129717a770a03183fb140720168",
+        "sha256": "84f153321e5f2c73dd6e46d547a1dd20c23c79446832ffd959774176a2381c1a"
+      },
+      {
+        "package": "symfony/mime",
+        "url": "https://codeload.github.com/symfony/mime/legacy.zip/ca4f58b2ef4baa8f6cecbeca2573f88cd577d205",
+        "sha256": "13ba044fb1a80b9b5fc1377dd83bd1f4fa5b7ed9e82e0b691919b1e4b6129851"
+      },
+      {
+        "package": "symfony/polyfill-intl-idn",
+        "url": "https://codeload.github.com/symfony/polyfill-intl-idn/legacy.zip/ecaafce9f77234a6a449d29e49267ba10499116d",
+        "sha256": "7854c4b859cd6160837ea89f759ecce6c93cace15ec36ab58753e57212e18238"
+      },
+      {
+        "package": "symfony/polyfill-intl-normalizer",
+        "url": "https://codeload.github.com/symfony/polyfill-intl-normalizer/legacy.zip/8c4ad05dd0120b6a53c1ca374dca2ad0a1c4ed92",
+        "sha256": "d09ec813416ae02cd41d590fd0bd47c3f6b002dea9977d08ece40411a3804a57"
+      },
+      {
+        "package": "symfony/polyfill-mbstring",
+        "url": "https://codeload.github.com/symfony/polyfill-mbstring/legacy.zip/42292d99c55abe617799667f454222c54c60e229",
+        "sha256": "8a5b4944726b1728e62f48467bd4e5c8fff1c1cc32d4e13f88a3450abc0874d4"
+      },
+      {
+        "package": "symfony/polyfill-php72",
+        "url": "https://codeload.github.com/symfony/polyfill-php72/legacy.zip/70f4aebd92afca2f865444d30a4d2151c13c3179",
+        "sha256": "6b82b82747a964c870906d657004f1cb322ef2651a7375e7f2d95c13fa8d4582"
+      },
+      {
+        "package": "symfony/polyfill-php80",
+        "url": "https://codeload.github.com/symfony/polyfill-php80/legacy.zip/6caa57379c4aec19c0a12a38b59b26487dcfe4b5",
+        "sha256": "3d5996e98ed3966972bfd463f313cb92d20aaaf9b35f55b25b34dde89b8dce17"
+      },
+      {
+        "package": "symfony/polyfill-php83",
+        "url": "https://codeload.github.com/symfony/polyfill-php83/legacy.zip/b0f46ebbeeeda3e9d2faebdfbf4b4eae9b59fa11",
+        "sha256": "cba392f0ccea4e59d8753cce658825f89caa1abca3b273edc445690d5f981d7c"
+      },
+      {
+        "package": "symfony/service-contracts",
+        "url": "https://codeload.github.com/symfony/service-contracts/legacy.zip/fe07cbc8d837f60caf7018068e350cc5163681a0",
+        "sha256": "b05f7b7c7b9c0d60c25a54cbcd90369fefb7aaec29cb6f97ed7043067b89d03f"
+      },
+      {
+        "package": "tecnickcom/tcpdf",
+        "url": "https://codeload.github.com/tecnickcom/TCPDF/legacy.zip/5fce932fcee4371865314ab7f6c0d85423c5c7ce",
+        "sha256": "dfdf24be89ab2257a3e7bbe6de3c1ee4819b0b9e460472b40e63bd449fab5078"
+      }
+    ]
+  }
+}

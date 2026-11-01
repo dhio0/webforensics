@@ -66,12 +66,16 @@ class ActivationLinkParser(html.parser.HTMLParser):
 def perform_attack() -> None:
     ready = Path("/replay/background-halfway")
     continuation = Path("/replay/background-continue")
-    for _ in range(2400):
+    for _ in range(180000):
         if ready.exists():
             break
         time.sleep(0.05)
     else:
         raise TimeoutError("background replay did not reach its seeded attack point")
+
+    from pacing import install_hand_pacing
+
+    install_hand_pacing(5007, scanner=False)
 
     records: dict[str, object] = {
         "scenario_id": "s07",

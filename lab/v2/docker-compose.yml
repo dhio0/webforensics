@@ -120,7 +120,7 @@ services:
     environment:
       APP_UPSTREAM: ${APP_UPSTREAM:-wp:80}
     ports:
-      - "127.0.0.1:8081:80"
+      - "127.0.0.1:${EDGE_PORT:-8081}:80"
     volumes:
       - ./nginx/templates:/etc/nginx/templates:ro
       - ../../benchmark/v2/${SCENARIO:-s01}/evidence/access.log:/var/log/v2/access.log
@@ -143,6 +143,7 @@ services:
     volumes:
       - ./scenarios:/opt/scenarios:ro
       - ./background.py:/opt/v2/background.py:ro
+      - ./pacing.py:/opt/v2/pacing.py:ro
       - ./crawl_app.py:/opt/crawl_app.py:ro
       - ../../benchmark/v2/${SCENARIO:-s01}/replay:/replay
       - ${APP_DATA_VOLUME:-wpdata}:/app-webroot:ro
@@ -157,6 +158,7 @@ services:
     command: ["sleep", "infinity"]
     volumes:
       - ./background.py:/opt/v2/background.py:ro
+      - ./pacing.py:/opt/v2/pacing.py:ro
       - ./crawl_app.py:/opt/crawl_app.py:ro
       - ../../benchmark/v2/${SCENARIO:-s01}/replay:/replay
     depends_on:
@@ -177,7 +179,7 @@ services:
       - ${APP_DATA_VOLUME:-wpdata}:/app-webroot:ro
       - collector-work:/collector-work
       - ../../benchmark/v2/${SCENARIO:-s01}/evidence:/capture
-      - ../../benchmark/v2/${SCENARIO:-s01}/replay:/replay:ro
+      - ../../benchmark/v2/${SCENARIO:-s01}/replay:/replay
       - ${FULL_EVIDENCE_DIR}:/full-evidence
     networks:
       lab:

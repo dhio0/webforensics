@@ -35,12 +35,16 @@ def isolation() -> None:
 def attack() -> None:
     ready = Path("/replay/background-halfway")
     continuation = Path("/replay/background-continue")
-    for _ in range(2400):
+    for _ in range(180000):
         if ready.exists():
             break
         time.sleep(0.05)
     else:
         raise TimeoutError("background replay did not reach its seeded pause")
+
+    from pacing import install_hand_pacing
+
+    install_hand_pacing(5006, scanner=False)
 
     headers = {"X-Lab-Client-IP": ATTACKER_IP, "User-Agent": "M8-v2-s06-lfi"}
     session = requests.Session()

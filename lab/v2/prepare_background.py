@@ -19,6 +19,14 @@ SCANNER_UA = re.compile(
     r"bot|crawler|spider|scanner|sqlmap|nikto|nmap|gobuster|dirb|uptime|hetrix", re.I
 )
 FALLBACK_UA = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/128.0 Safari/537.36"
+STATIC_SUFFIX = re.compile(r"\.(?:css|js|map|jpe?g|png|gif|svg|webp|ico|woff2?|ttf|eot)$", re.I)
+
+
+def static_asset(target: str) -> bool:
+    # A semicolon-suffixed API path in the source is a scanner's disguised endpoint
+    # probe, not a browser fetching an asset. Retain it and report it separately.
+    path = urlsplit(target).path
+    return bool(STATIC_SUFFIX.search(path)) and ";" not in path
 
 
 def prepare(
@@ -44,6 +52,10 @@ def prepare(
                 parsed.append(row)
     if not parsed:
         raise ValueError("source log had no parseable requests")
+    method_targets_path = urls_file.with_name("app_methods.json")
+    method_targets = (
+        json.loads(method_targets_path.read_text()) if method_targets_path.exists() else {}
+    )
     normalized_targets = 0
     for row in parsed:
         source_target = row["target"]
@@ -72,7 +84,16 @@ def prepare(
         row["class"] = "scanner" if scanner else "visitor"
         if not scanner:
             source_query = row["target"].partition("?")[2]
-            ranked_url = rank_map[row["target"].split("?", 1)[0]]
+            if row["method"] in {"POST", "PUT", "PATCH"}:
+                targets = method_targets.get(row["method"], [])
+                if not targets:
+                    raise ValueError(f"crawl found no endpoints accepting {row['method']}")
+                if any(static_asset(target) for target in targets):
+                    raise ValueError("crawl method target list contains a static asset")
+                rank = list(rank_map).index(row["target"].split("?", 1)[0])
+                ranked_url = targets[rank % len(targets)]
+            else:
+                ranked_url = rank_map[row["target"].split("?", 1)[0]]
             ranked_path, _separator, ranked_query = ranked_url.partition("?")
             query = source_query or ranked_query
             row["target"] = f"{ranked_path}?{query}" if query else ranked_path
@@ -82,7 +103,7 @@ def prepare(
     with gzip.open(output, "wt", encoding="utf-8", compresslevel=9, newline="\n") as handle:
         for row in expanded:
             handle.write(
-                f"{row['ip']} - - [30/Oct/2026:12:00:00 +0000] "
+                f"{row['ip']} - - [{row['timestamp']}] "
                 f'"{row["method"]} {row["target"]} {row.get("protocol", "HTTP/1.1")}" '
                 f"{row['status']} 0 "
                 f'"-" "{row["ua"] or FALLBACK_UA}"\n'
@@ -94,7 +115,11 @@ def prepare(
         + "".join(f"{ip}\t{kind}\n" for ip, kind in sorted(source_classes.items())),
         encoding="utf-8",
     )
+    post_counts = Counter(r["target"] for r in expanded if r["method"] == "POST")
     data = {
+        "method_targets_from_crawl": method_targets,
+        "post_target_counts": dict(post_counts.most_common()),
+        "timing": "source timestamps retained for live inter-arrival scaling",
         "source": source.name,
         "seed": 5031,
         "classification_rule": (

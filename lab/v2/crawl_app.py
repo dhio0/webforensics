@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import json
 import posixpath
 import re
 import xml.etree.ElementTree as ET
@@ -20,9 +21,12 @@ class Links(HTMLParser):
     def __init__(self) -> None:
         super().__init__()
         self.values: list[str] = []
+        self.forms: list[tuple[str, str]] = []
 
     def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
         fields = dict(attrs)
+        if tag == "form":
+            self.forms.append(((fields.get("method") or "GET").upper(), fields.get("action") or ""))
         for name in ("href", "src"):
             value = fields.get(name)
             if value:
@@ -46,6 +50,7 @@ def crawl(output: Path, base: str = BASE) -> int:
         queue.extend(f"{base.rstrip('/')}/search.php?search={quote(term)}" for term in SEEDS)
     visited: set[str] = set()
     urls: set[str] = set()
+    methods: dict[str, set[str]] = {"POST": set(), "PUT": set(), "PATCH": set()}
 
     def normalize(value: str, base_url: str) -> str | None:
         parts = urlsplit(urljoin(base_url, value))
@@ -69,7 +74,6 @@ def crawl(output: Path, base: str = BASE) -> int:
         if parts.netloc != host or parts.scheme != "http" or url in visited:
             continue
         visited.add(url)
-        urls.add(parts.path + (("?" + parts.query) if parts.query else ""))
         try:
             request = Request(
                 url,
@@ -86,6 +90,7 @@ def crawl(output: Path, base: str = BASE) -> int:
                 content_type = response.headers.get("Content-Type", "")
         except Exception:
             continue
+        urls.add(parts.path + (("?" + parts.query) if parts.query else ""))
         if "json" in content_type:
             for match in re.findall(rb'"link"\s*:\s*"([^"\\]+)', body):
                 candidate = match.decode("utf-8", "ignore").replace("\\/", "/")
@@ -105,6 +110,11 @@ def crawl(output: Path, base: str = BASE) -> int:
         elif "html" in content_type or not content_type:
             parser = Links()
             parser.feed(body.decode("utf-8", "replace"))
+            for method, action in parser.forms:
+                normalized = normalize(action, response.geturl())
+                if normalized and method in methods:
+                    form = urlsplit(normalized)
+                    methods[method].add(form.path + (f"?{form.query}" if form.query else ""))
             for href in parser.values:
                 normalized = normalize(href, response.geturl())
                 if normalized:
@@ -115,6 +125,10 @@ def crawl(output: Path, base: str = BASE) -> int:
         urls.update({"/", "/login.php", *(f"/search.php?search={quote(term)}" for term in SEEDS)})
     output.parent.mkdir(parents=True, exist_ok=True)
     output.write_text("\n".join(sorted(urls)) + "\n", encoding="utf-8")
+    output.with_name("app_methods.json").write_text(
+        json.dumps({key: sorted(values) for key, values in methods.items()}, indent=2) + "\n",
+        encoding="utf-8",
+    )
     print(f"crawled={len(visited)} app_urls={len(urls)}")
     return len(urls)
 

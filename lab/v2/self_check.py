@@ -9,17 +9,53 @@ import json
 import re
 import tempfile
 from collections import Counter
+from itertools import pairwise
 from pathlib import Path
 from typing import Any
 
 try:
     from . import background, collect, label
-    from .prepare_background import SCANNER_UA
+    from .prepare_background import SCANNER_UA, STATIC_SUFFIX, static_asset
 except ImportError:  # direct script execution from lab/v2
     import background
     import collect
     import label
-    from prepare_background import SCANNER_UA
+    from prepare_background import SCANNER_UA, STATIC_SUFFIX, static_asset
+
+
+def timing_checks(access_rows: list[dict], background_rows: list[dict], actors: set[str]) -> dict:
+    span = max(r["timestamp"] for r in access_rows) - min(r["timestamp"] for r in access_rows)
+    rate = len(access_rows) / span if span else float("inf")
+    overall = Counter(int(r["timestamp"]) for r in access_rows)
+    busy = Counter(int(r["timestamp"]) for r in background_rows)
+    if not 2 <= rate <= 5:
+        raise ValueError(f"average requests per second outside 2-5: {rate}")
+    if max(busy.values()) > 20:
+        raise ValueError("background exceeds 20 requests in a second")
+    attacks = [r for r in access_rows if r["client_ip"] in actors]
+    attack_span = max(r["timestamp"] for r in attacks) - min(r["timestamp"] for r in attacks)
+    if attack_span < 180:
+        raise ValueError("multi-step attack spans less than three minutes")
+    writes = [r["request"].split()[1] for r in background_rows
+              if r["request"].split()[0] in {"POST", "PUT", "PATCH"}]
+    static_writes = sum(static_asset(target) for target in writes)
+    if static_writes:
+        raise ValueError("background writes to static assets")
+    return {
+        "log_span_seconds": span,
+        "average_requests_per_second": round(rate, 5),
+        "maximum_background_requests_per_second": max(busy.values()),
+        "maximum_overall_requests_per_second": max(overall.values()),
+        "attack_span_seconds": attack_span,
+        "background_writes_to_static_assets": static_writes,
+        "scanner_disguised_api_static_suffix_probes": sum(
+            ";" in target and bool(STATIC_SUFFIX.search(target.split("?", 1)[0]))
+            for target in writes
+        ),
+        "top_10_post_targets": Counter(
+            r["request"].split()[1] for r in background_rows if r["request"].startswith("POST ")
+        ).most_common(10),
+    }
 
 
 def _rows(path: Path, parser) -> list[dict[str, Any]]:
@@ -186,7 +222,59 @@ def check_scenario(root: Path, scenario_id: str) -> dict[str, Any]:
     ):
         raise ValueError("no-compromise scenario has attacker files or a root cause")
 
+    round7 = {}
+    if restore_config.get("version") == 2:
+        try:
+            from .validate_evidence import validate
+        except ImportError:
+            from validate_evidence import validate
+
+        parse_failures = validate(evidence)
+        if any(parse_failures):
+            raise ValueError("evidence parser reported failures")
+        proof = json.loads((replay / "restore-validation.txt").read_text())
+        if proof.get("result") != "PASS" or not proof.get("destination_was_empty"):
+            raise ValueError("portable restore proof missing or failed")
+        scan = (replay / "defender-scan.txt").read_text(encoding="utf-8-sig")
+        if "detections=0" not in scan or "real_time_protection_enabled=True" not in scan:
+            raise ValueError("Defender scan proof missing or failed")
+        round7 = timing_checks(access_rows, actual_background, set(truth["attacker_ips"]))
+        replay_run = json.loads((replay / "background.json").read_text())["replay"]
+        if not replay_run.get("uninterrupted") or replay_run.get("resumed") is not False:
+            raise ValueError("recording was interrupted or resumed")
+        hand = json.loads((replay / "hand-pacing.json").read_text())
+        for previous, following in pairwise(hand):
+            if following["offset_seconds"] - previous["offset_seconds"] < 2:
+                raise ValueError("hand-run actions less than two seconds apart")
+        round7.update({
+            "parse_failures": dict(zip(
+                ("access", "manifest", "error"), parse_failures, strict=True
+            )),
+            "restore": proof,
+            "defender_scan": "PASS; detections=0; real-time protection enabled",
+            "analyst_read": "pending human/assistant review before scenario commit",
+            "replay_started_at_utc": replay_run["started_at_utc"],
+            "replay_ended_at_utc": replay_run["ended_at_utc"],
+            "uninterrupted_run": "PASS; no part resumed",
+            "native_tool_bursts_exempt": [
+                event["action"] for event in hand if "native burst" in event["action"]
+            ],
+            "hand_action_minimum_spacing_seconds": min(
+                (b["offset_seconds"] - a["offset_seconds"]
+                 for a, b in pairwise(hand)), default=None
+            ),
+            "write_candidates_within_5_seconds_of_ctime": {
+                item["path"]: sum(
+                    row["request"].split()[0] in {"POST", "PUT"}
+                    and abs(row["timestamp"] - float(
+                        current[item["path"].lstrip("/")].fields[8]
+                    )) <= 5
+                    for row in access_rows
+                ) for item in truth["files"] if item["path"].lstrip("/") in current
+            },
+        })
     return {
+        **round7,
         "scenario": scenario_id,
         "schema": "PASS",
         "ground_truth_regeneration": "PASS",

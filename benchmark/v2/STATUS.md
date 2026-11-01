@@ -1,4 +1,37 @@
-# Benchmark v2 status — round 6 complete
+# Benchmark v2 status - round 7 in progress
+
+
+## Round 7 progress (2026-11-01)
+
+- Step 0 complete: all four password values in ignored `lab/v2/.env` were rotated locally. No values were printed or committed.
+- Lab changes implemented: source-gap scaling (3.5 target requests/second), live rolling burst cap, detached background and attack workers, suspension/stall rejection, seeded human action spacing, and method-aware crawl/remapping.
+- Portable restore implemented from registry-digest-pinned public WordPress files and SHA-256-pinned app/plugin/Composer archives. Generated install files use a small safe overlay; secret configuration and generated executables are stubs listed in `defanged.tsv`. Restore never reads `.env` or uses a local scenario image.
+- Self-checks now report timing, background/overall peaks, hand spacing, native tool exemptions, POST targets, nearby writes, uninterrupted-run metadata, parser results, Defender, and clean-empty restore proof.
+- Focused tests: 30 passed. Full suite: 559 passed, 8 skipped; `ruff check .` passed.
+- No scenario has been re-recorded in round 7 yet. Round-6 evidence and ground truth remain intact. No results directory, scorer, unit test, or golden was read or changed.
+- **Exact next step:** launch `lab/v2/scenarios/run_s01.py` detached, read its analyst sample/window, complete all pilot self-checks, and commit s01. Then follow the requested dev/held-out order, one scenario per commit, followed by the all-twelve restore proof and final docs.
+- Step 1 is complete and ready for the lab-code commit. No recordings are active. The first live run must validate integration and may reveal recording defects; none of the new scenario metrics or clean-machine proofs is claimed yet.
+
+The source includes one scanner POST to a semicolon-suffixed API probe ending in `.js`. It is retained unchanged as a scanner endpoint probe, not treated as a browser asset request, and reported separately as `scanner_disguised_api_static_suffix_probes`. Visitor POST/PUT/PATCH remapping rejects static assets. This interpretation preserves the unchanged scanner stream and makes the suffix exception visible.
+
+### Preserved encrypted round-6 captures
+
+All twelve files were moved without overwriting or deleting them. They are outside Git beneath `C:\Users\Pongo\Documents\cases\benchmark-v2-full\old-round6\`:
+
+- `s01/full-evidence.tar.gz.enc`
+- `s02/full-evidence.tar.gz.enc`
+- `s03/full-evidence.tar.gz.enc`
+- `s04/full-evidence.tar.gz.enc`
+- `s05/full-evidence.tar.gz.enc`
+- `s06/full-evidence.tar.gz.enc`
+- `s07/full-evidence.tar.gz.enc`
+- `s08/full-evidence.tar.gz.enc`
+- `s09/full-evidence.tar.gz.enc`
+- `s10/full-evidence.tar.gz.enc`
+- `s11/full-evidence.tar.gz.enc`
+- `s12/full-evidence.tar.gz.enc`
+
+Ignored build inputs remain in `lab/v2/.cache/`, including the newly pinned Composer archives in `.cache/portable/`. No raw attacker files were exported. The legacy round-6 status below is historical, not a round-7 completion claim.
 
 ## Round 6 changes
 
@@ -35,7 +68,7 @@ The original recording commits remain listed below. Development split: s01, s03,
 
 ## Resume notes
 
-The work is complete on branch `m8-benchmark-v2`. If resuming, start from the round 6 commits above. The held-out hashes and change notes are in [HELDOUT.md](HELDOUT.md). No scoring run has been performed on v2.
+Round 6 was complete on branch `m8-benchmark-v2`. For current work, use the round-7 progress and next step above. The held-out hashes and change notes are in [HELDOUT.md](HELDOUT.md). No scoring run has been performed on v2.
 
 ## Original recording commits
 

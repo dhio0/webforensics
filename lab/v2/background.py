@@ -9,7 +9,7 @@ import json
 import re
 import threading
 import time
-from collections import Counter
+from collections import Counter, deque
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from pathlib import Path
@@ -17,13 +17,18 @@ from urllib.error import HTTPError, URLError
 from urllib.parse import quote, urlsplit
 from urllib.request import HTTPRedirectHandler, ProxyHandler, Request, build_opener
 
+try:
+    from .pacing import LiveClock, scaled_schedule
+except ImportError:
+    from pacing import LiveClock, scaled_schedule
+
 COMBINED = re.compile(
-    r'^(?P<ip>\S+) \S+ \S+ \[[^]]+\] "(?P<method>[A-Z]+) '
+    r'^(?P<ip>\S+) \S+ \S+ \[(?P<timestamp>[^]]+)\] "(?P<method>[A-Z]+) '
     r'(?P<target>\S+) (?P<protocol>HTTP/[^\"]+)" (?P<status>\d{3}) \S+ '
     r'"[^\"]*" "(?P<ua>[^\"]*)"'
 )
 NASA = re.compile(
-    r"^(?P<ip>\S+) (?:\S+ \S+ )?\[[^]]+\] "
+    r"^(?P<ip>\S+) (?:\S+ \S+ )?\[(?P<timestamp>[^]]+)\] "
     r'"(?P<method>[A-Z]+) (?P<target>\S+) (?P<protocol>HTTP/[^\"]+)" '
     r"(?P<status>\d{3}) \S+"
 )
@@ -40,7 +45,7 @@ BACKGROUND_POOLS = (
     ipaddress.ip_network("10.0.0.0/8"),
 )
 RESERVED_ZERO = ipaddress.ip_network("0.0.0.0/8")
-SAFE_METHODS = {"GET", "HEAD", "POST"}
+SAFE_METHODS = {"GET", "HEAD", "POST", "PUT", "PATCH"}
 
 
 class NoRedirects(HTTPRedirectHandler):
@@ -137,12 +142,15 @@ class ReplayStats:
             "source": source.name,
             "seed": seed,
             "pace_seconds": pace,
+            "schedule": "source inter-arrival scaling; rolling cap 20 per second",
             "attempted": self.attempted,
             "parsed": self.parsed,
             "last_source_line": self.last_source_line,
             "failures": dict(sorted(self.failures.items())),
             "started_at_utc": self.started_at,
             "ended_at_utc": self.ended_at,
+            "uninterrupted": self.ended_at is not None,
+            "resumed": False,
         }
 
 
@@ -154,7 +162,7 @@ class BackgroundReplay:
         source: Path,
         service: str,
         *,
-        pace: float = 0.001,
+        pace: float = 0.0,
         limit: int = 30_000,
         fallback_user_agent: str = "unknown-public-log-client",
         timeout: float = 5.0,
@@ -163,11 +171,13 @@ class BackgroundReplay:
         pause_at: float | None = None,
         ready_file: Path | None = None,
         continue_file: Path | None = None,
+        rate: float = 3.5,
     ) -> None:
         if service not in ALLOWED_TARGETS:
             raise ValueError("target service is not allowlisted")
-        if pace < 0 or limit < 1 or timeout <= 0:
+        if pace != 0 or limit < 1 or timeout <= 0:
             raise ValueError("pace, limit, and timeout are invalid")
+        self.rate = rate
         self.source = source
         self.service = service
         self.pace = pace
@@ -208,60 +218,71 @@ class BackgroundReplay:
         self.stats.started_at = datetime.now(UTC).isoformat()
         file_opener = gzip.open if self.source.suffix == ".gz" else Path.open
         with file_opener(self.source, "rt", encoding="utf-8", errors="replace") as handle:
+            rows = []
             for line_number, line in enumerate(handle, 1):
-                if self.stats.attempted >= self.limit:
-                    break
-                self.stats.last_source_line = line_number
-                if (
-                    self.pause_at is not None
-                    and self.stats.attempted >= int(self.limit * self.pause_at)
-                    and self.ready_file is not None
-                    and self.continue_file is not None
-                ):
-                    self.ready_file.write_text("ready\n", encoding="ascii")
-                    while not self.continue_file.exists():
-                        time.sleep(0.05)
-                    self.pause_at = None
                 row = parse_line(line, self.fallback_user_agent)
-                if row is None:
-                    continue
-                self.stats.parsed += 1
-                method = row["method"]
-                if method not in SAFE_METHODS:
-                    continue
-                mapped_ip = self.ip_mapper.assign(row["ip"])
-                request = Request(
-                    target_url(row["target"], self.service),
-                    headers={
-                        "User-Agent": re.sub(r"[\r\n]", " ", row["ua"])[:512],
-                        "X-Lab-Client-IP": mapped_ip,
-                        "X-Background-Source-Line": str(line_number),
-                    },
-                    method=method,
-                    # Public access logs have no request bodies; POSTs replay empty.
-                    data=b"" if method == "POST" else None,
-                )
-                self.stats.attempted += 1
-                try:
-                    with opener.open(request, timeout=self.timeout) as response:
-                        while response.read(64 * 1024):
-                            pass
-                except HTTPError:
-                    self.stats.failures["http_error"] += 1
-                except TimeoutError:
+                if row and row["method"] in SAFE_METHODS:
+                    rows.append((line_number, row))
+                if len(rows) >= self.limit:
+                    break
+        if not rows:
+            raise ValueError("no replayable source requests")
+        stamps = [
+            datetime.strptime(row["timestamp"], "%d/%b/%Y:%H:%M:%S %z").timestamp()
+            for _, row in rows
+        ]
+        schedule = scaled_schedule(stamps, self.rate) if len(rows) > 1 else [0.0]
+        self.planned_duration_seconds = schedule[-1]
+        clock = LiveClock()
+        sent: deque[float] = deque(maxlen=20)
+        for (line_number, row), offset in zip(rows, schedule, strict=True):
+            clock.wait_until(offset)
+            if sent and len(sent) == 20:
+                clock.wait_until(sent[0] + 1.01)
+            if time.monotonic() - clock.origin - offset > 10:
+                raise RuntimeError("replay fell behind schedule; discard interrupted run")
+            self.stats.last_source_line = line_number
+            if (
+                self.pause_at is not None
+                and self.stats.attempted >= int(self.limit * self.pause_at)
+                and self.ready_file is not None
+            ):
+                self.ready_file.write_text("ready\n", encoding="ascii")
+                self.pause_at = None
+            self.stats.parsed += 1
+            method = row["method"]
+            mapped_ip = self.ip_mapper.assign(row["ip"])
+            request = Request(
+                target_url(row["target"], self.service),
+                headers={
+                    "User-Agent": re.sub(r"[\r\n]", " ", row["ua"])[:512],
+                    "X-Lab-Client-IP": mapped_ip,
+                    "X-Background-Source-Line": str(line_number),
+                },
+                method=method,
+                # Public access logs have no request bodies; POSTs replay empty.
+                data=b"" if method in {"POST", "PUT", "PATCH"} else None,
+            )
+            self.stats.attempted += 1
+            try:
+                with opener.open(request, timeout=self.timeout) as response:
+                    while response.read(64 * 1024):
+                        pass
+            except HTTPError:
+                self.stats.failures["http_error"] += 1
+            except TimeoutError:
+                self.stats.failures["timeout"] += 1
+            except ConnectionError:
+                self.stats.failures["connection_error"] += 1
+            except URLError as exc:
+                reason = exc.reason
+                if isinstance(reason, TimeoutError):
                     self.stats.failures["timeout"] += 1
-                except ConnectionError:
+                elif isinstance(reason, ConnectionError):
                     self.stats.failures["connection_error"] += 1
-                except URLError as exc:
-                    reason = exc.reason
-                    if isinstance(reason, TimeoutError):
-                        self.stats.failures["timeout"] += 1
-                    elif isinstance(reason, ConnectionError):
-                        self.stats.failures["connection_error"] += 1
-                    else:
-                        self.stats.failures["url_error"] += 1
-                if self.pace:
-                    time.sleep(self.pace)
+                else:
+                    self.stats.failures["url_error"] += 1
+            sent.append(time.monotonic() - clock.origin)
         self.stats.ended_at = datetime.now(UTC).isoformat()
 
     def write_records(self, path: Path) -> None:
@@ -276,7 +297,8 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--source", type=Path, required=True)
     parser.add_argument("--service", required=True, choices=sorted(ALLOWED_TARGETS))
-    parser.add_argument("--pace", type=float, default=0.001)
+    parser.add_argument("--pace", type=float, default=0.0)
+    parser.add_argument("--rate", type=float, default=3.5)
     parser.add_argument("--limit", type=int, default=30_000)
     parser.add_argument("--fallback-user-agent", default="unknown-public-log-client")
     parser.add_argument("--timeout", type=float, default=5.0)
@@ -293,6 +315,7 @@ def main() -> None:
             args.source,
             args.service,
             pace=args.pace,
+            rate=args.rate,
             limit=args.limit,
             fallback_user_agent=args.fallback_user_agent,
             timeout=args.timeout,

@@ -112,7 +112,7 @@ def prepare_application() -> None:
 def perform_attack() -> None:
     ready = Path("/replay/background-halfway")
     continuation = Path("/replay/background-continue")
-    for _ in range(9000):
+    for _ in range(180000):
         if ready.exists():
             break
         time.sleep(0.05)
@@ -124,6 +124,10 @@ def perform_attack() -> None:
     }
     session = requests.Session()
     steps: list[dict[str, object]] = []
+
+    from pacing import install_hand_pacing
+
+    install_hand_pacing(5003, scanner=False)
 
     def marked_get(step_id: str, path: str, expected: bool) -> requests.Response:
         response = session.get(

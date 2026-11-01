@@ -12,6 +12,14 @@ import sys
 import time
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from recording import (
+    begin_run,
+    finalize_restore,
+    prepare_restore,
+    validate_portable_restore,
+)
+
 ROOT = Path(__file__).resolve().parents[3]
 COMPOSE_FILE = ROOT / "lab" / "v2" / "docker-compose.yml"
 ENV_FILE = ROOT / "lab" / "v2" / ".env"
@@ -77,6 +85,7 @@ def main() -> None:
     run("config", "--quiet")
     prepare_log_mounts()
     replay = ROOT / "benchmark" / "v2" / SCENARIO / "replay"
+    prepare_restore(replay, "wordpress")
     subprocess.run(
         [
             str(PYTHON),
@@ -119,7 +128,7 @@ def main() -> None:
         "rm -f /var/www/html/wp-content/uploads/wp-file-manager-pro/fm_backup/index.php",
     )
     attack_seed = 5031
-    attack_fraction = random.Random(attack_seed).randint(30, 70) / 100
+    attack_fraction = random.Random(attack_seed).randint(35, 45) / 100
     isolation = subprocess.run(
         [
             "docker",
@@ -197,6 +206,7 @@ def main() -> None:
         SCENARIO,
     )
 
+    begin_run(replay)
     run(
         "exec",
         "-d",
@@ -204,11 +214,11 @@ def main() -> None:
         "python",
         "/opt/v2/background.py",
         "--source",
-        "/source/background.log.gz",
+        "/replay/background.log.gz",
         "--service",
         "wp",
         "--pace",
-        "0.001",
+        "0.0",
         "--limit",
         "15000",
         "--seed",
@@ -224,10 +234,13 @@ def main() -> None:
         "--continue-file",
         "/replay/background-continue",
     )
-    run("exec", "-T", "attacker", "python", "/opt/scenarios/s01.py", "attack")
-    for _ in range(600):
-        if (replay / "background.done").is_file():
+    run("exec", "-d", "attacker", "python", "/opt/scenarios/detached.py",
+        "/opt/scenarios/s01.py", "attack")
+    for _ in range(18000):
+        if (replay / "background.done").is_file() and (replay / "attack.done").is_file():
             break
+        if (replay / "attack-error.json").is_file():
+            raise RuntimeError("detached attack failed; inspect attacker /tmp/attack-output.txt")
         error_file = replay / "background-error.json"
         if error_file.is_file():
             failure = json.loads(error_file.read_text(encoding="utf-8"))
@@ -237,7 +250,7 @@ def main() -> None:
             )
         time.sleep(0.5)
     else:
-        raise TimeoutError("background replay did not finish within five minutes")
+        raise TimeoutError("background replay did not finish within 150 minutes")
     plan = json.loads((replay / "background-plan.json").read_text(encoding="utf-8"))
     run_data = json.loads((replay / "background-run.json").read_text(encoding="utf-8"))
     plan["replay"] = run_data
@@ -382,20 +395,9 @@ def main() -> None:
         cwd=ROOT,
         check=True,
     )
+    finalize_restore(replay, "wordpress")
     run("down")
-    subprocess.run(
-        [
-            str(PYTHON),
-            str(ROOT / "lab" / "v2" / "self_check.py"),
-            SCENARIO,
-            "--root",
-            str(ROOT),
-            "--output",
-            str(replay / "self-check.txt"),
-        ],
-        cwd=ROOT,
-        check=True,
-    )
+    validate_portable_restore(replay)
     subprocess.run(
         [
             "powershell.exe",
@@ -408,6 +410,19 @@ def main() -> None:
             str(ROOT / "benchmark" / "v2" / SCENARIO),
             "-OutputPath",
             str(replay / "defender-scan.txt"),
+        ],
+        cwd=ROOT,
+        check=True,
+    )
+    subprocess.run(
+        [
+            str(PYTHON),
+            str(ROOT / "lab" / "v2" / "self_check.py"),
+            SCENARIO,
+            "--root",
+            str(ROOT),
+            "--output",
+            str(replay / "self-check.txt"),
         ],
         cwd=ROOT,
         check=True,
