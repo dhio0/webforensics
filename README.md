@@ -4,6 +4,10 @@ A defensive tool that reconstructs **how a website was compromised**. It correla
 
 > **Status: milestone 7 of 7 done; M8 (a realistic benchmark) is in progress and M9 (wider coverage) is planned.** Evidence loading (access + error logs, webroot manifest), detection rules, the file-first correlation engine, the Indonesian report (`webforensics analyze`, Markdown + HTML + JSON), the accuracy benchmark (`webforensics eval`, five lab scenarios plus one public DFIR case) and evidence from Wazuh 4.x (`webforensics pull`) work. For SQL injection, it also points at the vulnerable line and suggests a prepared-statement fix. See [docs/plan.md](docs/plan.md).
 
+![The interactive viewer on lab scenario F: verdict, per-actor timeline, the root-cause event with its evidence, search and the attack-story filter](docs/img/viewer-demo.gif)
+
+*Lab scenario F in the interactive viewer (`webforensics view`): a SQL-injection login bypass, then an upload and a webshell request. Open the [example page](docs/examples/scenario_f.viewer.html) after cloning; it works offline.*
+
 ## Design principles
 - **Deterministic and offline core.** Rules and heuristics only, with no LLM and no network calls in the analysis path. The same inputs always give the same output.
 - **Every claim cites evidence.** Each claim points to a log file + line number, or a file path + SHA-256.
@@ -44,6 +48,14 @@ webforensics view case01/report/report.json          # writes case01/report/view
 - the other report sections (root cause and vulnerable code, files, IOCs, gaps, actions, case info) as tabs.
 
 All text is the same Indonesian text as the static report, produced by the same code. The page loads nothing from anywhere: its Content-Security-Policy allows only its own script (by SHA-256) and no network, and evidence strings are only ever set as text. It works at phone width and in dark mode, and the same `report.json` gives the same bytes. A real-scale report (10,083 timeline events, 5,235 gaps) gives a 7.6 MB page (D91).
+
+<p>
+<img src="docs/img/viewer-timeline.png" alt="Timeline tab: per-actor chart, event list and the detail panel of the root-cause event" width="68%">
+<img src="docs/img/viewer-phone.png" alt="The same page at phone width, with the detail panel as a bottom sheet" width="22%">
+</p>
+<img src="docs/img/viewer-root-cause.png" alt="Root-cause tab in dark mode: the raw log line, the reasons, the vulnerable line and a prepared-statement fix" width="68%">
+
+The example page [docs/examples/scenario_f.viewer.html](docs/examples/scenario_f.viewer.html) is generated from the scenario F golden report; a test fails if it falls out of date.
 
 ## Evidence from Wazuh (M6)
 If the web server runs a Wazuh 4.x agent with FIM on the webroot, the evidence can come from the Wazuh indexer instead of the server. `pull` is the only command that uses the network. It copies one agent's web log lines and FIM alerts for a time window into a recording, and analysis then runs offline on that file:

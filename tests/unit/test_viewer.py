@@ -150,6 +150,13 @@ def test_bursts_collapse_into_runs():
     assert [e["run"] for e in view["events"]] == [0] * 5 + [None] * 3
 
 
+def test_docs_example_matches_the_golden_report():
+    # Regenerate with: webforensics view tests/golden/scenario_f.json
+    #                  --out docs/examples/scenario_f.viewer.html
+    example = Path(__file__).parents[2] / "docs" / "examples" / "scenario_f.viewer.html"
+    assert example.read_text(encoding="utf-8") == render_viewer(_golden("f"), WIB)
+
+
 def test_cli_view_writes_next_to_the_report(tmp_path):
     source = tmp_path / "report.json"
     shutil.copy(GOLDEN / "scenario_f.json", source)

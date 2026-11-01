@@ -11,3 +11,6 @@ lab/** text eol=lf
 
 # Golden reports are compared byte for byte.
 tests/golden/** -text
+
+# The example viewer is compared byte for byte with a fresh render.
+docs/examples/** -text
