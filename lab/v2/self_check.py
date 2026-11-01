@@ -315,7 +315,8 @@ def check_scenario(root: Path, scenario_id: str) -> dict[str, Any]:
             "uninterrupted_run": "PASS; no part resumed",
             "native_tool_bursts_exempt": [
                 event["action"] for event in hand if "native burst" in event["action"]
-            ],
+            ] + (["Weevely internal exchanges within hand-paced agent commands"]
+                 if any(event["action"] == "agent_command" for event in hand) else []),
             "hand_action_minimum_spacing_seconds": min(
                 (b["offset_seconds"] - a["offset_seconds"]
                  for a, b in pairwise(hand)), default=None

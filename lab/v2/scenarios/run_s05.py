@@ -30,6 +30,8 @@ ATTACK_SEED = 5051
 
 
 def run(*args: str, check: bool = True) -> subprocess.CompletedProcess[str]:
+    if args[0] == "build" and os.environ.get("M8V2_USE_PREBUILT_IMAGES") == "1":
+        return subprocess.CompletedProcess(args, 0)
     return subprocess.run(
         ["docker", "compose", "--env-file", str(ENV_FILE), "-f", str(COMPOSE_FILE), *args],
         cwd=ROOT,
