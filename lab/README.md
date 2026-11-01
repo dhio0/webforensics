@@ -111,7 +111,7 @@ hashes and relevant step timestamps without Docker.
 ## Stop and remove lab containers
 
 ```powershell
-docker compose -f lab/docker-compose.yml down -v
+docker compose -f lab/docker-compose.yml --profile wazuh down -v
 ```
 
 `-v` removes the lab's MySQL and shared webroot volumes. Collected evidence in
@@ -174,7 +174,7 @@ indexer heap at the upstream default and report its `OPENSEARCH_JAVA_OPTS`.
 Stop both stacks and remove their volumes after use:
 
 ```powershell
-docker compose -f lab/docker-compose.yml down -v
+docker compose -f lab/docker-compose.yml --profile wazuh down -v
 .venv\Scripts\python lab/wazuh/setup.py down
 ```
 

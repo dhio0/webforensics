@@ -291,4 +291,12 @@ Same rules as above: [doc], [src] at `v4.14.9`, and [lab] for what was run on a 
 - [lab] `wazuh-logtest` with `webforensics_rules.xml`: the scenario F events matched 100801 (level 12, summary with an entry point), 100804 (affected file) and 100805 (attacker IP), and scenario D's summary matched 100803 (level 3, no compromise). Field substitution in descriptions works (`$(webforensics.root_cause.path)` became `/admin/login.php`), and lists decode as arrays.
 - [lab] `queue.py`, run by the manager's own Python 3.10, sent the same three events to the live socket; all three appeared in `alerts.json`. Events sent with an agent location were filed under that agent (`agent.name` `web01`, `agent.id` `001`); the one without went to the manager (`000`).
 
-**Not yet run live:** the whole chain on the lab (FIM alert → worker → `pull` from the indexer → analysis → write-back alerts). Each link above was run on a real manager, and the worker is covered by unit tests with the real alerts; the lab run needs the indexer and an agent and is the remaining check for the M6+ "done" test.
+**Whole chain on the lab: passed (2026-11-01).** Lab manager and indexer from `setup.py up`, the integration installed as in [lab/wazuh/integration/README.md](../lab/wazuh/integration/README.md) (Python 3.11 from the Amazon Linux 2023 repository in a venv, wrapper, rules, the two `<integration>` blocks, the read-only `webforensics_reader` account), then scenario F replayed with `WF_LAB_WAZUH=1`:
+- 12:26:00 UTC: the realtime FIM `added` alert for `/var/www/html/uploads/scenario-f-marker.php` (rule 554) started one worker. No other alert of the replay passed `decide`.
+- 12:26:46: after the 45 s settle time, the worker had pulled the window from the indexer, analyzed it, written report.md/html/json, viewer.html and writeback.jsonl, and sent 3 events.
+- The automatic report matches the scenario F ground truth: entry point `GET /admin/login.php`, SQL-injection login bypass (medium), affected file `uploads/scenario-f-marker.php`, attacker 172.30.0.1, cited as `recording.jsonl:6`.
+- Rules 100801 (level 12), 100804 and 100805 raised alerts filed under `wf-lab-agent` (001), and all three were searchable in `wazuh-alerts-4.x-*` with the read-only account, so the dashboard shows them.
+- The write-back alerts did not start a second analysis: `trigger.log` has one start and one finish.
+- The integration runs as the `wazuh` user, which could read the config and password file (`root:wazuh`, 640) and write to the queue socket.
+
+Found while running it: `lab/README.md`'s stop command left the profiled agent container running; it now includes `--profile wazuh`.

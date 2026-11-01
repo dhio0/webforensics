@@ -422,7 +422,7 @@ Status: accepted (portfolio, on branch `ui-viewer`, independent of the benchmark
 - **Not in the frozen analysis.** No analysis or scoring code changed; only `document._shown_gaps` became public (`shown_gaps`, without its unused argument). Golden reports are byte-identical.
 
 ## D92 — Wazuh trigger and write-back (M6+)
-Status: accepted (on branch `ui-viewer`; verified against v4.14.9 source and docs, and on a live manager, docs/wazuh-notes.md section 11). The full lab chain is still to run.
+Status: accepted (on branch `ui-viewer`; verified against v4.14.9 source and docs, on a live manager, and end to end on the lab with scenario F, docs/wazuh-notes.md section 11).
 - **Trigger as a custom integration, not active response.** Active response runs on agents, the web servers themselves; the tool belongs next to the indexer, where `pull` already works. Integratord runs `custom-webforensics` for alerts that pass two `<integration>` blocks: group `syscheck` (level 5 and above) and the web-attack rules 31103–31106 and 31164/31165/31170/31171. Frequency rules 31151–31153 are left out: they repeat requests that are already in the window.
 - **The script decides again, from the alert alone.** `trigger.decide` accepts a FIM `added`/`modified` inside a configured agent's docroot, or a web-attack rule on one of its configured access logs. It refuses unconfigured agents, other paths, deletions, other logs, and any alert of our own (group `webforensics` or `data.integration`), so write-back cannot feed the trigger.
 - **One analysis per agent per cool-down** (15 min by default), claimed under a lock file; a lock older than 60 s is treated as left by a killed process. A deploy or a scanner burst then gives one analysis, not hundreds.
