@@ -152,6 +152,10 @@ def test_restore_requires_no_env_or_app_image_and_preserves_trailing_dot(
     (replay / "restore-overlay/config.php").write_bytes(b"DEFANGED invalid\n")
     with pytest.raises(ValueError, match="invalid defanged stub"):
         restore.restore("s01", tmp_path / "other")
+    config["snapshot_path_map"] = {"file.php..": "../../../../escape"}
+    (replay / "restore.json").write_text(json.dumps(config))
+    with pytest.raises(ValueError, match="unsafe restore overlay"):
+        restore.restore("s01", tmp_path / "traversal")
 
 
 def test_overlay_defangs_unchanged_install_secrets(tmp_path: Path) -> None:

@@ -168,6 +168,9 @@ def check_scenario(root: Path, scenario_id: str) -> dict[str, Any]:
     source_uas = Counter(row["ua"] for row in source)
     if max(source_uas.values()) / len(source) > 0.20:
         raise ValueError("a background User-Agent exceeds 20%")
+    largest_overall_ua_share = max(Counter(user_agents).values()) / len(user_agents)
+    if largest_overall_ua_share > 0.20:
+        raise ValueError("an access-log User-Agent exceeds 20%")
     client_counts = Counter(row["client_ip"] for row in actual_background)
     if len(client_counts) <= 300:
         raise ValueError("background has 300 or fewer distinct client addresses")
@@ -246,6 +249,15 @@ def check_scenario(root: Path, scenario_id: str) -> dict[str, Any]:
         if "detections=0" not in scan or "real_time_protection_enabled=True" not in scan:
             raise ValueError("Defender scan proof missing or failed")
         round7 = timing_checks(access_rows, actual_background, set(truth["attacker_ips"]))
+        all_actor_lines = [row["line_no"] for row in access_rows
+                           if row["client_ip"] in truth["attacker_ips"]]
+        if min(all_actor_lines) / len(access_rows) < 0.30 or (
+            max(all_actor_lines) / len(access_rows) > 0.70
+        ):
+            raise ValueError("actor window falls outside the 30-70% interval")
+        round7["whole_actor_window_position_range"] = [
+            min(all_actor_lines) / len(access_rows), max(all_actor_lines) / len(access_rows)
+        ]
         replay_run = json.loads((replay / "background.json").read_text())["replay"]
         if not replay_run.get("uninterrupted") or replay_run.get("resumed") is not False:
             raise ValueError("recording was interrupted or resumed")
@@ -292,6 +304,7 @@ def check_scenario(root: Path, scenario_id: str) -> dict[str, Any]:
         "largest_background_client_share": round(max(client_counts.values()) / len(source), 5),
         "background_user_agents": len(source_uas),
         "largest_user_agent_share": round(max(source_uas.values()) / len(source), 5),
+        "largest_overall_user_agent_share": round(largest_overall_ua_share, 5),
         "top_user_agent": Counter(user_agents).most_common(1)[0][0],
         "nested_path_share": round(nested_share, 5),
         "request_paths_with_lab_terms": sum(

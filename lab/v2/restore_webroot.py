@@ -79,6 +79,8 @@ def restore(scenario: str, destination: Path) -> int:
         content = None
         for folder in ("evidence/webroot", "replay/restore-overlay"):
             source = scenario_dir / folder / snapshot_path_map.get(rel, rel)
+            if not is_inside(source.resolve(), scenario_dir.resolve()) or source.is_symlink():
+                raise ValueError(f"unsafe restore overlay path: {rel}")
             if os.path.isfile(io_path(source)):
                 with open(io_path(source), "rb") as stream:
                     content = stream.read()
