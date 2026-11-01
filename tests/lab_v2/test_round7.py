@@ -8,6 +8,7 @@ import json
 from collections import Counter
 from itertools import pairwise
 from pathlib import Path
+from urllib.error import HTTPError
 
 import pytest
 from lab.v2 import background, collect, crawl_app, pacing, portable, prepare_background
@@ -77,6 +78,40 @@ def test_crawl_rejects_static_html_fallback_and_deduplicates_tracking_ids() -> N
     assert crawl_app.crawl_query("sid=123&action=search&lang=en") == "action=search&lang=en"
     assert crawl_app.crawl_query("sid=456&action=search&lang=en") == "action=search&lang=en"
     assert crawl_app.crawl_query("q=a%20b&value=%2f") == "q=a%20b&value=%2f"
+
+
+def test_crawl_does_not_publish_failed_guessed_pages_or_static_fallback_forms(
+    tmp_path: Path, monkeypatch
+) -> None:
+    class Response:
+        def __init__(self, url):
+            self.headers = {"Content-Type": "text/html"}
+            self.url = url
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *args):
+            return None
+
+        def geturl(self):
+            return self.url
+
+        def read(self, size):
+            return b'<link href="/missing.js"><form method="post" action="/login.php">'
+
+    class Opener:
+        def open(self, request, timeout):
+            url = request.full_url
+            if url in {"http://dvwa/", "http://dvwa/login.php", "http://dvwa/missing.js"}:
+                return Response(url)
+            raise HTTPError(url, 404, "missing", {}, None)
+
+    monkeypatch.setattr(crawl_app, "build_opener", lambda *args: Opener())
+    output = tmp_path / "app_urls.txt"
+    crawl_app.crawl(output, "http://dvwa")
+    assert output.read_text().splitlines() == ["/", "/login.php"]
+    assert json.loads((tmp_path / "app_methods.json").read_text())["POST"] == ["/login.php"]
 
 
 def test_prepare_routes_write_methods_and_preserves_scanner_and_timing(tmp_path: Path) -> None:

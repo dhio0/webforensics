@@ -57,6 +57,11 @@ def attack() -> None:
 
     headers = {"X-Lab-Client-IP": ATTACKER_IP, "User-Agent": "M8-v2-s02-sqlmap"}
     session = requests.Session()
+    from s05 import Inputs
+
+    login_page = session.get(f"{EDGE}/login.php", headers=headers, timeout=15)
+    login_fields = Inputs()
+    login_fields.feed(login_page.text)
     login = session.post(
         f"{EDGE}/login.php",
         headers={**headers, "X-Lab-Step": "administrator_login"},
@@ -64,6 +69,7 @@ def attack() -> None:
             "username": os.environ.get("DVWA_ADMIN_USER", "admin"),
             "password": os.environ.get("DVWA_ADMIN_PASSWORD", "password"),
             "Login": "Login",
+            "user_token": login_fields.values.get("user_token", ""),
         },
         timeout=15,
         allow_redirects=True,
@@ -72,7 +78,6 @@ def attack() -> None:
         raise RuntimeError("DVWA administrator login failed")
 
     security = session.get(f"{EDGE}/security.php", headers=headers, timeout=15)
-    from s05 import Inputs
 
     fields = Inputs()
     fields.feed(security.text)

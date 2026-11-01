@@ -103,7 +103,8 @@ services:
       DB_PASSWORD: ${MYSQL_PASSWORD}
       DB_PORT: "3306"
       DEFAULT_SECURITY_LEVEL: low
-      DISABLE_AUTHENTICATION: "false"
+      # DVWA uses PHP truthiness: the string "false" enables its auth bypass.
+      DISABLE_AUTHENTICATION: "0"
       TZ: UTC
     volumes:
       - dvwadata:/var/www/html

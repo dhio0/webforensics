@@ -62,6 +62,8 @@ def login(session: requests.Session, headers: dict[str, str]) -> None:
     page = session.get(f"{EDGE}/login.php", headers=headers, timeout=15)
     if page.status_code != 200 or 'name="username"' not in page.text:
         raise RuntimeError("DVWA login page did not load")
+    login_fields = Inputs()
+    login_fields.feed(page.text)
     response = session.post(
         f"{EDGE}/login.php",
         headers=headers,
@@ -69,6 +71,7 @@ def login(session: requests.Session, headers: dict[str, str]) -> None:
             "username": os.environ.get("DVWA_ADMIN_USER", "admin"),
             "password": os.environ.get("DVWA_ADMIN_PASSWORD", "password"),
             "Login": "Login",
+            "user_token": login_fields.values.get("user_token", ""),
         },
         timeout=15,
         allow_redirects=True,
@@ -162,7 +165,7 @@ def attack() -> None:
         return response
 
     home = marked_get("site_check", "/", False)
-    if home.status_code != 200:
+    if home.status_code not in {200, 302}:
         raise RuntimeError(f"site check returned HTTP {home.status_code}")
     login_probe = marked_get("login_page_probe", "/login.php", False)
     if login_probe.status_code != 200 or 'name="username"' not in login_probe.text:
@@ -171,6 +174,8 @@ def attack() -> None:
     if module_probe.status_code not in {200, 302}:
         raise RuntimeError("command module reconnaissance did not complete")
 
+    login_fields = Inputs()
+    login_fields.feed(login_probe.text)
     auth = session.post(
         f"{EDGE}/login.php",
         headers={**headers, "X-Lab-Step": "editor_login"},
@@ -178,6 +183,7 @@ def attack() -> None:
             "username": os.environ.get("DVWA_ADMIN_USER", "admin"),
             "password": os.environ.get("DVWA_ADMIN_PASSWORD", "password"),
             "Login": "Login",
+            "user_token": login_fields.values.get("user_token", ""),
         },
         timeout=15,
         allow_redirects=True,

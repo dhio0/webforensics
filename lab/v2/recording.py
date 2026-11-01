@@ -10,14 +10,21 @@ import uuid
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
-from portable import public_files
+try:
+    from .portable import public_files
+except ImportError:
+    from portable import public_files
 
 
 def begin_run(replay: Path) -> None:
     import gzip
 
-    from background import parse_line
-    from pacing import scaled_schedule
+    try:
+        from .background import parse_line
+        from .pacing import scaled_schedule
+    except ImportError:
+        from background import parse_line
+        from pacing import scaled_schedule
 
     with gzip.open(replay / "background.log.gz", "rt", encoding="utf-8") as stream:
         stamps = [datetime.strptime(parse_line(line, "")["timestamp"],
@@ -59,13 +66,30 @@ def finalize_restore(replay: Path, app: str) -> None:
 
 def validate_portable_restore(replay: Path) -> None:
     """Delete lab app images, prove their absence, then restore into a new empty tree."""
-    from restore_webroot import restore
+    try:
+        from .restore_webroot import restore
+    except ImportError:
+        from restore_webroot import restore
 
+    root = Path(__file__).resolve().parents[2]
     listing = subprocess.check_output(
         ["docker", "image", "ls", "--format", "{{.Repository}} {{.ID}}", "--no-trunc"], text=True
     )
     ids = sorted({line.split()[1] for line in listing.splitlines()
                   if line.split()[0] in {"m8v2-wordpress", "m8v2-phpmyfaq", "m8v2-dvwa"}})
+    # Include surviving untagged images from earlier recordings, without pruning
+    # any unrelated Docker images or the public immutable bases.
+    known = set(ids)
+    for metadata in (root / "benchmark/v2").glob("s??/replay/restore.json"):
+        config = json.loads(metadata.read_text())
+        for key in ("image", "recording_image"):
+            image = config.get(key, "")
+            if image.startswith("sha256:") and subprocess.run(
+                ["docker", "image", "inspect", image],
+                stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+            ).returncode == 0:
+                known.add(image)
+    ids = sorted(known)
     deferred = os.environ.get("M8V2_DEFER_IMAGE_PROOF") == "1"
     if ids and not deferred:
         subprocess.run(["docker", "image", "rm", *ids], check=True, stdout=subprocess.DEVNULL)
@@ -73,7 +97,6 @@ def validate_portable_restore(replay: Path) -> None:
         if subprocess.run(["docker", "image", "inspect", image_id],
                           stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL).returncode == 0:
             raise RuntimeError("local app image still exists before restore proof")
-    root = Path(__file__).resolve().parents[2]
     env = dict(line.split("=", 1) for line in (root / "lab/v2/.env").read_text().splitlines()
                if "=" in line and not line.startswith("#"))
     destination = Path(env["FULL_EVIDENCE_DIR"]).resolve() / "restore-round7" / (

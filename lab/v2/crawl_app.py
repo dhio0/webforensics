@@ -136,10 +136,8 @@ def crawl(output: Path, base: str = BASE) -> int:
                 normalized = normalize(href, response.geturl())
                 if normalized:
                     queue.append(normalized)
-    if host == "wp":
-        urls.update({"/", "/wp-login.php", *(f"/?s={quote(term)}" for term in SEEDS)})
-    else:
-        urls.update({"/", "/login.php", *(f"/search.php?search={quote(term)}" for term in SEEDS)})
+    if not urls:
+        raise ValueError("crawl returned no successful application URLs")
     output.parent.mkdir(parents=True, exist_ok=True)
     output.write_text("\n".join(sorted(urls)) + "\n", encoding="utf-8")
     output.with_name("app_methods.json").write_text(

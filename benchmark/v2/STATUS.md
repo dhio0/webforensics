@@ -7,9 +7,9 @@
 - Lab changes implemented: source-gap scaling (3.5 target requests/second), live rolling burst cap, detached background and attack workers, suspension/stall rejection, seeded human action spacing, and method-aware crawl/remapping.
 - Portable restore implemented from registry-digest-pinned public WordPress files and SHA-256-pinned app/plugin/Composer archives. Generated install files use a small safe overlay; secret configuration and generated executables are stubs listed in `defanged.tsv`. Restore never reads `.env` or uses a local scenario image.
 - Self-checks now report timing, background/overall peaks, hand spacing, native tool exemptions, POST targets, nearby writes, uninterrupted-run metadata, parser results, Defender, and clean-empty restore proof.
-- Focused tests: 31 passed. Full suite: 560 passed, 8 skipped; `ruff check .` passed.
-- No round-7 scenario has been committed. Attempt 1 was discarded; the pilot must start again from clean volumes with exact form-query routing. Round-6 evidence and ground truth remain intact. No results directory, scorer, unit test, or golden was read or changed.
-- **Exact next step:** start a fresh s01 pilot, poll it to completion, read its analyst sample/window, complete all pilot self-checks, and commit s01. Then follow the requested dev/held-out order, one scenario per commit, followed by the all-twelve restore proof and final docs.
+- Focused tests: 32 passed. Full suite: 561 passed, 8 skipped; `ruff check .` passed.
+- No round-7 scenario has been committed. Attempt 1 was discarded. Attempt 2 is recording from clean volumes with exact form-query routing. Round-6 evidence and ground truth remain intact. No results directory, scorer, unit test, or golden was read or changed.
+- **Exact next step:** poll s01 attempt 2 to completion (expected 15:01 WIB), read its analyst sample/window, complete all pilot self-checks, and commit s01. Then follow the requested dev/held-out order, one scenario per commit, followed by the all-twelve restore proof and final docs.
 - Step 1 implemented in `b1ff768` and startup fix `9864a5c`; the first pilot setup found a pre-existing WordPress startup race, fixed by waiting for the app listener before bootstrap and making bootstrap fail on early termination. No recording began. Round-6 source selection still uses GET/HEAD/POST; replay/remapping additionally support PUT/PATCH when the crawl discovers accepting endpoints. The discarded s01 run is listed below. The first live run must validate integration and may reveal recording defects; none of the new scenario metrics or clean-machine proofs is claimed yet.
 
 The source includes one scanner POST to a semicolon-suffixed API probe ending in `.js`. It is retained unchanged as a scanner endpoint probe, not treated as a browser asset request, and reported separately as `scanner_disguised_api_static_suffix_probes`. Visitor POST/PUT/PATCH remapping rejects static assets. This interpretation preserves the unchanged scanner stream and makes the suffix exception visible.
@@ -111,3 +111,14 @@ Encrypted full captures remain outside Git under the directory configured by `la
 
 - Discarded at 2026-11-01T06:46:47.777396+00:00 after identifying form-query routing defects. The host process and all lab volumes were stopped and removed. No part will be reused or stitched.
 - phpMyFAQ preflight now discovers 31 URLs and 11 POST targets after rejecting static HTML fallbacks and removing per-visit tracking IDs. Its temporary project/volumes were removed.
+
+## Active round-7 run: s01
+
+- Started: 2026-11-01T06:48:41.689427+00:00 (2026-11-01 13:48:41 WIB).
+- Expected replay end: 2026-11-01T08:01:41.368232+00:00.
+- Background and attack are detached in their isolated containers.
+- Windows sleep prevention requested. Any interruption invalidates the run.
+
+- Additional pristine DVWA preflight found and corrected the old PHP truthiness authentication bypass; real anonymous denial and token-bearing login were verified. See `preflight-round7.txt`. Scenario step IDs and incident meanings are unchanged; s02 gains an ordinary login-form GET prerequisite.
+- Ignored leftovers include `.cache/network-proof/`, `.cache/preflight-phpmyfaq/`, `.cache/preflight-dvwa/`, and `.cache/round7-s01-host.stdout.txt` / `.stderr.txt`, in addition to pinned source caches. No preflight containers or volumes remain.
+- After the pilot completes, invoke the current `recording.validate_portable_restore()` once more before its commit: it now also removes surviving untagged historical app image IDs. The running host imported the earlier helper version.

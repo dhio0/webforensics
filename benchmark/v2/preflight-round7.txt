@@ -1,0 +1,19 @@
+Round-7 pristine app setup and crawl preflight
+
+phpMyFAQ 3.2.5: installation with rotated lab credentials passed.
+A missing static URL returns an HTML fallback in this app. The crawler now
+rejects those responses and strips per-visit tracking IDs. Crawl result:
+37 fetched URLs, 31 accepted GET URLs, 11 POST targets, no static POST targets.
+Exact form action queries are preserved for visitor write-method remapping.
+
+DVWA: the old environment value for disabling authentication was the nonempty
+string "false", which PHP treats as true. This unintentionally bypassed both
+login and CSRF checks. It is now "0", which PHP treats as false. Existing login
+steps submit the real hidden form token. A fresh protected-module request
+without authentication returned 302; after the normal login it returned 200
+with the expected form. No command or attack was run during this preflight.
+Anonymous crawl: 11 fetched URLs, 4 accepted GET URLs, 1 POST target (login).
+Failed guessed pages are not added to the visitor target pool.
+
+The named preflight projects and their networks/volumes were removed afterward.
+The active WordPress pilot ran on its own unchanged network and volumes.
