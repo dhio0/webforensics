@@ -66,9 +66,10 @@ def validate_portable_restore(replay: Path) -> None:
     )
     ids = sorted({line.split()[1] for line in listing.splitlines()
                   if line.split()[0] in {"m8v2-wordpress", "m8v2-phpmyfaq", "m8v2-dvwa"}})
-    if ids:
+    deferred = os.environ.get("M8V2_DEFER_IMAGE_PROOF") == "1"
+    if ids and not deferred:
         subprocess.run(["docker", "image", "rm", *ids], check=True, stdout=subprocess.DEVNULL)
-    for image_id in ids:
+    for image_id in ([] if deferred else ids):
         if subprocess.run(["docker", "image", "inspect", image_id],
                           stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL).returncode == 0:
             raise RuntimeError("local app image still exists before restore proof")
@@ -78,11 +79,21 @@ def validate_portable_restore(replay: Path) -> None:
     destination = Path(env["FULL_EVIDENCE_DIR"]).resolve() / "restore-round7" / (
         replay.parent.name + "-" + uuid.uuid4().hex[:10]
     )
+    config = json.loads((replay / "restore.json").read_text())
+    recorded_image = config.get("recording_image")
+    absent = not recorded_image or subprocess.run(
+        ["docker", "image", "inspect", recorded_image],
+        stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+    ).returncode != 0
+    if not deferred and not absent:
+        raise RuntimeError("recorded app image still exists before restore proof")
     count = restore(replay.parent.name, destination)
     proof = {
         "result": "PASS", "manifest_entries_verified": count,
         "destination": str(destination), "destination_was_empty": True,
-        "local_app_images_removed_and_absence_verified": ids,
+        "local_app_images_removed_and_absence_verified": ids if not deferred else [],
+        "recorded_app_image_absent_before_restore": absent,
+        "image_removal_proof": "PENDING concurrent recordings" if deferred else "PASS",
         "completed_at_utc": datetime.now(UTC).isoformat(),
         "inputs": "repository, public digest-pinned base, SHA-256-pinned source archives",
     }

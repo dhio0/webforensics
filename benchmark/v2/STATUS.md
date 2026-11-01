@@ -8,11 +8,17 @@
 - Portable restore implemented from registry-digest-pinned public WordPress files and SHA-256-pinned app/plugin/Composer archives. Generated install files use a small safe overlay; secret configuration and generated executables are stubs listed in `defanged.tsv`. Restore never reads `.env` or uses a local scenario image.
 - Self-checks now report timing, background/overall peaks, hand spacing, native tool exemptions, POST targets, nearby writes, uninterrupted-run metadata, parser results, Defender, and clean-empty restore proof.
 - Focused tests: 30 passed. Full suite: 559 passed, 8 skipped; `ruff check .` passed.
-- No scenario has been re-recorded in round 7 yet. Round-6 evidence and ground truth remain intact. No results directory, scorer, unit test, or golden was read or changed.
-- **Exact next step:** launch `lab/v2/scenarios/run_s01.py` detached, read its analyst sample/window, complete all pilot self-checks, and commit s01. Then follow the requested dev/held-out order, one scenario per commit, followed by the all-twelve restore proof and final docs.
-- Step 1 implemented in `b1ff768`; the first pilot setup found a pre-existing WordPress startup race, fixed by waiting for the app listener before bootstrap and making bootstrap fail on early termination. No recording began. Round-6 source selection still uses GET/HEAD/POST; replay/remapping additionally support PUT/PATCH when the crawl discovers accepting endpoints. No recordings are active. The first live run must validate integration and may reveal recording defects; none of the new scenario metrics or clean-machine proofs is claimed yet.
+- The s01 pilot is currently recording; no round-7 scenario has been committed yet. Round-6 evidence and ground truth remain intact. No results directory, scorer, unit test, or golden was read or changed.
+- **Exact next step:** poll the active s01 pilot to completion (expected 14:42 WIB), read its analyst sample/window, complete all pilot self-checks, and commit s01. Then follow the requested dev/held-out order, one scenario per commit, followed by the all-twelve restore proof and final docs.
+- Step 1 implemented in `b1ff768` and startup fix `9864a5c`; the first pilot setup found a pre-existing WordPress startup race, fixed by waiting for the app listener before bootstrap and making bootstrap fail on early termination. No recording began. Round-6 source selection still uses GET/HEAD/POST; replay/remapping additionally support PUT/PATCH when the crawl discovers accepting endpoints. The active s01 run is listed below. The first live run must validate integration and may reveal recording defects; none of the new scenario metrics or clean-machine proofs is claimed yet.
 
 The source includes one scanner POST to a semicolon-suffixed API probe ending in `.js`. It is retained unchanged as a scanner endpoint probe, not treated as a browser asset request, and reported separately as `scanner_disguised_api_static_suffix_probes`. Visitor POST/PUT/PATCH remapping rejects static assets. This interpretation preserves the unchanged scanner stream and makes the suffix exception visible.
+
+### Concurrent recording support
+
+Separate projects may set `COMPOSE_PROJECT_NAME`, `LAB_PREFIX` (a unique 172.31.x prefix), and `EDGE_PORT`. Internal-only networks and per-project volumes remain isolated. The proxy maps physical project addresses back to the accepted logical lab addresses; explicit background IP headers keep their existing mapping. See `parallel-isolation-round7.txt` for the live two-network test.
+
+For a concurrent batch only, set `M8V2_DEFER_IMAGE_PROOF=1`: restore still uses public inputs and validates all files, but the image-removal proof is explicitly PENDING because other recordings still use those images. After every project is down, clear that variable, call `recording.validate_portable_restore()` for each scenario, and rerun `self_check.py`. Do not commit a scenario with PENDING proof or analyst review.
 
 ### Preserved encrypted round-6 captures
 
@@ -95,3 +101,10 @@ Round 6 was complete on branch `m8-benchmark-v2`. For current work, use the roun
 - s12 could not fetch a WordPress core update package on the internal-only network. It records opening the core-update page and uses a local benign cache-plugin update instead.
 
 Encrypted full captures remain outside Git under the directory configured by `lab/v2/.env`. Source archives and replay inputs under `lab/v2/.cache/` are ignored build inputs. Restore validation trees are outside the repository.
+
+## Active round-7 run: s01
+
+- Started: 2026-11-01T06:29:10.117605+00:00 (2026-11-01 13:29:10 WIB).
+- Expected replay end: 2026-11-01T07:42:09.796410+00:00.
+- Background and attack are detached in their isolated containers.
+- Windows sleep prevention requested. Any interruption invalidates the run.

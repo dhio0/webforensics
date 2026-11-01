@@ -116,6 +116,14 @@ def main() -> None:
     ):
         (replay / name).unlink(missing_ok=True)
     run("build")
+    image_id = subprocess.check_output(
+        ["docker", "image", "inspect", "m8v2-wordpress:pilot", "--format", "{{.Id}}"],
+        text=True,
+    ).strip()
+    (replay / "restore.json").write_text(
+        json.dumps({"image": image_id, "app_type": "wordpress"}, indent=2) + "\n",
+        encoding="utf-8", newline="\n",
+    )
     run("up", "-d", "db", "wp", "edge", "attacker", "background", "collector")
     wait_for_edge()
 

@@ -1,5 +1,20 @@
+# Physical addresses can vary across isolated Compose projects. Evidence always
+# uses the accepted logical lab addresses, including tools without custom headers.
+map $remote_addr $logical_remote_addr {
+    default $remote_addr;
+    "${LAB_PREFIX}.130" 192.0.2.130;
+    "${LAB_PREFIX}.131" 192.0.2.131;
+    "${LAB_PREFIX}.132" 192.0.2.132;
+    "${LAB_PREFIX}.133" 192.0.2.133;
+    "${LAB_PREFIX}.134" 192.0.2.134;
+    "${LAB_PREFIX}.135" 192.0.2.135;
+    "${LAB_PREFIX}.136" 192.0.2.136;
+    "${LAB_PREFIX}.137" 192.0.2.137;
+    "${LAB_PREFIX}.138" 192.0.2.138;
+}
+
 map $http_x_lab_client_ip $lab_client_ip {
-    ""      $remote_addr;
+    ""      $logical_remote_addr;
     default $http_x_lab_client_ip;
 }
 

@@ -6,6 +6,7 @@ import argparse
 import gzip
 import hashlib
 import json
+import os
 import re
 import tempfile
 from collections import Counter
@@ -235,6 +236,12 @@ def check_scenario(root: Path, scenario_id: str) -> dict[str, Any]:
         proof = json.loads((replay / "restore-validation.txt").read_text())
         if proof.get("result") != "PASS" or not proof.get("destination_was_empty"):
             raise ValueError("portable restore proof missing or failed")
+        clean_image_proof = proof.get("image_removal_proof") == "PASS" or (
+            "image_removal_proof" not in proof
+            and bool(proof.get("local_app_images_removed_and_absence_verified"))
+        )
+        if not clean_image_proof and os.environ.get("M8V2_DEFER_IMAGE_PROOF") != "1":
+            raise ValueError("clean-image restore proof is pending")
         scan = (replay / "defender-scan.txt").read_text(encoding="utf-8-sig")
         if "detections=0" not in scan or "real_time_protection_enabled=True" not in scan:
             raise ValueError("Defender scan proof missing or failed")
@@ -251,6 +258,7 @@ def check_scenario(root: Path, scenario_id: str) -> dict[str, Any]:
                 ("access", "manifest", "error"), parse_failures, strict=True
             )),
             "restore": proof,
+            "restore_with_app_images_removed": "PASS" if clean_image_proof else "PENDING",
             "defender_scan": "PASS; detections=0; real-time protection enabled",
             "analyst_read": "pending human/assistant review before scenario commit",
             "replay_started_at_utc": replay_run["started_at_utc"],

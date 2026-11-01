@@ -10,7 +10,7 @@ services:
       - dbdata:/var/lib/mysql
     networks:
       lab:
-        ipv4_address: 192.0.2.133
+        ipv4_address: ${LAB_PREFIX:-192.0.2}.133
     healthcheck:
       test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
       interval: 3s
@@ -32,7 +32,7 @@ services:
       retries: 30
     networks:
       lab:
-        ipv4_address: 192.0.2.137
+        ipv4_address: ${LAB_PREFIX:-192.0.2}.137
 
   wp:
     image: m8v2-wordpress:pilot
@@ -67,7 +67,7 @@ services:
         condition: service_healthy
     networks:
       lab:
-        ipv4_address: 192.0.2.132
+        ipv4_address: ${LAB_PREFIX:-192.0.2}.132
 
   phpfaq:
     image: m8v2-phpmyfaq:3.2.5
@@ -88,7 +88,7 @@ services:
         condition: service_healthy
     networks:
       lab:
-        ipv4_address: 192.0.2.136
+        ipv4_address: ${LAB_PREFIX:-192.0.2}.136
 
   dvwa:
     image: m8v2-dvwa:a1978a2
@@ -113,12 +113,13 @@ services:
         condition: service_healthy
     networks:
       lab:
-        ipv4_address: 192.0.2.138
+        ipv4_address: ${LAB_PREFIX:-192.0.2}.138
 
   edge:
     image: nginx:1.27.5-alpine@sha256:65645c7bb6a0661892a8b03b89d0743208a18dd2f3f17a54ef4b76fb8e2f2a10
     environment:
       APP_UPSTREAM: ${APP_UPSTREAM:-wp:80}
+      LAB_PREFIX: ${LAB_PREFIX:-192.0.2}
     ports:
       - "127.0.0.1:${EDGE_PORT:-8081}:80"
     volumes:
@@ -127,7 +128,7 @@ services:
       - ../../benchmark/v2/${SCENARIO:-s01}/replay:/var/log/v2/replay
     networks:
       lab:
-        ipv4_address: 192.0.2.130
+        ipv4_address: ${LAB_PREFIX:-192.0.2}.130
 
   attacker:
     image: m8v2-attacker:pilot
@@ -151,7 +152,7 @@ services:
       - edge
     networks:
       lab:
-        ipv4_address: 192.0.2.131
+        ipv4_address: ${LAB_PREFIX:-192.0.2}.131
 
   background:
     image: m8v2-attacker:pilot
@@ -165,7 +166,7 @@ services:
       - edge
     networks:
       lab:
-        ipv4_address: 192.0.2.135
+        ipv4_address: ${LAB_PREFIX:-192.0.2}.135
 
   collector:
     image: m8v2-collector:pilot
@@ -183,7 +184,7 @@ services:
       - ${FULL_EVIDENCE_DIR}:/full-evidence
     networks:
       lab:
-        ipv4_address: 192.0.2.134
+        ipv4_address: ${LAB_PREFIX:-192.0.2}.134
 
 networks:
   lab:
@@ -191,8 +192,8 @@ networks:
     internal: true
     ipam:
       config:
-        - subnet: 192.0.2.128/25
-          gateway: 192.0.2.129
+        - subnet: ${LAB_PREFIX:-192.0.2}.128/25
+          gateway: ${LAB_PREFIX:-192.0.2}.129
 
 volumes:
   dbdata:
