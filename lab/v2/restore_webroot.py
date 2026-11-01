@@ -99,11 +99,26 @@ def restore(scenario: str, destination: Path) -> int:
         if digest(io_path(target)) != hashlib.sha256(content).hexdigest():
             raise ValueError(f"written file verification failed: {rel}")
         checked += 1
-    extras = {
+    # Recheck the completed tree: Windows case folding or name normalization must
+    # not let a later file silently overwrite an earlier verified manifest entry.
+    for rel, row in manifest.items():
+        target = dest / Path(rel)
+        if digest(io_path(target)) != row.sha256:
+            with open(io_path(target), "rb") as source:
+                content = source.read()
+            if allowed_stub.get(rel) != [row.sha256, row.fields[2]] or content != (
+                f"DEFANGED {row.sha256} {row.fields[2]}\n".encode("ascii")
+            ):
+                raise ValueError(f"completed restore tree hash mismatch for {rel}")
+    restored_paths = {
         p.relative_to(dest).as_posix()
         for p in dest.rglob("*")
-        if os.path.isfile(io_path(p)) and p.relative_to(dest).as_posix() not in manifest
+        if os.path.isfile(io_path(p))
     }
+    missing = set(manifest) - restored_paths
+    if missing:
+        raise ValueError(f"completed restore tree missing exact names: {sorted(missing)[:5]}")
+    extras = restored_paths - set(manifest)
     if extras:
         raise ValueError(f"restored image has files outside manifest: {sorted(extras)[:5]}")
     return checked

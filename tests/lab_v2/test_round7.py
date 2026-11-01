@@ -5,6 +5,7 @@ from __future__ import annotations
 import gzip
 import hashlib
 import json
+import os
 from collections import Counter
 from itertools import pairwise
 from pathlib import Path
@@ -203,6 +204,19 @@ def test_restore_requires_no_env_or_app_image_and_preserves_trailing_dot(
     (replay / "restore.json").write_text(json.dumps(config))
     with pytest.raises(ValueError, match="unsafe restore overlay"):
         restore.restore("s01", tmp_path / "traversal")
+    if os.name == "nt":
+        config.pop("snapshot_path_map")
+        (replay / "restore.json").write_text(json.dumps(config))
+        other = b"different source bytes"
+        (evidence / "manifest.tsv").write_text(
+            "#columns=path_hex,type,size,mode,uid,inode,atime,mtime,ctime,btime,sha256\n"
+            + manifest_row("Case.php", public) + manifest_row("case.php", other)
+        )
+        monkeypatch.setattr(restore, "public_files", lambda app: {
+            hashlib.sha256(value).hexdigest(): value for value in (public, other)
+        })
+        with pytest.raises(ValueError, match="completed restore tree hash mismatch"):
+            restore.restore("s01", tmp_path / "case-collision")
 
 
 def test_overlay_defangs_unchanged_install_secrets(tmp_path: Path) -> None:
