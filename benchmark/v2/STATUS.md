@@ -8,8 +8,8 @@
 - Portable restore implemented from registry-digest-pinned public WordPress files and SHA-256-pinned app/plugin/Composer archives. Generated install files use a small safe overlay; secret configuration and generated executables are stubs listed in `defanged.tsv`. Restore never reads `.env` or uses a local scenario image.
 - Self-checks now report timing, background/overall peaks, hand spacing, native tool exemptions, POST targets, nearby writes, uninterrupted-run metadata, parser results, Defender, and clean-empty restore proof.
 - Focused tests: 34 passed. Full suite: 563 passed, 8 skipped; `ruff check .` passed.
-- No round-7 scenario has been committed. Attempt 1 was discarded. Attempt 2 is recording from clean volumes with exact form-query routing. Round-6 evidence and ground truth remain intact. No results directory, scorer, unit test, or golden was read or changed.
-- **Exact next step:** finalize and commit s01, then prebuild the images and launch the seven dev scenarios as separate isolated projects; preserve the requested one-commit-per-scenario order. Then follow the requested dev/held-out order, one scenario per commit, followed by the all-twelve restore proof and final docs.
+- Pilot s01 is complete and committed in `e9eec25`. Seven dev cases (s03, s04, s05, s07, s08, s10, s12) are recording in isolated projects; their scripted activity completed without errors. No results directory was read; scorer, unit tests, and goldens are unchanged.
+- **Exact next step:** read the seven completed activity windows while their detached background replays finish at 16:36-16:37 WIB. After all projects stop, remove local app images, prove portable restore, read each seeded final sample, finalize self-checks/notes, and commit s03, s04, s05, s07, s08, s10, s12 separately. Then record the four held-out cases, prove all-twelve restore, and finalize docs.
 - Step 1 implemented in `b1ff768` and startup fix `9864a5c`; the first pilot setup found a pre-existing WordPress startup race, fixed by waiting for the app listener before bootstrap and making bootstrap fail on early termination. No recording began. Round-6 source selection still uses GET/HEAD/POST; replay/remapping additionally support PUT/PATCH when the crawl discovers accepting endpoints. The discarded s01 run is listed below. The first live run must validate integration and may reveal recording defects; none of the new scenario metrics or clean-machine proofs is claimed yet.
 
 The source includes one scanner POST to a semicolon-suffixed API probe ending in `.js`. It is retained unchanged as a scanner endpoint probe, not treated as a browser asset request, and reported separately as `scanner_disguised_api_static_suffix_probes`. Visitor POST/PUT/PATCH remapping rejects static assets. This interpretation preserves the unchanged scanner stream and makes the suffix exception visible.
@@ -51,10 +51,10 @@ Claude reviewed all twelve scenarios before scoring. The review prompted these e
 
 ## Round 6 commits
 
-- UA normalization: `5ff2319` — `bench v2: neutral user agents in evidence`
-- s01 crawl exclusion: `a519440` — `bench v2: s01 without crawl lines`
-- s03/s04 crawler fix and re-recording: `23b518b` — `bench v2: s03/s04 fixed crawl and re-recorded`
-- held-out ground-truth fixes: `0595d50` — `bench v2: held-out ground-truth fixes (s06, s11)`
+- UA normalization: `5ff2319` â€” `bench v2: neutral user agents in evidence`
+- s01 crawl exclusion: `a519440` â€” `bench v2: s01 without crawl lines`
+- s03/s04 crawler fix and re-recording: `23b518b` â€” `bench v2: s03/s04 fixed crawl and re-recorded`
+- held-out ground-truth fixes: `0595d50` â€” `bench v2: held-out ground-truth fixes (s06, s11)`
 
 The original recording commits remain listed below. Development split: s01, s03, s04, s05, s07, s08, s10, s12. Held-out split: s02, s06, s09, s11.
 
@@ -131,3 +131,55 @@ Encrypted full captures remain outside Git under the directory configured by `la
 
 - s01 attempt 2 completed at 15:01 WIB; collection/restore/Defender finished afterward. It passed every recording check: 4,379-second log, 3.42955 overall requests/second, 20 maximum background/overall, 365-second attack, positions 40.97%-52.52%, zero static writes (one separately reported disguised scanner API probe). Analyst window and all 50 seeded final background lines have now been read and the proof written. Ground truth SHA-256: `1355a7e6ef9d4b41576a9b175625d664bef5f68a28d1369b139486febcbc4971`.
 - Two empty external restore trees for s01 are preserved under `FULL_EVIDENCE_DIR/restore-round7/`: `s01-6ba1bb8034` and `s01-0f15bb83cb`. The current full capture is encrypted in external `s01/full-evidence.tar.gz.enc`; old round-6 captures remain untouched under `old-round6/`.
+
+## Active round-7 run: s05
+
+- Started: 2026-11-01T08:23:01.024555+00:00 (2026-11-01 15:23:01 WIB).
+- Expected replay end: 2026-11-01T09:36:00.703360+00:00.
+- Background and attack are detached in their isolated containers.
+- Windows sleep prevention requested. Any interruption invalidates the run.
+
+## Active round-7 run: s03
+
+- Started: 2026-11-01T08:23:41.262146+00:00 (2026-11-01 15:23:41 WIB).
+- Expected replay end: 2026-11-01T09:36:40.940951+00:00.
+- Background and attack are detached in their isolated containers.
+- Windows sleep prevention requested. Any interruption invalidates the run.
+
+## Active round-7 run: s07
+
+- Started: 2026-11-01T08:23:41.794952+00:00 (2026-11-01 15:23:41 WIB).
+- Expected replay end: 2026-11-01T09:36:41.473757+00:00.
+- Background and attack are detached in their isolated containers.
+- Windows sleep prevention requested. Any interruption invalidates the run.
+
+## Active round-7 run: s10
+
+- Started: 2026-11-01T08:23:42.910533+00:00 (2026-11-01 15:23:42 WIB).
+- Expected replay end: 2026-11-01T09:36:42.589338+00:00.
+- Background and attack are detached in their isolated containers.
+- Windows sleep prevention requested. Any interruption invalidates the run.
+
+## Active round-7 run: s04
+
+- Started: 2026-11-01T08:23:43.658655+00:00 (2026-11-01 15:23:43 WIB).
+- Expected replay end: 2026-11-01T09:36:43.337460+00:00.
+- Background and attack are detached in their isolated containers.
+- Windows sleep prevention requested. Any interruption invalidates the run.
+
+## Active round-7 run: s08
+
+- Started: 2026-11-01T08:23:44.906982+00:00 (2026-11-01 15:23:44 WIB).
+- Expected replay end: 2026-11-01T09:36:44.585787+00:00.
+- Background and attack are detached in their isolated containers.
+- Windows sleep prevention requested. Any interruption invalidates the run.
+
+## Active round-7 run: s12
+
+- Started: 2026-11-01T08:23:45.607780+00:00 (2026-11-01 15:23:45 WIB).
+- Expected replay end: 2026-11-01T09:36:45.286585+00:00.
+- Background and attack are detached in their isolated containers.
+- Windows sleep prevention requested. Any interruption invalidates the run.
+
+- The benign s12 activity window is derived from clients of labelled steps, including unlabelled redirects from those clients. This validation-only correction preserves an empty attacker list and null root cause. Regression/full checks: 564 passed, 8 skipped; Ruff passed. No live evidence or timestamp was changed.
+- Batch runner PIDs/projects are in ignored `.cache/round7-dev-batch.json`; per-case host stdout/stderr are `.cache/round7-sXX-host.*.txt`. All seven attacks completed without error markers by 15:51 WIB; background replay continues.

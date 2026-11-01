@@ -15,7 +15,7 @@ import pytest
 from lab.v2 import background, collect, crawl_app, pacing, portable, prepare_background
 from lab.v2 import restore_webroot as restore
 from lab.v2.recording import normalize_replay_metadata
-from lab.v2.self_check import analyst_proof, analyst_selection, timing_checks
+from lab.v2.self_check import activity_ips, analyst_proof, analyst_selection, timing_checks
 
 
 def test_schedule_preserves_source_gaps_and_bounds_rolling_bursts() -> None:
@@ -276,6 +276,28 @@ def test_analyst_proof_binds_seeded_sample_window_and_log_hash(tmp_path: Path) -
     assert analyst_proof(path, selection, "a" * 64)["result"] == "PASS"
     with pytest.raises(ValueError, match="log hash"):
         analyst_proof(path, selection, "b" * 64)
+
+
+def test_benign_activity_window_keeps_ground_truth_without_attackers() -> None:
+    truth = {"attacker_ips": [], "steps": [{"line_no": 121}, {"line_no": 311}]}
+    bg = [{"timestamp": i / 3, "client_ip": "bg", "line_no": i + 1,
+           "request": "GET / HTTP/1.1"} for i in range(1200)]
+    # Labelled lines identify ordinary administrator/scanner activity; follow every
+    # exchange from those clients, including an unlabelled native redirect.
+    bg[120]["client_ip"] = "admin"
+    bg[121]["client_ip"] = "admin"
+    bg[310]["client_ip"] = "scanner"
+    bg[120]["timestamp"] = 120
+    bg[121]["timestamp"] = 121
+    bg[310]["timestamp"] = 310
+    actors = activity_ips(truth, bg)
+    assert actors == {"admin", "scanner"}
+    assert truth["attacker_ips"] == []
+    background_rows = [row for row in bg if row["client_ip"] == "bg"]
+    assert timing_checks(bg, background_rows, actors)["attack_span_seconds"] == 190
+    assert analyst_selection(bg, background_rows, actors, 7012)["attack_window"] == {
+        "start_line": 121, "end_line": 311
+    }
 
 
 def test_metadata_normalization_never_rewrites_recorded_logs(tmp_path: Path) -> None:

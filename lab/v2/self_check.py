@@ -25,6 +25,14 @@ except ImportError:  # direct script execution from lab/v2
     from prepare_background import SCANNER_UA, STATIC_SUFFIX, static_asset
 
 
+def activity_ips(truth: dict, access_rows: list[dict]) -> set[str]:
+    """Include labelled benign actors without calling them attackers in ground truth."""
+    lines = {step["line_no"] for step in truth["steps"]}
+    return set(truth["attacker_ips"]) | {
+        row["client_ip"] for row in access_rows if row["line_no"] in lines
+    }
+
+
 def timing_checks(access_rows: list[dict], background_rows: list[dict], actors: set[str]) -> dict:
     span = max(r["timestamp"] for r in access_rows) - min(r["timestamp"] for r in access_rows)
     rate = len(access_rows) / span if span else float("inf")
@@ -272,7 +280,9 @@ def check_scenario(root: Path, scenario_id: str) -> dict[str, Any]:
         scan = (replay / "defender-scan.txt").read_text(encoding="utf-8-sig")
         if "detections=0" not in scan or "real_time_protection_enabled=True" not in scan:
             raise ValueError("Defender scan proof missing or failed")
-        round7 = timing_checks(access_rows, actual_background, set(truth["attacker_ips"]))
+        actors = activity_ips(truth, access_rows)
+        round7 = timing_checks(access_rows, actual_background, actors)
+        round7["activity_client_ips"] = sorted(actors)
         targets = json.loads((replay / "background.json").read_text())["method_targets_from_crawl"]
         for item, actual in zip(source, actual_background, strict=True):
             scanner = item["status"] == "404" or bool(SCANNER_UA.search(item["ua"]))
@@ -282,7 +292,7 @@ def check_scenario(root: Path, scenario_id: str) -> dict[str, Any]:
                 if actual["request"].split()[1] != item["target"]:
                     raise ValueError("visitor write target changed between plan and live replay")
         all_actor_lines = [row["line_no"] for row in access_rows
-                           if row["client_ip"] in truth["attacker_ips"]]
+                           if row["client_ip"] in actors]
         if min(all_actor_lines) / len(access_rows) < 0.30 or (
             max(all_actor_lines) / len(access_rows) > 0.70
         ):
@@ -306,7 +316,7 @@ def check_scenario(root: Path, scenario_id: str) -> dict[str, Any]:
             "defender_scan": "PASS; detections=0; real-time protection enabled",
             "analyst_read": analyst_proof(
                 replay / "analyst-review.json",
-                analyst_selection(access_rows, actual_background, set(truth["attacker_ips"]),
+                analyst_selection(access_rows, actual_background, actors,
                                   7000 + int(scenario_id[1:])),
                 hashlib.sha256((evidence / access_name).read_bytes()).hexdigest(),
             ),
