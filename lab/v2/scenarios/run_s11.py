@@ -74,7 +74,8 @@ def wait_for_edge() -> None:
                 "attacker",
                 "python",
                 "-c",
-                "import socket; socket.create_connection(('edge', 80), timeout=1).close()",
+                "import socket; socket.create_connection(('edge', 80), timeout=1).close(); "
+                "socket.create_connection(('wp', 80), timeout=1).close()",
             ],
             cwd=ROOT,
             env=environment(),

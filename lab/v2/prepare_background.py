@@ -26,7 +26,7 @@ def static_asset(target: str) -> bool:
     # A semicolon-suffixed API path in the source is a scanner's disguised endpoint
     # probe, not a browser fetching an asset. Retain it and report it separately.
     path = urlsplit(target).path
-    return bool(STATIC_SUFFIX.search(path)) and ";" not in path
+    return bool(STATIC_SUFFIX.search(path)) and path != "/center/api/files;.js"
 
 
 def prepare(

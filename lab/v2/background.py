@@ -45,7 +45,8 @@ BACKGROUND_POOLS = (
     ipaddress.ip_network("10.0.0.0/8"),
 )
 RESERVED_ZERO = ipaddress.ip_network("0.0.0.0/8")
-SAFE_METHODS = {"GET", "HEAD", "POST", "PUT", "PATCH"}
+SAFE_METHODS = {"GET", "HEAD", "POST"}
+REPLAY_METHODS = SAFE_METHODS | {"PUT", "PATCH"}
 
 
 class NoRedirects(HTTPRedirectHandler):
@@ -221,7 +222,7 @@ class BackgroundReplay:
             rows = []
             for line_number, line in enumerate(handle, 1):
                 row = parse_line(line, self.fallback_user_agent)
-                if row and row["method"] in SAFE_METHODS:
+                if row and row["method"] in REPLAY_METHODS:
                     rows.append((line_number, row))
                 if len(rows) >= self.limit:
                     break

@@ -10,7 +10,7 @@
 - Focused tests: 30 passed. Full suite: 559 passed, 8 skipped; `ruff check .` passed.
 - No scenario has been re-recorded in round 7 yet. Round-6 evidence and ground truth remain intact. No results directory, scorer, unit test, or golden was read or changed.
 - **Exact next step:** launch `lab/v2/scenarios/run_s01.py` detached, read its analyst sample/window, complete all pilot self-checks, and commit s01. Then follow the requested dev/held-out order, one scenario per commit, followed by the all-twelve restore proof and final docs.
-- Step 1 is complete and ready for the lab-code commit. No recordings are active. The first live run must validate integration and may reveal recording defects; none of the new scenario metrics or clean-machine proofs is claimed yet.
+- Step 1 implemented in `b1ff768`; the first pilot setup found a pre-existing WordPress startup race, fixed by waiting for the app listener before bootstrap and making bootstrap fail on early termination. No recording began. Round-6 source selection still uses GET/HEAD/POST; replay/remapping additionally support PUT/PATCH when the crawl discovers accepting endpoints. No recordings are active. The first live run must validate integration and may reveal recording defects; none of the new scenario metrics or clean-machine proofs is claimed yet.
 
 The source includes one scanner POST to a semicolon-suffixed API probe ending in `.js`. It is retained unchanged as a scanner endpoint probe, not treated as a browser asset request, and reported separately as `scanner_disguised_api_static_suffix_probes`. Visitor POST/PUT/PATCH remapping rejects static assets. This interpretation preserves the unchanged scanner stream and makes the suffix exception visible.
 
