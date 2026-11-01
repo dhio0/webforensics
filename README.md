@@ -2,18 +2,50 @@
 
 A defensive tool that reconstructs **how a website was compromised**. It correlates evidence from the webroot (suspicious or modified files, their timestamps and hashes) with web server access logs. Like a human analyst, it starts from the file and traces back to the request that created it and the exploit that made that possible. The final output is an incident report in Indonesian.
 
-> **Status: milestone 7 of 7 done; M8 (a realistic benchmark) is in progress and M9 (wider coverage) is planned.** Evidence loading (access + error logs, webroot manifest), detection rules, the file-first correlation engine, the Indonesian report (`webforensics analyze`, Markdown + HTML + JSON), the accuracy benchmark (`webforensics eval`, five lab scenarios plus one public DFIR case) and evidence from Wazuh 4.x (`webforensics pull`) work. For SQL injection, it also points at the vulnerable line and suggests a prepared-statement fix. See [docs/plan.md](docs/plan.md).
+> **Status:** the core milestones (M0–M7) are done, plus an interactive viewer and a Wazuh trigger with write-back (M6+). M8, a larger benchmark built from real applications, real attack tools and real background traffic, is in progress. See [docs/plan.md](docs/plan.md).
 
 ![The interactive viewer on lab scenario F: verdict, per-actor timeline, the root-cause event with its evidence, search and the attack-story filter](docs/img/viewer-demo.gif)
 
 *Lab scenario F in the interactive viewer (`webforensics view`): a SQL-injection login bypass, then an upload and a webshell request. Open the [example page](docs/examples/scenario_f.viewer.html) after cloning; it works offline.*
+
+## At a glance
+- **The problem.** When a small organization's site is hacked, the admin needs to know how the attacker got in, when, and what changed. Today that is a manual hunt: find the webshell, check its timestamps, then read the access log backwards from that moment.
+- **What it does.** It automates that hunt, starting from the file the way an analyst does: file → write time → the request that wrote it → the exploit that made that request possible. Every claim cites a log line or a file hash, evidence gaps lower the confidence explicitly, and for SQL injection it points at the vulnerable PHP line with a prepared-statement fix. Output: an Indonesian report in a CSIRT incident-handling flow, an interactive offline viewer, and alerts written back to Wazuh.
+- **How well it works.** All five lab scenarios are fully correct through both evidence paths (plain files and Wazuh). On four outside cases, each with an answer key written before the first run, the first runs were imperfect and are reported as they were; every miss became a general fix with a test. One run over 7.4 million real log lines takes 3.7 minutes.
+- **Built with.** Python 3.11, Typer, pydantic, tree-sitter (code analysis), pytest (550+ tests, golden reports compared byte for byte), a Docker lab, and Wazuh 4.14 (indexer, FIM, custom integration and rules).
+
+## How it works
+
+```mermaid
+flowchart LR
+    subgraph EV["Evidence"]
+        L["Access and error logs"]
+        M["Webroot manifest<br/>(hashes and timestamps)"]
+        W["Wazuh indexer<br/>(archives + FIM)"]
+    end
+    L --> FA["FileAdapter"]
+    M --> FA
+    W -- "pull → recording" --> WA["WazuhAdapter"]
+    FA --> P["Parsers and<br/>detection rules"]
+    WA --> P
+    P --> C["File-first correlation<br/>anchor → writer → entry point"]
+    C --> G["Evidence gaps<br/>and confidence"]
+    C --> K["Vulnerable line<br/>(PHP SQLi)"]
+    G --> R["Report model"]
+    K --> R
+    R --> O1["Report<br/>(md / html / json)"]
+    R --> O2["Interactive viewer"]
+    R --> O3["Wazuh alerts"]
+```
+
+Both evidence paths produce the same internal objects, so one correlation engine serves both. The engine picks each suspicious file's most trustworthy write time (btime or ctime before the easily forged mtime), ranks the requests just before it by whether they can write files, succeeded, and come from the actor who later used the file, then walks back through that actor's requests to the earliest successful exploit. [docs/how-it-works.md](docs/how-it-works.md) traces scenario F through every step.
 
 ## Design principles
 - **Deterministic and offline core.** Rules and heuristics only, with no LLM and no network calls in the analysis path. The same inputs always give the same output.
 - **Every claim cites evidence.** Each claim points to a log file + line number, or a file path + SHA-256.
 - **Honest about uncertainty.** Evidence gaps and confidence levels are explicit, and mtime-only claims are treated as weak because mtime is easy to forge.
 
-## What works today (M4)
+## Quick start
 ```bash
 python -m venv .venv && .venv/bin/pip install -e ".[dev]"   # Windows: .venv\Scripts\pip
 
@@ -169,6 +201,7 @@ ruff check .
 ```
 
 ## Docs
+- [docs/how-it-works.md](docs/how-it-works.md): the pipeline and one case traced step by step
 - [docs/plan.md](docs/plan.md): plan, data models, correlation algorithm, milestones, risks
 - [docs/decisions.md](docs/decisions.md): design decisions and their reasons
 - [docs/evidence-format.md](docs/evidence-format.md): manifest v1 and supported log formats
