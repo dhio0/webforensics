@@ -1,4 +1,6 @@
 {
-  "image": "sha256:9f583315107a756a0398b1d7b556afdc054230c5320f6b07291a3d2744e120d8",
-  "webroot": "/var/www/html"
+  "app_type": "wordpress",
+  "recording_image": "sha256:8a32825062d4dfbe4dc4fa8460e00c61857faf47fc0358335c9298ac6534b601",
+  "version": 2,
+  "inputs": "lab/v2/portable-inputs.json"
 }

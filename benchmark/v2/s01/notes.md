@@ -1,96 +1,105 @@
-# s01: unauthenticated WordPress File Manager upload
+# s01: unauthenticated WordPress File Manager upload - round 7
 
-## Application and verification
+## Application and verified story
 
-This scenario uses WordPress 5.5.3 with WordPress File Manager 6.0 and CVE-2020-25213.
-The [NVD advisory](https://nvd.nist.gov/vuln/detail/CVE-2020-25213) describes the exposed
-elFinder connector and unauthenticated upload and execution path. In the isolated lab,
-the upload succeeded, the uploaded file ran under Apache/PHP, and the pinned Weevely
-agent returned results for three identification commands. No attack request or agent
-contents are included here.
+WordPress 5.5.3 and WordPress File Manager 6.0 reproduce CVE-2020-25213.
+The exposed connector accepts an unauthenticated upload; the uploaded agent then
+returns results for three identification commands inside the isolated lab. The
+[NVD advisory](https://nvd.nist.gov/vuln/detail/CVE-2020-25213) and pinned sources
+are recorded in `../SOURCES.md`. The scenario story and ground-truth meaning are
+unchanged. No payload or agent contents are included in these notes.
 
-The app image is pinned by the digest in `replay/restore.json`. The full original capture
-is encrypted outside Git under the directory configured by `lab/v2/.env`.
+## Live timing and labels
 
-## Request phases and line labels
+The recording ran once, uninterrupted, from 2026-11-01 06:48:41.916 UTC to
+08:01:41.563 UTC (13:48-15:01 WIB). No part was resumed or stitched. Access-log
+seconds span 4,379 seconds: 15,000 background requests, 17 actor requests, and
+one ordinary WordPress scheduled self-request. The whole-log average is 3.42955
+requests/second; both the background and overall busiest second have 20 requests.
+Source inter-arrival times were scaled with a rolling burst cap, preserving quiet
+periods and bursts. Evidence timestamps and file timestamps were recorded live.
 
-The attacker first checked the site and plugin version, then made two routine probes.
-These four recon lines are labelled but have `expected_in_timeline: false`. The app crawl
-ran before access-log collection; its six requests are excluded from the evidence and label
-sidecar. Seed `5031` selected a 54% attack start; the upload began at 54.00% of the
-completed access log. Three agent requests followed it.
+Seed 5031 selects the background trigger at 41% of the source stream. All actor
+requests occupy 40.97%-52.52% of the completed log. First reconnaissance to last
+agent exchange takes 365 seconds. Human action starts are seeded and at least
+46.79 seconds apart. Weevely's internal handshake and command exchanges retain
+their native speed; those exchanges explain the short bursts within each command.
 
-| Step | Access line | Expected in timeline |
+| Step | Access line | Expected in incident timeline |
 |---|---:|---|
-| Site check | 8104 | No |
-| Plugin version check | 8105 | No |
-| Admin probe | 8106 | No |
-| XML-RPC probe | 8107 | No |
-| Unauthenticated upload (root cause) | 8108 | Yes |
-| Agent identity | 8113 | Yes |
-| Agent working directory | 8117 | Yes |
-| Agent user | 8120 | Yes |
+| Site check | 6153 | No |
+| Plugin version check | 6682 | No |
+| Administration probe | 7098 | No |
+| XML-RPC probe | 7276 | No |
+| Unauthenticated upload, root cause | 7372 | Yes |
+| Agent identity | 7394 | Yes |
+| Agent working directory | 7535 | Yes |
+| Agent account | 7886 | Yes |
 
-`label.py` joins the ordered sidecar and combined access log and verifies every pair's
-request, status, client address, and timestamp. The sidecar uses the lab step header for
-the four recon requests and upload. Each agent command uses the attacker address, exact
-request and status, and a narrow recorded time window. The identity command generated
-two identical agent requests in its window; its record selects the first request as the
-command initiation, while later polling requests remain unlabelled.
+`label.py` alone generates the ground truth. Ordered access/sidecar joins verify
+requests, status, client, and timestamp. Agent labels use the actual invocation
+start/end window and select the first matching exchange as command initiation;
+later exchanges remain unlabelled. The upload root cause is actor-sourced and 2xx.
+The app crawl and setup finished before incident logging was cleared and started.
 
-## Background traffic
+## Background and method routing
 
-Visitor request methods, source targets, response patterns, and User-Agent strings come
-from Organization X in the [MIT-licensed Zenodo log dataset](https://zenodo.org/records/20001206).
-The source anonymizes almost every client address to one value, so the preparation step
-pairs the chronological Organization X request rows with evenly sampled NASA KSC source
-client identities. NASA's trace is used only for client identity; its missing User-Agent
-field is never filled with an invented visitor agent. The selected stream has 903 distinct
-User-Agent strings and 10,384 client identities; the most common agent is 4.41% and the
-largest client share is 0.98%.
+The accepted Organization X request stream and NASA identity mapping are retained:
+12,077 visitors, 2,923 scanner requests, 10,384 background clients, and 903 source
+user agents. The largest non-actor client contributes 0.98% of all requests; the
+largest overall user-agent share is 4.40%. Visitor answers are 99.942% 2xx/3xx.
+The repeated nested-path share is 0.027%. The background container address never
+appears in the evidence.
 
-The deterministic classifier retains scanner User-Agents and source-side 404s with their
-original paths. A single protocol-relative scanner path was normalized to an internal
-origin-form path so the target allowlist could reject network authorities. For visitor
-rows the preparer frequency-ranks source paths and maps them to the pre-attack crawl of
-this app, while preserving method, query string, protocol, client, User-Agent, and line
-order. App targets include pages, REST URLs, login, search, and discovered assets. Source
-request bodies are unavailable, so POST requests replay empty.
+Visitor POSTs use exact crawled form actions, including their routing queries:
+661 comment-form requests, 419 login requests, and 210 password-recovery requests.
+There are zero background writes to static assets. One retained source scanner
+probe disguises an API endpoint with a semicolon and JavaScript suffix; it is
+reported separately in the self-check, rather than treated as a browser asset.
+Scanner paths stay unchanged. GET/HEAD query remapping, empty source POST bodies,
+and source-anonymized browser versions remain as accepted in round 6. Source
+browser-version values that look like IP addresses were not corrected or invented.
+The final user agents contain no forbidden lab/crawler labels.
 
-The replay contains 15,000 background requests: 12,077 visitors and 2,923 scanner
-requests. Visitor responses were 10,671 HTTP 200, 740 HTTP 301, 216 HTTP 302, 71 HTTP
-400, 48 HTTP 401, 290 HTTP 404, and 41 HTTP 405. This is 96.27% 2xx/3xx. Scanner
-responses were 2,264 HTTP 404, 642 HTTP 200, 9 HTTP 302, 7 HTTP 301, and 1 HTTP 403.
-`replay/source-preparation.json` and `replay/background.json` preserve the source and
-transformation counts. The attack lines span 53.973%â€“54.080% of the 15,026-line access log.
-The replay ran in its own container at `192.0.2.135`; simulated client addresses are the
-first field in `access.log.gz`. The background container address does not occur in that
-evidence log. `replay/background.json` records the classification rule and counts.
+## Files and portable restore
 
-## Changed files and side effect
+The agent and the plugin's empty backup index are defanged. The backup index is
+a plugin side effect with `expected_in_report: false`. Within five seconds either
+side of each file's recorded ctime, there is one POST/PUT candidate for the agent
+and two for the backup index. These counts are observations, not selection limits.
+The original full capture remains encrypted outside Git.
 
-The baseline was collected after plugin activation. Immediately before the baseline, the
-empty `wp-content/uploads/wp-file-manager-pro/fm_backup/index.php` was removed. It
-reappeared as an empty file after the upload request, confirming that the upload flow
-creates it as a plugin side effect. Its ground-truth role is `side_effect`, with
-`expected_in_report: false`. The uploaded agent is the other changed file. Both are
-represented by inert `DEFANGED` stubs, and `defanged.tsv` preserves their original hashes.
+Restore uses the public digest-pinned WordPress tree and SHA-256-pinned plugin
+archive in `lab/v2/portable-inputs.json`; the local recording image is provenance
+only. The install overlay has inert stubs for `.htaccess`, `wp-config-sample.php`,
+and secret `wp-config.php`, with reasons and original hashes/sizes in `defanged.tsv`.
+The two changed executable artifacts are also stubs. No live attacker file reached
+Windows. `restore_webroot.py s01 DEST` needs no local credentials or app image.
 
-Only new or changed files are stored under `evidence/webroot`. Run
-`python lab/v2/restore_webroot.py s01 DEST` outside the repository to restore the rest
-from the pinned image and validate all manifest hashes before scoring.
+The first clean proof removed three local app images and verified all 2,845 entries
+in a new empty external destination. A second proof with the historical-ID sweep
+found the app images absent and verified another new destination. Both proofs are
+recorded in `replay/restore-validation.txt`. The completed tree is checked again
+for every hash/stub and exact file name, including Windows path handling.
 
-## Evidence checks
+## Analyst read and checks
 
-- The attacker container could not reach an external address; a non-allowlisted service
-  name was refused.
-- The access log is ordinary combined format with the simulated client address first and
-  no trailing X-Forwarded-For field. Access and sidecar rows join with zero mismatches.
-- The Apache error log was collected as `evidence/app-error.log`; it has no entries for
-  this run. `ground_truth.json` records Apache format and UTC offset `+0000`.
-- The manifest and access-log adapters report zero parse failures; two expected hash
-  mismatches correspond to the defanged stubs.
-- The full restore command checked all manifest entries outside the repository.
-- The encrypted full capture is stored outside Git. No live attacker file was copied to
-  the host without defanging.
-- No `webforensics analyze` or `webforensics eval` command was run.
+I read all 1,736 entries in access lines 6153-7888 using a lossless row view with
+complete request and user-agent dictionaries, and read all 17 actor lines raw.
+After collection I verified that this window's timestamp, client, request, status,
+size, and referrer fields were unchanged. I then read all 50 final background
+lines selected with seed 7001. Their exact numbers and final access-log hash are
+bound by `replay/analyst-review.json`.
+
+I checked form-versus-asset methods, plausible status/body-size combinations,
+client and user-agent variety, quiet periods and bursts, nested paths, the whole
+reconnaissance/upload/agent sequence, and native agent handshakes. The preserved
+source query strings and anonymized version numbers were treated as source-data
+characteristics. No additional recording defect was found in this review.
+
+Schema validation, byte-identical ground-truth regeneration, step joins, parser
+checks, defanging, size, clean-image restore, and Defender all pass. Access,
+manifest, and error parse failures are zero; Defender detections are zero. No v2
+analysis/evaluation was run, and no Defender exclusion was added. Attempt 1 was
+thrown away after a form-query routing defect; only this fresh attempt supplies
+these artifacts. Detailed values are in `replay/self-check.txt`.

@@ -7,9 +7,9 @@
 - Lab changes implemented: source-gap scaling (3.5 target requests/second), live rolling burst cap, detached background and attack workers, suspension/stall rejection, seeded human action spacing, and method-aware crawl/remapping.
 - Portable restore implemented from registry-digest-pinned public WordPress files and SHA-256-pinned app/plugin/Composer archives. Generated install files use a small safe overlay; secret configuration and generated executables are stubs listed in `defanged.tsv`. Restore never reads `.env` or uses a local scenario image.
 - Self-checks now report timing, background/overall peaks, hand spacing, native tool exemptions, POST targets, nearby writes, uninterrupted-run metadata, parser results, Defender, and clean-empty restore proof.
-- Focused tests: 33 passed. Full suite: 562 passed, 8 skipped; `ruff check .` passed.
+- Focused tests: 34 passed. Full suite: 563 passed, 8 skipped; `ruff check .` passed.
 - No round-7 scenario has been committed. Attempt 1 was discarded. Attempt 2 is recording from clean volumes with exact form-query routing. Round-6 evidence and ground truth remain intact. No results directory, scorer, unit test, or golden was read or changed.
-- **Exact next step:** poll s01 attempt 2 to completion (expected 15:01 WIB), read its analyst sample/window, complete all pilot self-checks, and commit s01. Then follow the requested dev/held-out order, one scenario per commit, followed by the all-twelve restore proof and final docs.
+- **Exact next step:** finalize and commit s01, then prebuild the images and launch the seven dev scenarios as separate isolated projects; preserve the requested one-commit-per-scenario order. Then follow the requested dev/held-out order, one scenario per commit, followed by the all-twelve restore proof and final docs.
 - Step 1 implemented in `b1ff768` and startup fix `9864a5c`; the first pilot setup found a pre-existing WordPress startup race, fixed by waiting for the app listener before bootstrap and making bootstrap fail on early termination. No recording began. Round-6 source selection still uses GET/HEAD/POST; replay/remapping additionally support PUT/PATCH when the crawl discovers accepting endpoints. The discarded s01 run is listed below. The first live run must validate integration and may reveal recording defects; none of the new scenario metrics or clean-machine proofs is claimed yet.
 
 The source includes one scanner POST to a semicolon-suffixed API probe ending in `.js`. It is retained unchanged as a scanner endpoint probe, not treated as a browser asset request, and reported separately as `scanner_disguised_api_static_suffix_probes`. Visitor POST/PUT/PATCH remapping rejects static assets. This interpretation preserves the unchanged scanner stream and makes the suffix exception visible.
@@ -112,7 +112,7 @@ Encrypted full captures remain outside Git under the directory configured by `la
 - Discarded at 2026-11-01T06:46:47.777396+00:00 after identifying form-query routing defects. The host process and all lab volumes were stopped and removed. No part will be reused or stitched.
 - phpMyFAQ preflight now discovers 31 URLs and 11 POST targets after rejecting static HTML fallbacks and removing per-visit tracking IDs. Its temporary project/volumes were removed.
 
-## Active round-7 run: s01
+## Completed round-7 run: s01 (attempt 2)
 
 - Started: 2026-11-01T06:48:41.689427+00:00 (2026-11-01 13:48:41 WIB).
 - Expected replay end: 2026-11-01T08:01:41.368232+00:00.
@@ -128,3 +128,6 @@ Encrypted full captures remain outside Git under the directory configured by `la
 - s01 attempt 2 attack completed: eight hand-run actions, 17 actor HTTP requests, 365 seconds from first reconnaissance to final command. All 1,736 rows in lines 6153-7888 were read in a lossless table with complete request/User-Agent dictionaries; actor lines were also read raw. Review findings and raw/core hashes are in ignored `.cache/s01-window-review-progress.json`. The final 50-line random sample is not yet read and no completed analyst proof exists.
 - Current pilot host PID: 6796. Continue polling; expected replay completion remains 15:01 WIB. No error flags were present at 14:17 WIB. Do not restart its containers or edit the live evidence log.
 - For each concurrent batch, build the app/attacker/collector images once before startup, then set `M8V2_USE_PREBUILT_IMAGES=1` on its runners. This prevents concurrent tag/provenance changes. Use distinct projects/prefixes/ports and defer only the image-removal proof until all batch projects are down. Clear both batch flags before the final proof/check pass.
+
+- s01 attempt 2 completed at 15:01 WIB; collection/restore/Defender finished afterward. It passed every recording check: 4,379-second log, 3.42955 overall requests/second, 20 maximum background/overall, 365-second attack, positions 40.97%-52.52%, zero static writes (one separately reported disguised scanner API probe). Analyst window and all 50 seeded final background lines have now been read and the proof written. Ground truth SHA-256: `1355a7e6ef9d4b41576a9b175625d664bef5f68a28d1369b139486febcbc4971`.
+- Two empty external restore trees for s01 are preserved under `FULL_EVIDENCE_DIR/restore-round7/`: `s01-6ba1bb8034` and `s01-0f15bb83cb`. The current full capture is encrypted in external `s01/full-evidence.tar.gz.enc`; old round-6 captures remain untouched under `old-round6/`.

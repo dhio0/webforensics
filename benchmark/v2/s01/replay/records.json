@@ -59,10 +59,10 @@
       ],
       "label_method": "attacker_ip_time_window",
       "attacker_ip": "192.0.2.131",
-      "started_at": "2026-10-31T12:21:31.104261+00:00",
-      "ended_at": "2026-10-31T12:21:31.134261+00:00",
-      "command_started_at": "2026-10-31T12:21:30.805753+00:00",
-      "command_ended_at": "2026-10-31T12:21:31.154261+00:00",
+      "started_at": "2026-11-01T07:03:55.910870+00:00",
+      "ended_at": "2026-11-01T07:04:43.122380+00:00",
+      "command_started_at": "2026-11-01T07:03:55.910870+00:00",
+      "command_ended_at": "2026-11-01T07:04:43.122380+00:00",
       "request": "POST /wp-content/plugins/wp-file-manager/lib/files/maintenance-agent.php HTTP/1.1",
       "status": 200,
       "candidate_ordinal": 1
@@ -75,12 +75,13 @@
       ],
       "label_method": "attacker_ip_time_window",
       "attacker_ip": "192.0.2.131",
-      "started_at": "2026-10-31T12:21:31.337155+00:00",
-      "ended_at": "2026-10-31T12:21:31.367155+00:00",
-      "command_started_at": "2026-10-31T12:21:31.154289+00:00",
-      "command_ended_at": "2026-10-31T12:21:31.387155+00:00",
+      "started_at": "2026-11-01T07:04:43.122398+00:00",
+      "ended_at": "2026-11-01T07:05:29.839432+00:00",
+      "command_started_at": "2026-11-01T07:04:43.122398+00:00",
+      "command_ended_at": "2026-11-01T07:05:29.839432+00:00",
       "request": "POST /wp-content/plugins/wp-file-manager/lib/files/maintenance-agent.php HTTP/1.1",
-      "status": 200
+      "status": 200,
+      "candidate_ordinal": 1
     },
     {
       "id": "agent_user",
@@ -90,12 +91,13 @@
       ],
       "label_method": "attacker_ip_time_window",
       "attacker_ip": "192.0.2.131",
-      "started_at": "2026-10-31T12:21:31.617949+00:00",
-      "ended_at": "2026-10-31T12:21:31.647949+00:00",
-      "command_started_at": "2026-10-31T12:21:31.387181+00:00",
-      "command_ended_at": "2026-10-31T12:21:31.667949+00:00",
+      "started_at": "2026-11-01T07:05:29.839450+00:00",
+      "ended_at": "2026-11-01T07:06:23.464934+00:00",
+      "command_started_at": "2026-11-01T07:05:29.839450+00:00",
+      "command_ended_at": "2026-11-01T07:06:23.464934+00:00",
       "request": "POST /wp-content/plugins/wp-file-manager/lib/files/maintenance-agent.php HTTP/1.1",
-      "status": 200
+      "status": 200,
+      "candidate_ordinal": 1
     }
   ],
   "files": [

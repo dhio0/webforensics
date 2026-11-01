@@ -1,23 +1,183 @@
 {
+  "log_span_seconds": 4379.0,
+  "average_requests_per_second": 3.42955,
+  "maximum_background_requests_per_second": 20,
+  "maximum_overall_requests_per_second": 20,
+  "attack_span_seconds": 365.0,
+  "background_writes_to_static_assets": 0,
+  "scanner_disguised_api_static_suffix_probes": 1,
+  "top_10_post_targets": [
+    [
+      "/wp-comments-post.php",
+      661
+    ],
+    [
+      "/wp-login.php",
+      419
+    ],
+    [
+      "/wp-login.php?action=lostpassword",
+      210
+    ],
+    [
+      "/wp-admin/54.php",
+      37
+    ],
+    [
+      "/wp-admin/261.php?page=smartcode",
+      5
+    ],
+    [
+      "/ajax-api/2.0/mlflow/registered-models/create",
+      4
+    ],
+    [
+      "/wp-content/plugins/delightful-downloads/assets/vendor/jqueryFileTree/connectors/246.php",
+      3
+    ],
+    [
+      "/mgmt/shared/authn/login",
+      3
+    ],
+    [
+      "/wp-admin/92.php",
+      3
+    ],
+    [
+      "/wp-json/click5_sitemap/API/update_html_option_AJAX",
+      3
+    ]
+  ],
+  "whole_actor_window_position_range": [
+    0.409708349980024,
+    0.5252363830070582
+  ],
+  "parse_failures": {
+    "access": 0,
+    "manifest": 0,
+    "error": 0
+  },
+  "restore": {
+    "result": "PASS",
+    "manifest_entries_verified": 2845,
+    "destination": "C:\\Users\\Pongo\\Documents\\cases\\benchmark-v2-full\\restore-round7\\s01-0f15bb83cb",
+    "destination_was_empty": true,
+    "local_app_images_removed_and_absence_verified": [],
+    "recorded_app_image_absent_before_restore": true,
+    "image_removal_proof": "PASS",
+    "completed_at_utc": "2026-11-01T08:09:59.545574+00:00",
+    "inputs": "repository, public digest-pinned base, SHA-256-pinned source archives",
+    "prior_image_removal_and_restore_proof": {
+      "result": "PASS",
+      "manifest_entries_verified": 2845,
+      "destination": "C:\\Users\\Pongo\\Documents\\cases\\benchmark-v2-full\\restore-round7\\s01-6ba1bb8034",
+      "destination_was_empty": true,
+      "local_app_images_removed_and_absence_verified": [
+        "sha256:30b8ac3e94bc090ef546752e06509f494731a2310ea23c22b3ca0f774b6baf3a",
+        "sha256:8a32825062d4dfbe4dc4fa8460e00c61857faf47fc0358335c9298ac6534b601",
+        "sha256:94eeb0d7fcdb6a1c1587de506a1db776eaff0e7cb02489ac5030bd60e64bcd58"
+      ],
+      "recorded_app_image_absent_before_restore": true,
+      "image_removal_proof": "PASS",
+      "completed_at_utc": "2026-11-01T08:04:28.921358+00:00",
+      "inputs": "repository, public digest-pinned base, SHA-256-pinned source archives"
+    }
+  },
+  "restore_with_app_images_removed": "PASS",
+  "defender_scan": "PASS; detections=0; real-time protection enabled",
+  "analyst_read": {
+    "result": "PASS",
+    "sample_seed": 7001,
+    "sample_background_line_numbers": [
+      192,
+      286,
+      468,
+      622,
+      653,
+      1165,
+      1291,
+      1925,
+      1948,
+      2151,
+      2235,
+      2432,
+      3119,
+      3343,
+      3793,
+      3916,
+      4465,
+      4754,
+      4969,
+      5255,
+      5285,
+      5849,
+      6086,
+      6560,
+      7205,
+      7651,
+      8036,
+      8324,
+      8469,
+      8987,
+      9530,
+      9644,
+      10674,
+      10801,
+      10867,
+      10974,
+      11020,
+      11197,
+      11240,
+      11381,
+      11382,
+      11560,
+      11601,
+      11832,
+      12039,
+      13582,
+      13625,
+      13764,
+      14105,
+      14541
+    ],
+    "attack_window": {
+      "start_line": 6153,
+      "end_line": 7888
+    },
+    "access_log_sha256": "ad6b6342b9d13d57c4f82b3027c1594ae5f6fa760d6b94fa02aa870fcde764cf",
+    "notes": "notes.md"
+  },
+  "replay_started_at_utc": "2026-11-01T06:48:41.916394+00:00",
+  "replay_ended_at_utc": "2026-11-01T08:01:41.563419+00:00",
+  "uninterrupted_run": "PASS; no part resumed",
+  "native_tool_bursts_exempt": [
+    "Weevely internal exchanges within hand-paced agent commands"
+  ],
+  "hand_action_minimum_spacing_seconds": 46.79236560899972,
+  "write_candidates_within_5_seconds_of_ctime": {
+    "wp-content/plugins/wp-file-manager/lib/files/maintenance-agent.php": 1,
+    "wp-content/uploads/wp-file-manager-pro/fm_backup/index.php": 2
+  },
   "scenario": "s01",
   "schema": "PASS",
   "ground_truth_regeneration": "PASS",
-  "access_rows": 15020,
+  "access_rows": 15018,
   "background_rows": 15000,
   "background_clients": 10384,
   "largest_background_client_share": 0.00973,
   "background_user_agents": 903,
   "largest_user_agent_share": 0.04407,
+  "largest_overall_user_agent_share": 0.04401,
   "top_user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/217.155.106.155 Safari/537.36 Edg/217.155.106.155",
   "nested_path_share": 0.00027,
   "request_paths_with_lab_terms": 0,
-  "visitor_success_share": 0.96274,
+  "visitor_success_share": 0.99942,
   "scanner_rows": 2923,
   "attack_position_range": [
-    0.53955,
-    0.54061
+    0.40971,
+    0.5251
   ],
-  "defanged_files": 2,
-  "scenario_bytes": 3248635,
-  "ground_truth_sha256": "788dc23b30ea758e61fc14e0963038968a2b09ebca7ecc16d10d231de4f3b8eb"
+  "defanged_files": 5,
+  "scenario_bytes": 3348366,
+  "ground_truth_sha256": "1355a7e6ef9d4b41576a9b175625d664bef5f68a28d1369b139486febcbc4971"
 }
