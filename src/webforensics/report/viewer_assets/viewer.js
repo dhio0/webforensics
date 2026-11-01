@@ -81,36 +81,118 @@
   };
   D.categories.forEach(function (c) { state.cats[c.id] = true; });
 
-  // --- shell -----------------------------------------------------------------------------
+  // Motion is decoration: it is skipped entirely when the viewer asks for less of it.
+  var REDUCED = !!(window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches);
+  var POP_LIMIT = 400;  // more marks than this appear at once instead of one by one
+  var chartPlayed = false, flowShown = false, spaceView = null;
 
+  // A motion class is always taken off again after its run. If a renderer never plays CSS
+  // animations (some screenshot tools, previews), the page still ends up fully visible.
+  function playOnce(node, cls, ms) {
+    if (REDUCED) return;
+    node.classList.remove(cls);
+    void node.getBoundingClientRect();
+    node.classList.add(cls);
+    setTimeout(function () { node.classList.remove(cls); }, ms);
+  }
+
+  function css(name) {
+    return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+  }
+
+  // --- icons: small line drawings, 24x24, stroked with the current colour ---------------
+
+  var ICONS = {
+    overview: "M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z",
+    timeline: "M3 12h4l3-8 4 16 3-8h4",
+    flow: "M6 3v6M6 15v6M6 9a3 3 0 1 0 0 6 3 3 0 0 0 0-6M6 12h6a6 6 0 0 0 6-6V3M18 3l-2 2M18 3l2 2",
+    space: "M12 2l9 5v10l-9 5-9-5V7zM12 22V12M21 7l-9 5-9-5",
+    root: "M12 3v4M12 17v4M3 12h4M17 12h4M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8",
+    files: "M14 3H6v18h12V7zM14 3v4h4M9 13h6M9 17h6",
+    iocs: "M12 3l9 16H3zM12 10v4M12 17h.01",
+    gaps: "M4 6h4M12 6h4M20 6h0M4 18h4M12 18h4M4 12h16",
+    actions: "M9 6h11M9 12h11M9 18h11M4 6l1 1 2-2M4 12l1 1 2-2M4 18l1 1 2-2",
+    "case": "M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18M12 11v5M12 8h.01",
+    events: "M3 12h4l3-8 4 16 3-8h4",
+    actors: "M12 4a4 4 0 1 0 0 8 4 4 0 0 0 0-8M4 21a8 8 0 0 1 16 0",
+    shield: "M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"
+  };
+
+  function icon(name, cls) {
+    var svg = sv("svg", { viewBox: "0 0 24 24", "class": "ic" + (cls ? " " + cls : ""), "aria-hidden": "true" });
+    svg.appendChild(sv("path", { d: ICONS[name] || ICONS.overview }));
+    return svg;
+  }
+
+  // Cards lean a few degrees toward the pointer. Pure decoration: off for reduced motion
+  // and for touch, where there is no hover.
+  var CAN_TILT = !REDUCED && !!(window.matchMedia && window.matchMedia("(hover: hover)").matches);
+  function tilt(node) {
+    if (!CAN_TILT) return node;
+    node.classList.add("tilt");
+    node.addEventListener("pointermove", function (ev) {
+      var b = node.getBoundingClientRect();
+      var px = (ev.clientX - b.left) / b.width - 0.5, py = (ev.clientY - b.top) / b.height - 0.5;
+      node.style.setProperty("--ry", (px * 6).toFixed(2) + "deg");
+      node.style.setProperty("--rx", (-py * 6).toFixed(2) + "deg");
+      node.style.setProperty("--gx", Math.round((px + 0.5) * 100) + "%");
+      node.style.setProperty("--gy", Math.round((py + 0.5) * 100) + "%");
+    });
+    node.addEventListener("pointerleave", function () {
+      node.style.setProperty("--rx", "0deg"); node.style.setProperty("--ry", "0deg");
+    });
+    return node;
+  }
+
+  // --- shell: sidebar with the case and the sections, content on the right -----------------
+
+  playOnce(document.documentElement, "motion", 1600);
   var app = document.getElementById("app");
-  var wrap = el("div", { cls: "wrap" });
-  app.appendChild(wrap);
-  wrap.appendChild(cover());
-  wrap.appendChild(finding());
+  var shellEl = el("div", { cls: "shell" });
+  var side = el("aside", { cls: "side" });
+  var mainEl = el("main", { cls: "main" });
+  shellEl.appendChild(side); shellEl.appendChild(mainEl);
+  app.appendChild(shellEl);
 
-  var nav = el("nav", { cls: "tabs", role: "tablist" });
+  var bad = D.verdict.compromised;
+  side.appendChild(el("div", { cls: "brand" }, icon("shield", "brand-ic"),
+    el("span", { text: "webforensics" })));
+  side.appendChild(el("div", { cls: "side-case" },
+    el("div", { cls: "label", text: U["meta.case"] }), el("div", { cls: "side-id", text: D.caseId }),
+    el("div", { cls: "status" + (bad ? "" : " clean"), text: bad ? U["stamp.compromised"] : U["stamp.clean"] })));
+
+  var nav = el("nav", { cls: "tabs", role: "tablist", "aria-orientation": "vertical" });
   var panels = {};
-  wrap.appendChild(nav);
-  D.tabs.forEach(function (tab, i) {
+  side.appendChild(nav);
+  side.appendChild(el("div", { cls: "side-foot", text: "webforensics " + D.tool }));
+
+  mainEl.appendChild(cover());
+  mainEl.appendChild(finding());
+  var stage = el("div", { cls: "stage" });
+  mainEl.appendChild(stage);
+  D.tabs.forEach(function (tab) {
     var btn = el("button", {
       role: "tab", id: "tab-" + tab.id, "aria-controls": "panel-" + tab.id,
       onclick: function () { showTab(tab.id, true); }
-    }, el("span", { cls: "i", text: (i < 9 ? "0" : "") + (i + 1) }), tab.label);
+    }, icon(tab.id), el("span", { text: tab.label }));
     nav.appendChild(btn);
     var panel = el("div", { role: "tabpanel", id: "panel-" + tab.id, "aria-labelledby": "tab-" + tab.id });
     panel.hidden = true;
     panels[tab.id] = panel;
-    wrap.appendChild(panel);
+    stage.appendChild(panel);
     if (tab.id === "timeline") buildTimeline(panel);
+    else if (tab.id === "flow") buildFlow(panel);
+    else if (tab.id === "space") spaceView = buildSpace(panel);
     else tab.sections.forEach(function (s) { panel.appendChild(docSection(s)); });
   });
-  wrap.appendChild(el("footer", { text: U.generated_by }));
+  mainEl.appendChild(el("footer", { text: U.generated_by }));
 
   nav.addEventListener("keydown", function (ev) {
-    if (ev.key !== "ArrowRight" && ev.key !== "ArrowLeft") return;
+    var back = ev.key === "ArrowUp" || ev.key === "ArrowLeft";
+    if (!back && ev.key !== "ArrowDown" && ev.key !== "ArrowRight") return;
+    ev.preventDefault();
     var ids = D.tabs.map(function (t) { return t.id; });
-    var i = ids.indexOf(state.tab) + (ev.key === "ArrowRight" ? 1 : -1);
+    var i = ids.indexOf(state.tab) + (back ? -1 : 1);
     showTab(ids[(i + ids.length) % ids.length], true);
     document.getElementById("tab-" + state.tab).focus();
   });
@@ -126,7 +208,14 @@
       b.tabIndex = on ? 0 : -1;
     });
     if (push && location.hash !== "#" + id) history.replaceState(null, "", "#" + id);
+    var panel = panels[id];
+    playOnce(panel, "enter", 400);
     if (id === "timeline") drawChart();
+    if (id === "flow" && !flowShown) {
+      flowShown = true;
+      playOnce(panel, "play", 700 + panel.querySelectorAll(".flow-node,.flow-link").length * 90);
+    }
+    if (spaceView) { if (id === "space") spaceView.start(); else spaceView.stop(); }
   }
 
   window.addEventListener("hashchange", function () { showTab(location.hash.slice(1), false); });
@@ -135,11 +224,9 @@
 
   function cover() {
     var meta = el("div", { cls: "meta" });
-    [[U["meta.case"], D.caseId], [U["meta.generated"], D.generated], [U["meta.zone"], D.zone],
-      [U["meta.tool"], "webforensics " + D.tool]].forEach(function (p) {
+    [[U["meta.generated"], D.generated], [U["meta.zone"], D.zone]].forEach(function (p) {
       meta.appendChild(el("div", null, el("span", { cls: "label", text: p[0] }), el("span", { text: p[1] })));
     });
-    var bad = D.verdict.compromised;
     return el("header", { cls: "cover" },
       el("div", null, el("div", { cls: "label", text: U.kicker }), el("h1", { text: D.title }), meta),
       el("div", { cls: "stamp" + (bad ? "" : " clean"), role: "img",
@@ -148,28 +235,47 @@
   }
 
   function finding() {
-    var v = D.verdict, left = el("div");
+    var v = D.verdict, hero = el("div", { cls: "hero card" + (v.root ? " is-root" : "") });
     if (v.root) {
       var r = v.root;
-      left.appendChild(el("div", { cls: "label", text: U["verdict.root"] }));
-      left.appendChild(el("p", { cls: "entry" },
+      hero.appendChild(el("div", { cls: "label" }, icon("root", "lab-ic"), U["verdict.root"]));
+      hero.appendChild(el("p", { cls: "entry" },
         el("a", { cls: "n", href: "#timeline", text: no(r.n),
           onclick: function (ev) { ev.preventDefault(); showTab("timeline", true); select(r.n, true); } }),
         el("span", { cls: "when", text: r.day + " " + r.clock + " " + D.zoneShort }), r.text));
-      left.appendChild(el("p", { cls: "entry-sub" }, el("span", { text: r.vuln }),
+      hero.appendChild(el("p", { cls: "entry-sub" }, el("span", { text: r.vuln }),
         meter(r.conf, r.confLabel),
         r.actor ? el("span", { text: U["verdict.from"] + " " + r.actor }) : null));
     } else {
-      left.appendChild(el("div", { cls: "label", text: v.compromised ? U["verdict.root"] : U["verdict.result"] }));
-      left.appendChild(el("p", { cls: "entry-sub", text: v.compromised ? U["verdict.no_root"] : U["verdict.clean"] }));
+      hero.appendChild(el("div", { cls: "label" }, icon(v.compromised ? "root" : "shield", "lab-ic"),
+        v.compromised ? U["verdict.root"] : U["verdict.result"]));
+      hero.appendChild(el("p", { cls: "entry-sub", text: v.compromised ? U["verdict.no_root"] : U["verdict.clean"] }));
     }
-    var ledger = el("dl", { cls: "ledger" });
-    [["events", v.stats.events], ["files", v.stats.files], ["actors", v.stats.actors],
-      ["gaps", v.stats.gaps]].forEach(function (s) {
-      ledger.appendChild(el("div", null, el("dt", { cls: "label", text: U["stat." + s[0]] }),
-        el("dd", { text: String(s[1]) })));
+    var kpis = el("div", { cls: "kpis" });
+    [["events", "events", v.stats.events], ["files", "files", v.stats.files],
+      ["actors", "actors", v.stats.actors], ["gaps", "gaps", v.stats.gaps]].forEach(function (s, i) {
+      kpis.appendChild(tilt(el("div", { cls: "kpi card", style: "--i:" + i },
+        el("div", { cls: "kpi-top" }, el("span", { cls: "label", text: U["stat." + s[0]] }), icon(s[1], "kpi-ic")),
+        countUp(el("div", { cls: "kpi-val", text: REDUCED ? String(s[2]) : "0" }), s[2]))));
     });
-    return el("section", { cls: "finding" }, left, ledger);
+    return el("section", { cls: "finding" }, tilt(hero), kpis);
+  }
+
+  // Counts rise to their value once, over about 0.7 s.
+  function countUp(node, target) {
+    if (REDUCED || !target) { node.textContent = String(target); return node; }
+    var start = null, dur = 700, finished = false;
+    function step(t) {
+      if (finished) return;
+      if (start === null) start = t;
+      var k = Math.min(1, (t - start) / dur), eased = 1 - Math.pow(1 - k, 3);
+      node.textContent = String(Math.round(target * eased));
+      if (k < 1) requestAnimationFrame(step); else finished = true;
+    }
+    requestAnimationFrame(step);
+    // The final value is guaranteed even where animation frames are throttled.
+    setTimeout(function () { finished = true; node.textContent = String(target); }, dur + 150);
+    return node;
   }
 
   // --- static sections (same content as the HTML report) ---------------------------------
@@ -316,11 +422,11 @@
   // One SVG mark per event: the shape says what kind of event it is.
   function mark(cat, x, y, root) {
     var r = root ? 6.5 : 5, color = "var(--c-" + cat + ")", node;
-    if (cat === "recon") node = sv("circle", { cx: x, cy: y, r: r - 1, fill: "var(--bg)", stroke: color, "stroke-width": 2 });
+    if (cat === "recon") node = sv("circle", { cx: x, cy: y, r: r - 1, fill: "var(--surface)", stroke: color, "stroke-width": 2 });
     else if (cat === "exploit") node = sv("polygon", { points: [x, y - r - 1, x + r + 1, y + r, x - r - 1, y + r].join(" "), fill: color });
     else if (cat === "login") node = sv("polygon", { points: [x, y - r - 1, x + r + 1, y, x, y + r + 1, x - r - 1, y].join(" "), fill: color });
     else if (cat === "write") node = sv("rect", { x: x - r + 0.5, y: y - r + 0.5, width: 2 * r - 1, height: 2 * r - 1, fill: color });
-    else if (cat === "file") node = sv("rect", { x: x - r + 1, y: y - r + 1, width: 2 * r - 2, height: 2 * r - 2, fill: "var(--bg)", stroke: color, "stroke-width": 2 });
+    else if (cat === "file") node = sv("rect", { x: x - r + 1, y: y - r + 1, width: 2 * r - 2, height: 2 * r - 2, fill: "var(--surface)", stroke: color, "stroke-width": 2 });
     else if (cat === "use") node = sv("circle", { cx: x, cy: y, r: r - 0.5, fill: color });
     else node = sv("circle", { cx: x, cy: y, r: 2.5, fill: color });
     return node;
@@ -389,10 +495,14 @@
       svg.appendChild(label);
     }
 
+    // The first drawing plays once: marks appear in time order, then the root line is drawn.
+    var play = !chartPlayed && !REDUCED && shown.length <= POP_LIMIT;
+    chartPlayed = true;
     var root = events.filter(function (e) { return e.root; })[0];
     if (root && root.ms >= lo && root.ms <= hi && matches(root)) {
       var rx = x(root.ms);
-      svg.appendChild(sv("line", { "class": "rootline", x1: rx, x2: rx, y1: top - 4, y2: top + plotH }));
+      svg.appendChild(sv("line", { "class": "rootline", x1: rx, x2: rx,
+        y1: top - 4, y2: top + plotH }));
       var tagText = U["chart.root"].toUpperCase() + " " + no(root.n);
       var tagW = tagText.length * 6.2 + 8, tagX = Math.min(rx, width - right - tagW);
       svg.appendChild(sv("rect", { "class": "roottagbg", x: tagX, y: top - 19, width: tagW, height: 14 }));
@@ -406,8 +516,10 @@
     marks = {};
     shown.forEach(function (e) {
       var lane = e.actor in laneOf ? laneOf[e.actor] : othersLane;
-      var node = mark(e.cat, x(e.ms), top + lane * laneH + laneH / 2, e.root);
+      var mx = x(e.ms);
+      var node = mark(e.cat, mx, top + lane * laneH + laneH / 2, e.root);
       node.setAttribute("class", "ev" + (state.sel === e.n ? " sel" : ""));
+      if (play) node.style.animationDelay = Math.round((mx - left) / plotW * 700) + "ms";
       node.appendChild(titleNode(no(e.n) + " " + e.clock + " · " + (e.actor || U["chart.files"]) + "\n" + e.text));
       node.addEventListener("click", function (ev) { ev.stopPropagation(); select(e.n, true); });
       marks[e.n] = node;
@@ -450,6 +562,7 @@
 
     svgHost.textContent = "";
     svgHost.appendChild(svg);
+    if (play) playOnce(svg, "pop", 1600);
   }
 
   function titleNode(text) {
@@ -629,6 +742,234 @@
         c.ex ? el("pre", { text: c.ex }) : null));
     });
     detailEl.appendChild(body);
+    playOnce(body, "enter", 400);
+  }
+
+  function openEvent(n) {
+    showTab("timeline", true);
+    select(n, true);
+  }
+
+  // --- attack flow: the incident's main steps as a chain ---------------------------------
+
+  function buildFlow(panel) {
+    var steps = events.filter(function (e) { return e.story || e.root; });
+    panel.appendChild(el("div", { cls: "chart-head" }, el("h2", { text: U["flow.title"] })));
+    panel.appendChild(el("p", { cls: "hint", text: steps.length ? U["flow.hint"] : U["flow.none"] }));
+    if (!steps.length) return;
+    var list = el("ol", { cls: "flow" });
+    var actors = D.attackers.length ? D.attackers.join(", ") : D.labels.noActor;
+    list.appendChild(el("li", { cls: "flow-node actor", style: "--i:0" },
+      el("div", { cls: "label", text: U["flow.actor"] }), el("div", { cls: "flow-actor", text: actors })));
+    steps.forEach(function (e, i) {
+      list.appendChild(el("li", { cls: "flow-link", style: "--i:" + (2 * i + 1) },
+        el("span", { text: U["flow.rel." + e.cat] || U["flow.rel.other"] })));
+      var open = function () { openEvent(e.n); };
+      list.appendChild(el("li", {
+        cls: "flow-node" + (e.root ? " root" : ""), style: "--i:" + (2 * i + 2), tabindex: "0",
+        role: "button", onclick: open,
+        onkeydown: function (ev) { if (ev.key === "Enter" || ev.key === " ") { ev.preventDefault(); open(); } }
+      },
+        el("div", { cls: "flow-meta" }, glyph(e.cat), el("span", { cls: "n", text: no(e.n) }),
+          el("span", { text: e.day + " " + e.clock + " " + D.zoneShort }),
+          e.root ? el("span", { cls: "tag", text: D.labels.rootMarker }) : null),
+        el("div", { cls: "flow-text", text: e.text }),
+        el("div", { cls: "flow-foot" }, el("span", { text: e.actor || D.labels.noActor }),
+          meter(e.conf, e.confLabel))));
+    });
+    panel.appendChild(list);
+  }
+
+  // --- 3D space: time x actor x kind, drawn on a canvas without any library -----------------
+
+  function buildSpace(panel) {
+    var canvas = el("canvas", { cls: "space", role: "img", "aria-label": U["space.title"] });
+    var tip = el("div", { cls: "space-tip", hidden: true });
+    var reset = el("button", { cls: "btn", text: U["space.reset"], onclick: function () { home(); draw(); } });
+    var legend = el("div", { cls: "legend" });
+    present().forEach(function (c) { legend.appendChild(el("span", null, glyph(c.id), c.label)); });
+    panel.appendChild(el("div", { cls: "chart-head" }, el("h2", { text: U["space.title"] }), reset));
+    panel.appendChild(el("p", { cls: "hint", text: events.length ? U["space.hint"] : U["chart.empty"] }));
+    if (!events.length) return { start: function () {}, stop: function () {} };
+    panel.appendChild(el("div", { cls: "space-box" }, canvas, tip));
+    panel.appendChild(legend);
+
+    var kinds = present().map(function (c) { return c.id; });
+    var lanes = D.lanes.concat(hasOthers ? [null] : []);
+    var t0 = events[0].ms, t1 = events[events.length - 1].ms;
+    var span = Math.max(1, t1 - t0);
+    var FLOOR = -0.55;
+    function laneZ(i) { return lanes.length > 1 ? -0.7 + 1.4 * i / (lanes.length - 1) : 0; }
+    var pts = events.map(function (e) {
+      var lane = e.actor in laneOf ? laneOf[e.actor] : lanes.length - 1;
+      return {
+        e: e,
+        x: -1 + 2 * (e.ms - t0) / span,
+        y: FLOOR + 1.1 * (kinds.indexOf(e.cat) + 1) / (kinds.length + 1),
+        z: laneZ(lane)
+      };
+    });
+    var cam, drag = null, moved = false, running = false, auto = !REDUCED, raf = 0, hover = null;
+    var proj = [];
+
+    function home() { cam = { yaw: -0.65, pitch: 0.42, dist: 3.6 }; }
+    home();
+
+    function project(x, y, z, W, H) {
+      var cy = Math.cos(cam.yaw), sy = Math.sin(cam.yaw), cp = Math.cos(cam.pitch), sp = Math.sin(cam.pitch);
+      var x1 = x * cy - z * sy, z1 = x * sy + z * cy;
+      var y1 = y * cp - z1 * sp, z2 = y * sp + z1 * cp;
+      var f = Math.min(W, H * 1.7) * 1.05 / (cam.dist - z2);
+      return { x: W / 2 + x1 * f, y: H * 0.5 - y1 * f, d: z2, s: f };
+    }
+
+    function size() {
+      var ratio = window.devicePixelRatio || 1, w = canvas.clientWidth || 800;
+      var h = Math.max(300, Math.min(560, Math.round(w * 0.56)));
+      if (canvas.width !== Math.round(w * ratio) || canvas.height !== Math.round(h * ratio)) {
+        canvas.width = Math.round(w * ratio); canvas.height = Math.round(h * ratio);
+        canvas.style.height = h + "px";
+      }
+      return { w: w, h: h, r: ratio };
+    }
+
+    function line(g, a, b) { g.beginPath(); g.moveTo(a.x, a.y); g.lineTo(b.x, b.y); g.stroke(); }
+
+    function shape(g, cat, p, r, color, bg) {
+      g.fillStyle = color; g.strokeStyle = color; g.lineWidth = 1.6;
+      g.beginPath();
+      if (cat === "exploit") { g.moveTo(p.x, p.y - r * 1.15); g.lineTo(p.x + r, p.y + r * 0.8); g.lineTo(p.x - r, p.y + r * 0.8); g.closePath(); g.fill(); }
+      else if (cat === "login") { g.moveTo(p.x, p.y - r); g.lineTo(p.x + r, p.y); g.lineTo(p.x, p.y + r); g.lineTo(p.x - r, p.y); g.closePath(); g.fill(); }
+      else if (cat === "write") { g.rect(p.x - r * 0.85, p.y - r * 0.85, r * 1.7, r * 1.7); g.fill(); }
+      else if (cat === "file") { g.fillStyle = bg; g.rect(p.x - r * 0.8, p.y - r * 0.8, r * 1.6, r * 1.6); g.fill(); g.stroke(); }
+      else if (cat === "recon") { g.fillStyle = bg; g.arc(p.x, p.y, r * 0.85, 0, 6.2832); g.fill(); g.stroke(); }
+      else if (cat === "use") { g.arc(p.x, p.y, r * 0.9, 0, 6.2832); g.fill(); }
+      else { g.arc(p.x, p.y, r * 0.45, 0, 6.2832); g.fill(); }
+    }
+
+    function draw() {
+      var S = size(), g = canvas.getContext("2d"), W = S.w, H = S.h;
+      g.setTransform(S.r, 0, 0, S.r, 0, 0);
+      g.clearRect(0, 0, W, H);
+      var rule = css("--rule"), rule2 = css("--rule-2"), muted = css("--muted"), ink = css("--ink"),
+        bg = css("--surface"), red = css("--red"), mono = "11px " + css("--mono");
+      var colors = {};
+      kinds.concat(["other"]).forEach(function (k) { colors[k] = css("--c-" + k); });
+      // Floor grid: one line per lane and one per time tick.
+      g.strokeStyle = rule; g.lineWidth = 1;
+      lanes.forEach(function (a, i) {
+        line(g, project(-1, FLOOR, laneZ(i), W, H), project(1, FLOOR, laneZ(i), W, H));
+      });
+      var tk = ticks(t0, t0 + span);
+      tk.forEach(function (t) {
+        var x = -1 + 2 * (t.ms - t0) / span;
+        line(g, project(x, FLOOR, -0.8, W, H), project(x, FLOOR, 0.8, W, H));
+      });
+      // Axes from the near-left corner.
+      g.strokeStyle = rule2; g.lineWidth = 1.2;
+      var o = project(-1.05, FLOOR, -0.8, W, H);
+      line(g, o, project(1.1, FLOOR, -0.8, W, H));
+      line(g, o, project(-1.05, 0.65, -0.8, W, H));
+      line(g, o, project(-1.05, FLOOR, 0.85, W, H));
+      g.font = mono; g.fillStyle = muted;
+      var at = project(1.12, FLOOR - 0.08, -0.95, W, H); g.fillText(U["space.time"], at.x, at.y);
+      var ak = project(-1.05, 0.72, -0.8, W, H); g.fillText(U["space.kind"], ak.x - 10, ak.y);
+      var aa = project(-1.05, FLOOR, 0.95, W, H); g.fillText(U["space.actor"], aa.x - 10, aa.y);
+      tk.forEach(function (t) {
+        var p = project(-1 + 2 * (t.ms - t0) / span, FLOOR, -0.92, W, H);
+        g.fillText(t.label, p.x - 14, p.y + 12);
+      });
+      lanes.forEach(function (a, i) {
+        var p = project(1.05, FLOOR, laneZ(i), W, H);
+        var name = a === null ? U["chart.others"] : (a || U["chart.files"]);
+        g.fillStyle = attacker[a] ? ink : muted;
+        g.fillText(name.length > 16 ? name.slice(0, 15) + "…" : name, p.x + 4, p.y + 4);
+      });
+      // Points, far to near, each with a faint drop line to the floor.
+      proj = pts.map(function (q) {
+        return { q: q, p: project(q.x, q.y, q.z, W, H), f: project(q.x, FLOOR, q.z, W, H) };
+      });
+      proj.sort(function (a, b) { return a.p.d - b.p.d; });
+      var drops = proj.length <= 600;
+      proj.forEach(function (it) {
+        var e = it.q.e, r = Math.max(2.5, Math.min(8, it.p.s * 0.022)) * (e.root ? 1.35 : 1);
+        if (drops) { g.strokeStyle = rule; g.lineWidth = 1; line(g, it.p, it.f); }
+        shape(g, e.cat, it.p, r, colors[e.cat] || colors.other, bg);
+        if (e.root) {
+          g.strokeStyle = red; g.lineWidth = 1.5; g.beginPath(); g.arc(it.p.x, it.p.y, r + 5, 0, 6.2832); g.stroke();
+          g.fillStyle = red; g.font = mono;
+          g.fillText(U["chart.root"].toUpperCase() + " " + no(e.n), it.p.x + r + 8, it.p.y - r - 4);
+        }
+        if (state.sel === e.n || hover === e.n) {
+          g.strokeStyle = ink; g.lineWidth = 2; g.beginPath(); g.arc(it.p.x, it.p.y, r + 3, 0, 6.2832); g.stroke();
+        }
+      });
+    }
+
+    function loop() {
+      if (!running) return;
+      if (auto && !drag) cam.yaw += 0.0025;
+      draw();
+      raf = requestAnimationFrame(loop);
+    }
+
+    function pick(ev) {
+      var b = canvas.getBoundingClientRect(), mx = ev.clientX - b.left, my = ev.clientY - b.top;
+      var best = null, bd = 144;
+      proj.forEach(function (it) {
+        var dx = it.p.x - mx, dy = it.p.y - my, d = dx * dx + dy * dy;
+        if (d < bd) { bd = d; best = it; }
+      });
+      return best;
+    }
+
+    canvas.addEventListener("pointerdown", function (ev) {
+      drag = { x: ev.clientX, y: ev.clientY }; moved = false; auto = false;
+      canvas.setPointerCapture(ev.pointerId);
+    });
+    canvas.addEventListener("pointermove", function (ev) {
+      if (drag) {
+        var dx = ev.clientX - drag.x, dy = ev.clientY - drag.y;
+        if (Math.abs(dx) + Math.abs(dy) > 3) moved = true;
+        cam.yaw += dx * 0.008;
+        cam.pitch = Math.max(-0.1, Math.min(1.35, cam.pitch + dy * 0.006));
+        drag = { x: ev.clientX, y: ev.clientY };
+        if (!running) draw();
+        return;
+      }
+      var it = pick(ev);
+      hover = it ? it.q.e.n : null;
+      canvas.style.cursor = it ? "pointer" : "grab";
+      if (it) {
+        var b = canvas.getBoundingClientRect();
+        tip.hidden = false;
+        tip.textContent = no(it.q.e.n) + "  " + it.q.e.clock + "  " + (it.q.e.actor || U["chart.files"]) +
+          "\n" + it.q.e.text;
+        tip.style.left = Math.max(0, Math.min(it.p.x + 14, b.width - 300)) + "px";
+        tip.style.top = (it.p.y + 12) + "px";
+      } else { tip.hidden = true; }
+      if (!running) draw();
+    });
+    canvas.addEventListener("pointerup", function (ev) {
+      var wasDrag = moved;
+      drag = null;
+      if (!wasDrag) { var it = pick(ev); if (it) openEvent(it.q.e.n); }
+    });
+    canvas.addEventListener("pointerleave", function () { hover = null; tip.hidden = true; if (!running) draw(); });
+    canvas.addEventListener("wheel", function (ev) {
+      ev.preventDefault(); auto = false;
+      cam.dist = Math.max(2.2, Math.min(7, cam.dist * (ev.deltaY > 0 ? 1.08 : 0.93)));
+      if (!running) draw();
+    }, { passive: false });
+
+    return {
+      start: function () {
+        if (running) return;
+        if (REDUCED) { draw(); return; }
+        running = true; loop();
+      },
+      stop: function () { running = false; cancelAnimationFrame(raf); }
+    };
   }
 
   function copy(text, btn) {

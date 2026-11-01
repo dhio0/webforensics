@@ -45,6 +45,8 @@ from webforensics.report.text import Texts, clean, zone_short
 TABS: tuple[tuple[str, tuple[str, ...]], ...] = (
     ("overview", ("ringkasan",)),
     ("timeline", ()),
+    ("flow", ()),
+    ("space", ()),
     ("root", ("akar-masalah",)),
     ("files", ("file-terdampak", "tinjau")),
     ("iocs", ("ioc", "latar")),

@@ -73,17 +73,23 @@ The evidence formats are described in [docs/evidence-format.md](docs/evidence-fo
 webforensics view case01/report/report.json          # writes case01/report/viewer.html
 ```
 `view` turns a `report.json` into one offline HTML page for exploring the case, next to the static report for reading and printing:
-- a header with the verdict, the entry point (linked to its event) and the counts;
+- an app layout: a sidebar with the case, its status and the sections; an entry-point card and four count cards that lean slightly toward the pointer;
 - a timeline chart with one lane per actor and one shape per kind of event (reconnaissance, exploit, login, write, file change, file use), so colour is never the only cue; evidence gaps are shaded and the root cause is marked; drag across it to zoom;
 - an evidence register (search, actor, kind, "attack story only") grouped by day, with scanner bursts collapsed into one row until opened;
 - an evidence sheet per event with its time basis, ATT&CK phase, confidence notes and every cited log line or file hash, each with a copy button;
+- an attack-flow tab: the incident's main steps as a chain (attacker → entry point → write → file → use), each opening its evidence;
+- a 3D tab for presentations: every event placed by time, actor and kind, which you can rotate and zoom; clicking a point opens its evidence;
 - the other report sections (root cause and vulnerable code, files, IOCs, gaps, actions, case info) as tabs.
 
-All text is the same Indonesian text as the static report, produced by the same code. The page loads nothing from anywhere: its Content-Security-Policy allows only its own script (by SHA-256) and no network, and evidence strings are only ever set as text. It works at phone width and in dark mode, and the same `report.json` gives the same bytes. A real-scale report (10,083 timeline events, 5,235 gaps) gives a 7.6 MB page (D91).
+Motion is short and plays once (cards fold in, marks appear in time order, the root-cause line is drawn, counts rise), is switched off for viewers who ask their system for reduced motion, and can never leave content hidden. All text is the same Indonesian text as the static report, produced by the same code. The page loads nothing from anywhere: its Content-Security-Policy allows only its own script (by SHA-256) and no network, and evidence strings are only ever set as text. It works at phone width and in dark mode, and the same `report.json` gives the same bytes. A real-scale report (10,083 timeline events, 5,235 gaps) gives a 7.6 MB page (D91).
 
 <p>
 <img src="docs/img/viewer-timeline.png" alt="Timeline tab: per-actor chart, event list and the detail panel of the root-cause event" width="68%">
 <img src="docs/img/viewer-phone.png" alt="The same page at phone width, with the detail panel as a bottom sheet" width="22%">
+</p>
+<p>
+<img src="docs/img/viewer-flow.png" alt="Attack-flow tab: attacker, SQL-injection login bypass marked as root cause, the upload that wrote the file, the file, and its first use" width="45%">
+<img src="docs/img/viewer-3d.png" alt="3D tab in dark mode: events placed by time, actor and kind, with the root cause ringed" width="45%">
 </p>
 <img src="docs/img/viewer-root-cause.png" alt="Root-cause tab in dark mode: the raw log line, the reasons, the vulnerable line and a prepared-statement fix" width="68%">
 

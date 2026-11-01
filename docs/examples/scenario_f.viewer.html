@@ -2,218 +2,340 @@
 <html lang="id">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-0ECkTEbgNI5QACBgIV+XsKNV+vSaAwF+51QaubWetPs='; style-src 'unsafe-inline'; img-src 'none'; connect-src 'none'; form-action 'none'; base-uri 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-LXm7fazw3TyJGvFjaNjuGzRiriLkS0W6CMQFFJa5kp4='; style-src 'unsafe-inline'; img-src 'none'; connect-src 'none'; form-action 'none'; base-uri 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="referrer" content="no-referrer">
 <title>Laporan Insiden Website</title>
-<style>/* webforensics viewer. Quiet on purpose: white space, thin rules, one signal colour (red)
-   kept for the compromise and the root cause. System fonts only: the page works offline. */
+<style>/* webforensics viewer: a security console. Layered surfaces with soft depth, one interactive
+   accent (indigo), red only for the compromise and the root cause. System fonts only, so the
+   page works offline. Motion runs only while the script holds a class (see playOnce). */
 :root{
---bg:#ffffff;--soft:#f6f7f8;--ink:#16181d;--ink-2:#454b54;--muted:#6b717b;
---rule:#e4e6e9;--rule-2:#cfd3d8;
---red:#c42b1c;--red-soft:#fbeeed;--sel:#f1f3f5;
---high:#2f7d4f;--medium:#9a6b00;--low:#c42b1c;
---c-recon:#7b8794;--c-exploit:#c42b1c;--c-login:#8a6d1f;--c-write:#5b4a8a;
---c-file:#2d6f6a;--c-use:#4a6b3a;--c-other:#9aa1aa;
---gap:#eef0f2;
+--bg:#f3f5f9;--surface:#ffffff;--surface-2:#f7f8fb;--ink:#0f1729;--ink-2:#3b4558;--muted:#6b7487;
+--rule:#e4e8ef;--rule-2:#cfd5df;
+--accent:#4f5bd5;--accent-soft:#eef0ff;--accent-ink:#ffffff;
+--red:#d1342b;--red-soft:#fdeeec;--green:#1f8a5b;--green-soft:#e8f6ef;
+--high:#1f8a5b;--medium:#a8770b;--low:#d1342b;
+--c-recon:#6c7a8c;--c-exploit:#d1342b;--c-login:#a8770b;--c-write:#5b4fc4;
+--c-file:#1f7f78;--c-use:#3f7d3a;--c-other:#9aa1ad;
+--gap:#eef1f6;--sel:#eef0ff;
+--sh-1:0 1px 2px rgba(15,23,41,.05),0 1px 1px rgba(15,23,41,.03);
+--sh-2:0 18px 40px -18px rgba(15,23,41,.28),0 4px 10px rgba(15,23,41,.05);
+--glow:rgba(79,91,213,.10);
 --sans:"Segoe UI Variable Text","Segoe UI",system-ui,-apple-system,"Helvetica Neue",Roboto,sans-serif;
 --mono:"Cascadia Mono","SF Mono",ui-monospace,Menlo,Consolas,"Liberation Mono",monospace;
 color-scheme:light}
 @media (prefers-color-scheme:dark){:root{
---bg:#131416;--soft:#1a1c1f;--ink:#e8e9eb;--ink-2:#b9bdc3;--muted:#8a9099;
---rule:#26292d;--rule-2:#363a40;
---red:#ff6b5e;--red-soft:#2a1716;--sel:#1e2124;
---high:#6cc48e;--medium:#d9b25a;--low:#ff6b5e;
---c-recon:#8d99a6;--c-exploit:#ff6b5e;--c-login:#cfae5c;--c-write:#a596d6;
---c-file:#6fb7af;--c-use:#93b87f;--c-other:#7d838c;
---gap:#1c1f22;color-scheme:dark}}
+--bg:#0a0e16;--surface:#111725;--surface-2:#161d2d;--ink:#e7ebf3;--ink-2:#b3bccc;--muted:#7c8699;
+--rule:#1f2838;--rule-2:#2c374b;
+--accent:#8c96ff;--accent-soft:#1b2042;--accent-ink:#0a0e16;
+--red:#ff6b61;--red-soft:#2b1619;--green:#5fd09a;--green-soft:#11281f;
+--high:#5fd09a;--medium:#e3b44f;--low:#ff6b61;
+--c-recon:#93a1b4;--c-exploit:#ff6b61;--c-login:#e3b44f;--c-write:#a99cff;
+--c-file:#5cc7bd;--c-use:#8fcf7a;--c-other:#7c8699;
+--gap:#151c2b;--sel:#1b2042;
+--sh-1:0 1px 0 rgba(255,255,255,.03) inset,0 1px 2px rgba(0,0,0,.4);
+--sh-2:0 24px 50px -24px rgba(0,0,0,.75),0 0 0 1px rgba(140,150,255,.08);
+--glow:rgba(140,150,255,.10);color-scheme:dark}}
 *{box-sizing:border-box}
 html{-webkit-text-size-adjust:100%}
-body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.6 var(--sans)}
+body{margin:0;color:var(--ink);font:14.5px/1.6 var(--sans);background:var(--bg);
+background-image:radial-gradient(1200px 500px at 85% -10%,var(--glow),transparent 60%)}
 button,input,select{font:inherit;color:inherit}
-a{color:inherit;text-decoration-color:var(--rule-2);text-underline-offset:3px}
-a:hover{text-decoration-color:currentColor}
-.wrap{max-width:1180px;margin:0 auto;padding:40px 24px 72px}
-.label{font-size:.75rem;color:var(--muted)}
+a{color:inherit}
+.label{font-size:.72rem;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;
+stroke-linejoin:round;flex-shrink:0}
+
+/* shell */
+.shell{display:grid;grid-template-columns:244px minmax(0,1fr);min-height:100vh}
+.side{position:sticky;top:0;height:100vh;display:flex;flex-direction:column;gap:18px;padding:22px 14px;
+background:var(--surface);border-right:1px solid var(--rule)}
+.brand{display:flex;align-items:center;gap:10px;padding:0 8px;font-weight:650;font-size:1.02rem;letter-spacing:-.01em}
+svg.brand-ic{width:30px;height:30px;padding:6px;border-radius:9px;color:var(--accent-ink);
+background:linear-gradient(140deg,var(--accent),#7b5cd6);stroke-width:2;box-shadow:0 6px 16px -6px var(--accent)}
+.side-case{margin:0 4px;padding:12px;border:1px solid var(--rule);border-radius:10px;background:var(--surface-2)}
+.side-id{font:600 .82rem var(--mono);margin:3px 0 8px;overflow-wrap:anywhere}
+.status{display:inline-flex;align-items:center;gap:7px;font-size:.78rem;font-weight:600;color:var(--red);
+background:var(--red-soft);padding:3px 10px;border-radius:999px}
+.status::before{content:"";width:7px;height:7px;border-radius:50%;background:currentColor;
+box-shadow:0 0 0 3px color-mix(in srgb,currentColor 25%,transparent)}
+.status.clean{color:var(--green);background:var(--green-soft)}
+nav.tabs{display:flex;flex-direction:column;gap:2px}
+nav.tabs button{position:relative;display:flex;align-items:center;gap:11px;width:100%;text-align:left;
+background:none;border:0;border-radius:8px;padding:8px 12px;cursor:pointer;color:var(--ink-2);font-size:.9rem;
+transition:background .15s,color .15s}
+nav.tabs button svg.ic{color:var(--muted);transition:color .15s,transform .2s}
+nav.tabs button:hover{background:var(--surface-2);color:var(--ink)}
+nav.tabs button:hover svg.ic{transform:translateX(1px)}
+nav.tabs button[aria-selected="true"]{background:var(--accent-soft);color:var(--accent);font-weight:600}
+nav.tabs button[aria-selected="true"] svg.ic{color:var(--accent)}
+nav.tabs button[aria-selected="true"]::before{content:"";position:absolute;left:-14px;top:8px;bottom:8px;width:3px;
+border-radius:0 3px 3px 0;background:var(--accent)}
+nav.tabs button:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+.side-foot{margin-top:auto;padding:0 10px;font:.72rem var(--mono);color:var(--muted)}
+.main{min-width:0;padding:30px 38px 64px;max-width:1260px}
 
 /* header */
-.cover{display:flex;justify-content:space-between;align-items:flex-start;gap:12px 32px;flex-wrap:wrap}
-.cover h1{font-size:1.6rem;font-weight:600;line-height:1.25;margin:2px 0 0;letter-spacing:-.01em}
-.meta{display:flex;flex-wrap:wrap;gap:4px 24px;margin-top:10px;font-size:.82rem;color:var(--muted)}
-.meta div{display:flex;gap:6px}
-.meta span:last-child{color:var(--ink-2);font-family:var(--mono);font-size:.8rem}
-.stamp{display:inline-flex;align-items:center;gap:8px;font-size:.9rem;font-weight:600;color:var(--red);
-padding-top:6px;white-space:nowrap}
+.cover{display:flex;justify-content:space-between;align-items:flex-start;gap:12px 28px;flex-wrap:wrap}
+.cover h1{font-size:1.65rem;font-weight:650;line-height:1.2;margin:4px 0 0;letter-spacing:-.02em}
+.meta{display:flex;flex-wrap:wrap;gap:4px 22px;margin-top:8px;font-size:.82rem;color:var(--muted)}
+.meta div{display:flex;gap:6px;align-items:baseline}
+.meta .label{text-transform:none;letter-spacing:0;font-weight:500;font-size:.8rem}
+.meta span:last-child{color:var(--ink-2);font:.8rem var(--mono)}
+.stamp{display:inline-flex;align-items:center;gap:8px;font-size:.85rem;font-weight:600;color:var(--red);
+background:var(--red-soft);border:1px solid color-mix(in srgb,var(--red) 22%,transparent);
+padding:6px 14px;border-radius:999px;white-space:nowrap}
 .stamp::before{content:"";width:8px;height:8px;border-radius:50%;background:currentColor}
-.stamp.clean{color:var(--high)}
+.stamp.clean{color:var(--green);background:var(--green-soft);border-color:color-mix(in srgb,var(--green) 22%,transparent)}
+
+/* cards */
+.card,.sheet{background:var(--surface);border:1px solid var(--rule);border-radius:12px;box-shadow:var(--sh-1)}
+.tilt{transform:perspective(900px) rotateX(var(--rx,0deg)) rotateY(var(--ry,0deg));transform-style:preserve-3d;
+transition:transform .25s ease,box-shadow .25s ease,border-color .25s ease;will-change:transform}
+.tilt:hover{box-shadow:var(--sh-2);border-color:var(--rule-2)}
+.tilt::after{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;opacity:0;
+background:radial-gradient(420px circle at var(--gx,50%) var(--gy,50%),var(--glow),transparent 45%);transition:opacity .25s}
+.tilt:hover::after{opacity:1}
 
 /* main finding */
-.finding{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:16px 48px;align-items:end;
-margin-top:28px;padding:22px 0;border-top:1px solid var(--rule);border-bottom:1px solid var(--rule)}
-.entry{margin:6px 0 6px;font-size:1.15rem;line-height:1.45;overflow-wrap:anywhere}
-.entry .n{font-family:var(--mono);font-size:.95rem;color:var(--red);margin-right:8px;text-decoration:none}
-.entry .when{font-family:var(--mono);font-size:.85rem;color:var(--muted);margin-right:8px}
-.entry-sub{margin:0;color:var(--ink-2);font-size:.9rem;display:flex;flex-wrap:wrap;gap:4px 16px;align-items:center}
-.ledger{display:flex;gap:32px;margin:0}
-.ledger div{display:flex;flex-direction:column-reverse;gap:2px}
-.ledger dd{margin:0;font-size:1.6rem;font-weight:600;line-height:1.1;font-variant-numeric:tabular-nums}
+.finding{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(0,1fr);gap:16px;margin-top:22px}
+.hero{position:relative;padding:20px 22px;overflow:hidden}
+.hero.is-root{border-color:color-mix(in srgb,var(--red) 30%,var(--rule))}
+.hero.is-root::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;
+background:linear-gradient(var(--red),color-mix(in srgb,var(--red) 30%,transparent))}
+.hero .label{display:flex;align-items:center;gap:7px}
+svg.lab-ic{width:15px;height:15px;color:var(--red)}
+.entry{margin:10px 0 8px;font-size:1.12rem;line-height:1.45;font-weight:500;overflow-wrap:anywhere}
+.entry .n{font:600 .9rem var(--mono);color:var(--red);background:var(--red-soft);padding:2px 7px;border-radius:6px;
+margin-right:8px;text-decoration:none}
+.entry .when{font:.82rem var(--mono);color:var(--muted);margin-right:8px}
+.entry-sub{margin:0;color:var(--ink-2);font-size:.88rem;display:flex;flex-wrap:wrap;gap:4px 16px;align-items:center}
+.kpis{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.kpi{position:relative;padding:14px 16px;overflow:hidden}
+.kpi-top{display:flex;justify-content:space-between;align-items:center;gap:8px}
+svg.kpi-ic{width:28px;height:28px;padding:6px;border-radius:8px;color:var(--accent);background:var(--accent-soft)}
+.kpi-val{font-size:1.75rem;font-weight:650;line-height:1.1;margin-top:6px;font-variant-numeric:tabular-nums;letter-spacing:-.02em}
 
 /* confidence */
-.meter{display:inline-flex;align-items:center;gap:6px;font-size:.85rem;white-space:nowrap;color:var(--ink-2)}
+.meter{display:inline-flex;align-items:center;gap:6px;font-size:.82rem;white-space:nowrap;color:var(--ink-2)}
 .meter i{width:7px;height:7px;border-radius:50%;background:var(--muted);display:inline-block}
-.c-high i{background:var(--high)}.c-medium i{background:var(--medium)}.c-low i{background:var(--low)}
+.c-high i{background:var(--high);box-shadow:0 0 0 3px color-mix(in srgb,var(--high) 18%,transparent)}
+.c-medium i{background:var(--medium);box-shadow:0 0 0 3px color-mix(in srgb,var(--medium) 18%,transparent)}
+.c-low i{background:var(--low);box-shadow:0 0 0 3px color-mix(in srgb,var(--low) 18%,transparent)}
 
-/* tabs */
-nav.tabs{display:flex;gap:4px;margin:28px 0 24px;overflow-x:auto;border-bottom:1px solid var(--rule)}
-nav.tabs button{background:none;border:0;border-bottom:2px solid transparent;margin-bottom:-1px;
-padding:8px 12px;cursor:pointer;white-space:nowrap;color:var(--muted);font-size:.92rem}
-nav.tabs button .i{display:none}
-nav.tabs button:hover{color:var(--ink)}
-nav.tabs button[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--ink);font-weight:600}
-nav.tabs button:focus-visible{outline:2px solid var(--ink-2);outline-offset:-2px}
-
-/* static sections */
-.sheet{margin-bottom:36px}
-section.doc h2{font-size:1.15rem;font-weight:600;margin:0 0 12px}
-section.doc h3{font-size:.85rem;font-weight:600;color:var(--ink-2);margin:24px 0 8px}
+/* sections */
+.stage{margin-top:24px}
+.sheet{padding:20px 24px;margin-bottom:16px}
+section.doc h2{font-size:1.05rem;font-weight:650;margin:0 0 12px;letter-spacing:-.01em}
+section.doc h3{font-size:.72rem;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin:22px 0 8px}
 section.doc p,section.doc ul{margin:6px 0}
 section.doc ul{padding-left:20px}
 section.doc li{margin:4px 0;overflow-wrap:anywhere}
-section.doc li::marker{color:var(--muted)}
+section.doc li::marker{color:var(--accent)}
 .tw{overflow-x:auto}
-table{border-collapse:collapse;width:100%;font-size:.88rem}
-th{font-weight:600;font-size:.78rem;color:var(--muted);text-align:left;padding:8px 10px;border-bottom:1px solid var(--rule-2)}
+table{border-collapse:collapse;width:100%;font-size:.86rem}
+th{font-weight:600;font-size:.72rem;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);text-align:left;
+padding:9px 10px;border-bottom:1px solid var(--rule-2);background:var(--surface-2)}
 td{padding:9px 10px;border-bottom:1px solid var(--rule);vertical-align:top;overflow-wrap:anywhere}
 tr.hl td{background:var(--red-soft)}
 td.mark-root{font-weight:600}
-dl.fields{display:grid;grid-template-columns:max-content 1fr;gap:6px 28px;margin:8px 0}
-dl.fields dt{color:var(--muted);font-size:.85rem}
+dl.fields{display:grid;grid-template-columns:max-content 1fr;gap:7px 28px;margin:8px 0}
+dl.fields dt{color:var(--muted);font-size:.84rem}
 dl.fields dd{margin:0;overflow-wrap:anywhere}
-pre{font:.8rem/1.6 var(--mono);background:var(--soft);border-radius:4px;padding:10px 12px;margin:8px 0;
-white-space:pre-wrap;overflow-wrap:anywhere}
+pre{font:.79rem/1.6 var(--mono);background:var(--surface-2);border:1px solid var(--rule);border-radius:8px;
+padding:10px 12px;margin:8px 0;white-space:pre-wrap;overflow-wrap:anywhere}
 
 /* timeline */
-.tl{display:grid;grid-template-columns:minmax(0,1fr) 360px;gap:36px;align-items:start}
-.chart-head{display:flex;justify-content:space-between;gap:12px;align-items:baseline;flex-wrap:wrap}
-.chart-head h2{font-size:1.05rem;font-weight:600;margin:0}
-.hint{color:var(--muted);font-size:.85rem;margin:2px 0 12px}
+.tl{display:grid;grid-template-columns:minmax(0,1fr) 350px;gap:18px;align-items:start}
+.tl>div:first-child{min-width:0}
+.chart{background:var(--surface);border:1px solid var(--rule);border-radius:12px;box-shadow:var(--sh-1);padding:18px 20px}
+.chart-head{display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap}
+.chart-head h2{font-size:1rem;font-weight:650;margin:0}
+.hint{color:var(--muted);font-size:.84rem;margin:2px 0 12px}
 .chart svg{display:block;width:100%;touch-action:none;user-select:none}
 .chart .lane{font:11px var(--mono);fill:var(--muted)}
-.chart .lane.att{fill:var(--ink)}
+.chart .lane.att{fill:var(--ink);font-weight:600}
 .chart .axis{font:10px var(--mono);fill:var(--muted)}
 .chart .base{stroke:var(--rule);stroke-width:1}
-.chart .tick{stroke:var(--rule);stroke-width:1}
+.chart .tick{stroke:var(--rule);stroke-width:1;stroke-dasharray:2 3}
 .chart .gapband{fill:var(--gap)}
 .chart .hatchline{stroke:none}
 .chart .gaplabel{font:9px var(--mono);fill:var(--muted)}
-.chart .ev{cursor:pointer}
-.chart .ev.sel{stroke:var(--ink);stroke-width:2}
-.chart .rootline{stroke:var(--red);stroke-width:1;stroke-dasharray:2 3}
-.chart .roottagbg{display:none}
-.chart .roottag{font:10px var(--mono);fill:var(--red)}
-.chart .brush{fill:var(--ink);opacity:.06}
-.legend{display:flex;flex-wrap:wrap;gap:4px 18px;font-size:.8rem;color:var(--muted);margin-top:10px}
+.chart .ev{cursor:pointer;transition:filter .15s}
+.chart .ev:hover{filter:drop-shadow(0 0 4px var(--accent))}
+.chart .ev.sel{stroke:var(--accent);stroke-width:2.5}
+.chart .rootline{stroke:var(--red);stroke-width:1.2;stroke-dasharray:3 3}
+.chart .roottagbg{fill:var(--red-soft)}
+.chart .roottag{font:600 10px var(--mono);fill:var(--red)}
+.chart .brush{fill:var(--accent);opacity:.1}
+.legend{display:flex;flex-wrap:wrap;gap:4px 18px;font-size:.78rem;color:var(--muted);margin-top:10px}
 .legend span{display:inline-flex;align-items:center;gap:6px}
-.btn{border:1px solid var(--rule-2);background:var(--bg);border-radius:4px;padding:2px 10px;cursor:pointer;
-font-size:.8rem;white-space:nowrap;flex-shrink:0;color:var(--ink-2)}
-.btn:hover{border-color:var(--ink-2);color:var(--ink)}
+.btn{border:1px solid var(--rule-2);background:var(--surface);border-radius:7px;padding:3px 11px;cursor:pointer;
+font-size:.8rem;white-space:nowrap;flex-shrink:0;color:var(--ink-2);transition:all .15s;box-shadow:var(--sh-1)}
+.btn:hover{border-color:var(--accent);color:var(--accent)}
+.btn:active{transform:translateY(1px)}
 
 /* glyphs: a shape per kind, so colour is never the only cue */
 .g{display:inline-block;width:9px;height:9px;flex-shrink:0}
 .g-recon{border:1.5px solid var(--c-recon);border-radius:50%}
 .g-exploit{background:var(--c-exploit);clip-path:polygon(50% 0,100% 100%,0 100%)}
 .g-login{background:var(--c-login);clip-path:polygon(50% 0,100% 50%,50% 100%,0 50%)}
-.g-write{background:var(--c-write)}
-.g-file{border:1.5px solid var(--c-file)}
+.g-write{background:var(--c-write);border-radius:1px}
+.g-file{border:1.5px solid var(--c-file);border-radius:1px}
 .g-use{background:var(--c-use);border-radius:50%}
 .g-other{background:var(--c-other);width:5px;height:5px;margin:2px}
 
-/* filters */
-.filters{display:flex;flex-wrap:wrap;gap:8px 10px;align-items:center;margin:28px 0 4px}
-.filters input[type=search]{flex:1 1 220px;min-width:0;padding:6px 10px;border:1px solid var(--rule-2);
-border-radius:4px;background:var(--bg)}
-.filters input[type=search]:focus,.filters select:focus{outline:2px solid var(--ink-2);outline-offset:-1px}
-.filters select{padding:6px 8px;border:1px solid var(--rule-2);border-radius:4px;background:var(--bg);max-width:100%}
-.chip{display:inline-flex;align-items:center;gap:6px;border:0;background:none;padding:3px 6px;cursor:pointer;
-font-size:.82rem;color:var(--ink-2)}
-.chip[aria-pressed="false"]{opacity:.35}
-.toggle{display:flex;gap:6px;align-items:center;font-size:.85rem;color:var(--ink-2)}
-.toggle input{accent-color:var(--ink)}
-.count{color:var(--muted);font-size:.8rem;margin-left:auto}
-
-/* register */
-.reg-head,ol.events li{display:grid;grid-template-columns:48px 72px 124px minmax(0,1fr) 84px;
-gap:12px;align-items:baseline}
-.reg-head{padding:10px 8px 8px;border-bottom:1px solid var(--rule-2)}
-ol.events{list-style:none;margin:0;padding:0}
-ol.events li{padding:10px 8px;border-bottom:1px solid var(--rule);cursor:pointer;font-size:.9rem}
-ol.events li:hover{background:var(--soft)}
-ol.events li.sel{background:var(--sel)}
-ol.events li.root{box-shadow:inset 2px 0 0 var(--red)}
-ol.events li.day{display:block;cursor:default;padding:18px 8px 6px;font-size:.78rem;color:var(--muted);
-border-bottom:1px solid var(--rule);background:none}
-ol.events li.sub{font-size:.86rem}
+/* filters + register, joined into one panel */
+.filters{display:flex;flex-wrap:wrap;gap:8px 10px;align-items:center;margin-top:16px;padding:12px 14px;
+background:var(--surface);border:1px solid var(--rule);border-bottom:0;border-radius:12px 12px 0 0}
+.filters input[type=search]{flex:1 1 220px;min-width:0;padding:7px 11px;border:1px solid var(--rule-2);
+border-radius:8px;background:var(--surface-2);transition:border-color .15s,box-shadow .15s}
+.filters input[type=search]:focus,.filters select:focus{outline:0;border-color:var(--accent);
+box-shadow:0 0 0 3px var(--accent-soft)}
+.filters select{padding:7px 9px;border:1px solid var(--rule-2);border-radius:8px;background:var(--surface-2);max-width:100%}
+.chip{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--rule);background:var(--surface-2);
+padding:3px 10px;border-radius:999px;cursor:pointer;font-size:.78rem;color:var(--ink-2);transition:opacity .15s,border-color .15s}
+.chip:hover{border-color:var(--rule-2)}
+.chip[aria-pressed="false"]{opacity:.4}
+.toggle{display:flex;gap:6px;align-items:center;font-size:.82rem;color:var(--ink-2)}
+.toggle input{accent-color:var(--accent)}
+.count{color:var(--muted);font-size:.78rem;margin-left:auto}
+.reg-head,ol.events li{display:grid;grid-template-columns:50px 74px 124px minmax(0,1fr) 86px;gap:12px;align-items:baseline}
+.reg-head{padding:9px 14px;background:var(--surface-2);border:1px solid var(--rule)}
+ol.events{list-style:none;margin:0;padding:0;background:var(--surface);border:1px solid var(--rule);border-top:0;
+border-radius:0 0 12px 12px;overflow:hidden;box-shadow:var(--sh-1)}
+ol.events li{padding:10px 14px;border-top:1px solid var(--rule);cursor:pointer;font-size:.88rem;
+transition:background .12s}
+ol.events li:first-child{border-top:0}
+ol.events li:hover{background:var(--surface-2)}
+ol.events li.sel{background:var(--sel);box-shadow:inset 3px 0 0 var(--accent)}
+ol.events li.root{box-shadow:inset 3px 0 0 var(--red)}
+ol.events li.root.sel{background:var(--sel)}
+ol.events li.day{display:block;cursor:default;padding:12px 14px 6px;font-size:.72rem;font-weight:600;
+letter-spacing:.06em;text-transform:uppercase;color:var(--muted);background:var(--surface)}
+ol.events li.sub{font-size:.84rem;background:var(--surface-2)}
 ol.events li.sub .n{padding-left:10px}
 ol.events li.runrow .text{color:var(--ink-2)}
-ol.events .n{font:.8rem var(--mono);color:var(--muted);font-variant-numeric:tabular-nums}
-ol.events li.root .n{color:var(--red)}
-ol.events .time{font:.82rem var(--mono);color:var(--ink-2);font-variant-numeric:tabular-nums}
-ol.events .actor{font:.8rem var(--mono);color:var(--muted);overflow-wrap:anywhere}
+ol.events .n{font:.78rem var(--mono);color:var(--muted);font-variant-numeric:tabular-nums}
+ol.events li.root .n{color:var(--red);font-weight:600}
+ol.events .time{font:.8rem var(--mono);color:var(--ink-2);font-variant-numeric:tabular-nums}
+ol.events .actor{font:.78rem var(--mono);color:var(--muted);overflow-wrap:anywhere}
 ol.events .text{display:flex;gap:9px;align-items:baseline;overflow-wrap:anywhere;min-width:0}
-ol.events .text .g{position:relative;top:0}
-ol.events .tag{font-size:.75rem;font-weight:600;color:var(--red);margin-right:6px}
+ol.events .tag{font-size:.7rem;font-weight:700;color:var(--red);background:var(--red-soft);padding:1px 6px;
+border-radius:5px;margin-right:6px;letter-spacing:.03em}
 ol.events li.empty{display:block;cursor:default;color:var(--muted);text-align:center;padding:28px}
-.more{margin:16px 0;text-align:center}
+.more{margin:14px 0;text-align:center}
 
-/* detail */
-.detail{position:sticky;top:20px;max-height:calc(100vh - 40px);overflow:auto;
-border-left:1px solid var(--rule);padding:0 0 16px 24px}
-.detail .head{display:flex;justify-content:space-between;align-items:flex-start;gap:8px;padding:2px 0 10px}
-.detail .head .no{font:600 1.1rem var(--mono);margin-top:2px}
-.detail .body{padding:0}
-.detail .rootnote{font-size:.8rem;font-weight:600;color:var(--red);margin-top:4px}
-.detail .text{margin:10px 0 14px;font-size:1rem;line-height:1.5;overflow-wrap:anywhere}
+/* evidence sheet */
+.detail{position:sticky;top:20px;max-height:calc(100vh - 40px);overflow:auto;background:var(--surface);
+border:1px solid var(--rule);border-radius:12px;box-shadow:var(--sh-2);padding:0 0 18px}
+.detail .head{display:flex;justify-content:space-between;align-items:flex-start;gap:8px;padding:16px 18px 12px;
+border-bottom:1px solid var(--rule);background:linear-gradient(var(--surface-2),var(--surface))}
+.detail .head .no{font:650 1.25rem var(--mono);margin-top:2px;letter-spacing:-.01em}
+.detail .body{padding:0 18px}
+.detail .rootnote{display:inline-block;font-size:.72rem;font-weight:700;color:var(--red);background:var(--red-soft);
+padding:2px 8px;border-radius:5px;margin-top:14px;letter-spacing:.03em}
+.detail .text{margin:12px 0 14px;font-size:.98rem;line-height:1.5;font-weight:500;overflow-wrap:anywhere}
 .detail .text .g{margin-right:4px}
-.detail dl.fields{grid-template-columns:96px 1fr;font-size:.88rem}
-.detail h3{font-size:.8rem;font-weight:600;color:var(--muted);margin:20px 0 6px}
-.detail ul{margin:0;padding-left:18px;font-size:.88rem;color:var(--ink-2)}
+.detail dl.fields{grid-template-columns:96px 1fr;font-size:.85rem}
+.detail h3{font-size:.7rem;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin:20px 0 6px}
+.detail ul{margin:0;padding-left:18px;font-size:.86rem;color:var(--ink-2)}
 .detail li{margin:4px 0}
-.cite{margin:10px 0}
-.cite .ref{display:flex;justify-content:space-between;align-items:center;gap:8px;font:.78rem var(--mono);
-color:var(--ink-2);overflow-wrap:anywhere;margin-bottom:4px}
-.cite pre{margin:0}
-.detail .empty{color:var(--muted);margin:8px 0;font-size:.9rem}
+.cite{margin:10px 0;border:1px solid var(--rule);border-radius:8px;overflow:hidden}
+.cite .ref{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:6px 10px;
+background:var(--surface-2);border-bottom:1px solid var(--rule);font:.76rem var(--mono);color:var(--ink-2);overflow-wrap:anywhere}
+.cite pre{margin:0;border:0;border-radius:0;background:var(--surface)}
+.detail .empty{color:var(--muted);margin:16px 18px;font-size:.88rem}
 .detail .close{display:none}
-footer{color:var(--muted);font-size:.78rem;margin-top:48px;padding-top:14px;border-top:1px solid var(--rule)}
+footer{color:var(--muted);font-size:.76rem;margin-top:40px;padding-top:14px;border-top:1px solid var(--rule)}
 
-@media (max-width:980px){
+/* attack flow */
+ol.flow{list-style:none;margin:6px 0 0;padding:0;max-width:740px}
+.flow-node{background:var(--surface);border:1px solid var(--rule);border-radius:12px;padding:13px 16px;box-shadow:var(--sh-1)}
+.flow-node[role=button]{cursor:pointer;transition:border-color .2s,box-shadow .2s,transform .2s}
+.flow-node[role=button]:hover,.flow-node[role=button]:focus-visible{border-color:var(--accent);box-shadow:var(--sh-2);
+transform:translateY(-2px);outline:none}
+.flow-node.actor{background:var(--surface-2);border-style:dashed;box-shadow:none}
+.flow-actor{font:600 .95rem var(--mono);margin-top:3px}
+.flow-node.root{border-color:color-mix(in srgb,var(--red) 40%,var(--rule));box-shadow:inset 3px 0 0 var(--red),var(--sh-1)}
+.flow-meta{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;font:.76rem var(--mono);color:var(--muted)}
+.flow-meta .n{color:var(--ink-2);font-weight:600}
+.flow-node.root .flow-meta .n{color:var(--red)}
+.flow-meta .tag{font:700 .68rem var(--sans);color:var(--red);background:var(--red-soft);padding:1px 6px;border-radius:5px}
+.flow-text{margin:6px 0 5px;font-weight:500;overflow-wrap:anywhere}
+.flow-foot{display:flex;justify-content:space-between;gap:12px;font:.76rem var(--mono);color:var(--muted)}
+.flow-link{position:relative;height:42px;margin-left:30px;border-left:2px solid var(--rule-2)}
+.flow-link::after{content:"";position:absolute;left:-6px;bottom:-1px;border:5px solid transparent;
+border-top:7px solid var(--rule-2);border-bottom:0}
+.flow-link span{position:absolute;left:14px;top:50%;transform:translateY(-50%);font-size:.74rem;font-weight:600;
+color:var(--accent);background:var(--accent-soft);padding:1px 8px;border-radius:999px}
+
+/* 3D space */
+.space-box{position:relative;border:1px solid var(--rule);border-radius:12px;overflow:hidden;box-shadow:var(--sh-1);
+background:radial-gradient(ellipse at 50% 55%,var(--surface),var(--surface-2) 75%)}
+canvas.space{display:block;width:100%;height:420px;cursor:grab;touch-action:none}
+canvas.space:active{cursor:grabbing}
+.space-tip{position:absolute;max-width:300px;pointer-events:none;background:var(--ink);color:var(--bg);
+font:.75rem/1.45 var(--mono);padding:7px 10px;border-radius:8px;white-space:pre-wrap;box-shadow:var(--sh-2)}
+[role=tabpanel]>.chart-head{margin-bottom:2px}
+
+/* motion: short, once, and only while the script holds the class */
+@keyframes rise{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+@keyframes fade{from{opacity:0}to{opacity:1}}
+@keyframes slideIn{from{opacity:0;transform:translateX(-10px)}to{opacity:1;transform:none}}
+@keyframes pop{from{opacity:0;transform:scale(.2)}to{opacity:1;transform:scale(1)}}
+@keyframes grow{from{transform:scaleY(0)}to{transform:scaleY(1)}}
+@keyframes slide{from{opacity:0;transform:translateX(12px)}to{opacity:1;transform:none}}
+@keyframes flip{from{opacity:0;transform:perspective(900px) rotateX(-12deg) translateY(14px)}to{opacity:1;transform:perspective(900px)}}
+.motion .side{animation:slideIn .45s ease-out both}
+.motion .cover{animation:rise .5s .05s ease-out both}
+.motion .hero{animation:flip .6s .12s cubic-bezier(.2,.8,.2,1) both}
+.motion .kpi{animation:flip .6s cubic-bezier(.2,.8,.2,1) both;animation-delay:calc(.2s + var(--i) * 70ms)}
+.motion .stage{animation:rise .5s .35s ease-out both}
+[role=tabpanel].enter{animation:rise .32s ease-out}
+.chart svg.pop .ev{transform-box:fill-box;transform-origin:center;animation:pop .34s cubic-bezier(.3,1.5,.6,1) both}
+.chart svg.pop .rootline{transform-box:fill-box;transform-origin:top;animation:grow .5s .75s ease-out both}
+.chart svg.pop .roottag,.chart svg.pop .roottagbg{animation:fade .3s 1.1s both}
+.detail .body.enter{animation:slide .28s ease-out}
+.play .flow-node{animation:flip .5s cubic-bezier(.2,.8,.2,1) both;animation-delay:calc(var(--i) * 90ms)}
+.play .flow-link{transform-origin:top;animation:grow .3s ease-out both;animation-delay:calc(var(--i) * 90ms)}
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}
+.tilt{transform:none!important}}
+@media print{*,*::before,*::after{animation:none!important}.side{display:none}.shell{display:block}}
+
+/* narrow screens: the sidebar becomes a top bar */
+@media (max-width:1080px){
 .tl{grid-template-columns:1fr}
-.detail{position:fixed;left:0;right:0;bottom:0;top:auto;max-height:62vh;z-index:5;display:none;
-background:var(--bg);border:0;border-top:1px solid var(--rule-2);padding:14px 20px 20px;
-box-shadow:0 -8px 24px rgba(0,0,0,.12)}
+.detail{position:fixed;left:0;right:0;bottom:0;top:auto;max-height:62vh;z-index:5;display:none;border-radius:14px 14px 0 0}
 .detail.open{display:block}
 .detail .close{display:inline-block}
+.finding{grid-template-columns:1fr}
+.kpis{grid-template-columns:repeat(4,minmax(0,1fr))}
+}
+@media (max-width:860px){
+.shell{display:block}
+.side{position:sticky;height:auto;z-index:4;flex-direction:row;flex-wrap:wrap;align-items:center;gap:10px 14px;
+padding:12px 16px;border-right:0;border-bottom:1px solid var(--rule)}
+.side-case{display:flex;align-items:center;gap:10px;margin:0;padding:0;border:0;background:none}
+.side-case .label,.side-foot{display:none}
+.side-id{margin:0}
+nav.tabs{flex-direction:row;overflow-x:auto;width:100%;gap:4px;padding-bottom:2px}
+nav.tabs button{width:auto;white-space:nowrap;padding:6px 10px}
+nav.tabs button[aria-selected="true"]::before{display:none}
+.main{padding:20px 16px 56px}
 .reg-head{display:none}
-ol.events li{grid-template-columns:auto auto minmax(0,1fr);
-grid-template-areas:"n time conf" "actor actor actor" "text text text";row-gap:2px}
+ol.events li{grid-template-columns:auto auto minmax(0,1fr);grid-template-areas:"n time conf" "actor actor actor" "text text text";row-gap:2px}
 ol.events .n{grid-area:n}ol.events .time{grid-area:time}ol.events .actor{grid-area:actor}
 ol.events .text{grid-area:text}ol.events li>:last-child{grid-area:conf;justify-self:end}
-.finding{grid-template-columns:1fr}
-}
-@media (max-width:640px){
-.wrap{padding:24px 16px 56px}
-.cover h1{font-size:1.35rem}
-.ledger{gap:20px}
-.ledger dd{font-size:1.3rem}
+.kpis{grid-template-columns:repeat(2,minmax(0,1fr))}
 dl.fields{grid-template-columns:1fr;gap:0}
 dl.fields dd{margin-bottom:6px}
 }
-@media print{nav.tabs,.filters,.chart-head .btn,.detail{display:none}}
 </style>
 </head>
 <body>
 <div id="app"></div>
-<script type="application/json" id="data">{"attackers":["172.30.0.1"],"caseId":"WF-E887DEB66B","categories":[{"id":"recon","label":"Pengintaian"},{"id":"exploit","label":"Eksploitasi"},{"id":"login","label":"Login"},{"id":"write","label":"Penulisan"},{"id":"file","label":"Perubahan file"},{"id":"use","label":"Pemakaian file"},{"id":"other","label":"Lainnya"}],"cites":[{"ex":"172.30.0.1 - - [29/Oct/2026:05:19:47 +0000] \"GET / HTTP/1.1\" 200 298 \"-\" \"webforensics-lab/1.0 scenario-f\" \"-\"","ref":"access.log:1"},{"ex":"172.30.0.1 - - [29/Oct/2026:05:19:53 +0000] \"GET /admin/login.php?username=admin\u0026password=wrong-lab-password HTTP/1.1\" 401 355 \"-\" \"webforensics-lab/1.0 scenario-f\" \"-\"","ref":"access.log:4"},{"ex":"172.30.0.1 - - [29/Oct/2026:05:19:55 +0000] \"GET /admin/login.php?username=admin%27+OR+%271%27%3D%271+--+\u0026password= HTTP/1.1\" 200 359 \"-\" \"webforensics-lab/1.0 scenario-f\" \"-\"","ref":"access.log:5"},{"ex":"172.30.0.1 - - [29/Oct/2026:05:19:57 +0000] \"POST /admin/auth_upload.php HTTP/1.1\" 200 51 \"-\" \"webforensics-lab/1.0 scenario-f\" \"-\"","ref":"access.log:6"},{"ex":"SHA-256 c2f45202f02ab18a6ad3965db67be368436a3a245819798ad1601464405f838c","ref":"uploads/scenario-f-marker.php @c2f45202f02a"},{"ex":"172.30.0.1 - - [29/Oct/2026:05:19:59 +0000] \"GET /uploads/scenario-f-marker.php HTTP/1.1\" 200 37 \"-\" \"webforensics-lab/1.0 scenario-f\" \"-\"","ref":"access.log:7"}],"events":[{"actor":"172.30.0.1","basis":"log","cat":"recon","cites":[0],"clock":"12:19:47","conf":"high","confLabel":"tinggi","day":"29 Okt 2026","ms":1793251187000,"n":1,"notes":[],"phase":"-","root":false,"run":null,"story":false,"text":"Request pertama aktor ini di log: GET / → 200.","time":"2026-10-29 12:19:47 WIB"},{"actor":"172.30.0.1","basis":"log","cat":"login","cites":[1],"clock":"12:19:53","conf":"high","confLabel":"tinggi","day":"29 Okt 2026","ms":1793251193000,"n":2,"notes":["Server membalas 401."],"phase":"-","root":false,"run":null,"story":false,"text":"Login gagal: GET /admin/login.php → 401.","time":"2026-10-29 12:19:53 WIB"},{"actor":"172.30.0.1","basis":"log","cat":"exploit","cites":[2],"clock":"12:19:55","conf":"medium","confLabel":"sedang","day":"29 Okt 2026","ms":1793251195000,"n":3,"notes":["Login dengan payload SQL injection berhasil, lalu aktor yang sama menulis file di area yang sama.","Respons berbeda dari login yang gagal dan tidak diikuti percobaan ulang.","Kaitan login dan upload disimpulkan dari IP dan area yang sama, karena cookie sesi tidak tercatat."],"phase":"Initial Access (akses awal) · T1190","root":true,"run":null,"story":true,"text":"Bypass login dengan SQL injection: GET /admin/login.php → 200.","time":"2026-10-29 12:19:55 WIB"},{"actor":"172.30.0.1","basis":"log","cat":"write","cites":[3,4],"clock":"12:19:57","conf":"high","confLabel":"tinggi","day":"29 Okt 2026","ms":1793251197000,"n":4,"notes":["Hanya satu request penulis yang cocok dengan waktu file dibuat.","Aktor yang sama kemudian mengakses file ini.","Isi POST tidak tercatat di access log, jadi nama file yang diupload tidak terbukti dari log."],"phase":"Persistence (bertahan) · T1505.003","root":false,"run":null,"story":true,"text":"Request yang menulis uploads/scenario-f-marker.php: POST /admin/auth_upload.php → 200.","time":"2026-10-29 12:19:57 WIB"},{"actor":"","basis":"btime","cat":"file","cites":[4],"clock":"12:19:57","conf":"high","confLabel":"tinggi","day":"29 Okt 2026","ms":1793251197000,"n":5,"notes":["Waktu dari btime (waktu file lahir), yang tidak bisa diubah dengan touch."],"phase":"Persistence (bertahan) · T1505.003","root":false,"run":null,"story":true,"text":"File uploads/scenario-f-marker.php dibuat (SHA-256 c2f45202f02a…).","time":"2026-10-29 12:19:57 WIB"},{"actor":"172.30.0.1","basis":"log","cat":"use","cites":[5],"clock":"12:19:59","conf":"high","confLabel":"tinggi","day":"29 Okt 2026","ms":1793251199000,"n":6,"notes":[],"phase":"Persistence (bertahan) · T1505.003","root":false,"run":null,"story":true,"text":"File uploads/scenario-f-marker.php diakses: GET /uploads/scenario-f-marker.php → 200.","time":"2026-10-29 12:19:59 WIB"}],"gaps":[],"generated":"2026-10-28 09:00:00 WIB","labels":{"noActor":"-","rootMarker":"AKAR MASALAH"},"lanes":["172.30.0.1",""],"offsetMin":420,"runs":[],"subtitle":"WF-E887DEB66B · 2026-10-28 09:00:00 WIB","tabs":[{"id":"overview","label":"Ringkasan","sections":[{"blocks":[{"items":["Ditemukan 1 file mencurigakan yang terkait dengan 1 alamat IP. Aktivitas pertama aktor pada 2026-10-29 12:19:47 WIB, terakhir pada 2026-10-29 12:19:59 WIB.","Titik masuk yang paling mungkin: SQL injection pada login (bypass autentikasi) lewat GET /admin/login.php pada 2026-10-29 12:19:55 WIB (keyakinan sedang)."],"t":"ul"},{"t":"h","text":"Alur serangan"},{"items":["#3 2026-10-29 12:19:55 WIB: Bypass login dengan SQL injection: GET /admin/login.php → 200.","#4 2026-10-29 12:19:57 WIB: Request yang menulis uploads/scenario-f-marker.php: POST /admin/auth_upload.php → 200.","#5 2026-10-29 12:19:57 WIB: File uploads/scenario-f-marker.php dibuat (SHA-256 c2f45202f02a…).","#6 2026-10-29 12:19:59 WIB: File uploads/scenario-f-marker.php diakses: GET /uploads/scenario-f-marker.php → 200."],"t":"ul"}],"title":"1. Ringkasan"}]},{"id":"timeline","label":"Kronologi","sections":[]},{"id":"root","label":"Akar masalah","sections":[{"blocks":[{"pairs":[["Kejadian","#3 Bypass login dengan SQL injection: GET /admin/login.php → 200."],["Jenis kelemahan","SQL injection pada login (bypass autentikasi)"],["Keyakinan","sedang"],["Bukti","access.log:5"]],"t":"dl"},{"t":"h","text":"Baris log asli"},{"lines":["172.30.0.1 - - [29/Oct/2026:05:19:55 +0000] \"GET /admin/login.php?username=admin%27+OR+%271%27%3D%271+--+\u0026password= HTTP/1.1\" 200 359 \"-\" \"webforensics-lab/1.0 scenario-f\" \"-\""],"t":"code"},{"t":"h","text":"Alasan"},{"items":["Login dengan payload SQL injection berhasil, lalu aktor yang sama menulis file di area yang sama.","Respons berbeda dari login yang gagal dan tidak diikuti percobaan ulang.","Kaitan login dan upload disimpulkan dari IP dan area yang sama, karena cookie sesi tidak tercatat."],"t":"ul"},{"t":"h","text":"Baris kode yang rentan"},{"pairs":[["Lokasi","admin/login.php:13"],["Kenapa dianalisis","endpoint titik masuk (akar masalah atau kandidatnya)"],["Keyakinan","tinggi"],["Input dari","$_GET, $_POST"],["Query dijalankan di","admin/login.php:14 ($pdo-\u003equery)"],["Bukti","admin/login.php @fa2a9d556bc9"]],"t":"dl"},{"lines":["$query = \"SELECT id, username FROM users WHERE username = '$username' AND password = '$password'\";"],"t":"code"},{"t":"p","text":"Contoh perbaikan (prepared statement)"},{"lines":["$stmt = $pdo-\u003eprepare(\"SELECT id, username FROM users WHERE username = ? AND password = ?\");","$stmt-\u003eexecute([$username, $password]);"],"t":"code"},{"pairs":[["File yang dianalisis","admin/auth_upload.php, admin/login.php"]],"t":"dl"}],"title":"4. Akar Masalah"}]},{"id":"files","label":"File","sections":[{"blocks":[{"t":"h","text":"uploads/scenario-f-marker.php"},{"pairs":[["SHA-256","c2f45202f02ab18a6ad3965db67be368436a3a245819798ad1601464405f838c"],["Ukuran","26 byte"],["Status baseline","tidak diketahui (tanpa baseline)"],["Timestamp","btime 2026-10-29 12:19:57 WIB; ctime 2026-10-29 12:19:57 WIB; mtime 2026-10-29 12:19:57 WIB"],["Sumber timestamp","manifest webroot"],["URL","/uploads/scenario-f-marker.php"]],"t":"dl"},{"t":"p","text":"Temuan"},{"items":["File skrip di folder yang bisa ditulis: uploads/scenario-f-marker.php (FILE-WEBSHELL-WRITABLE-EXEC, keyakinan sedang)"],"t":"ul"}],"title":"5. File Terdampak"},{"blocks":[{"t":"p","text":"Tidak ada."}],"title":"6. Perubahan yang Perlu Ditinjau"}]},{"id":"iocs","label":"IOC","sections":[{"blocks":[{"t":"h","text":"Alamat IP"},{"lines":["172.30.0.1"],"t":"code"},{"t":"h","text":"User agent"},{"lines":["webforensics-lab/1.0 scenario-f"],"t":"code"},{"t":"h","text":"Hash SHA-256"},{"lines":["c2f45202f02ab18a6ad3965db67be368436a3a245819798ad1601464405f838c"],"t":"code"},{"t":"h","text":"Path file"},{"lines":["uploads/scenario-f-marker.php"],"t":"code"},{"t":"h","text":"URL"},{"lines":["/uploads/scenario-f-marker.php"],"t":"code"}],"title":"7. Indikator Kompromi (IOC)"},{"blocks":[{"t":"p","text":"Tidak ada."}],"title":"9. Aktivitas Serangan Lain (Tidak Terkait Insiden)"}]},{"id":"gaps","label":"Celah bukti","sections":[{"blocks":[{"headers":["ID","Jenis","Rentang waktu","Keterangan","Melemahkan"],"hl":[],"rows":[[{"mark":null,"text":"G1"},{"mark":null,"text":"Tanpa baseline"},{"mark":null,"text":"-"},{"mark":null,"text":"Tidak ada baseline (salinan bersih) untuk pembanding, jadi status file hanya dari heuristik."},{"mark":null,"text":"-"}]],"t":"table"}],"title":"8. Celah Bukti"}]},{"id":"actions","label":"Tindakan","sections":[{"blocks":[{"t":"h","text":"Penahanan (containment)"},{"items":["Amankan bukti dulu: salin log dan webroot beserta hash-nya sebelum mengubah apa pun di server.","Batasi akses ke situs (mode maintenance atau firewall) sampai file berbahaya dihapus.","Blokir sementara IP berikut: 172.30.0.1."],"t":"ul"},{"t":"h","text":"Pembersihan (eradication)"},{"items":["Karantina lalu hapus file berikut setelah disalin sebagai bukti: uploads/scenario-f-marker.php.","Perbaiki query login di /admin/login.php dengan prepared statement, lalu periksa query lain yang menyusun SQL dari input user.","Perbaiki endpoint /admin/auth_upload.php: batasi ekstensi dan tipe file, simpan upload di luar webroot, dan matikan eksekusi skrip di folder upload.","Ganti query di admin/login.php baris 13 dengan prepared statement (contoh perbaikan ada di bagian Akar Masalah)."],"t":"ul"},{"t":"h","text":"Pemulihan (recovery)"},{"items":["Ganti password admin aplikasi, database, dan semua kredensial yang tersimpan di file konfigurasi webroot.","Pulihkan webroot dari sumber yang terpercaya (git atau backup sebelum insiden), bukan dengan menghapus file satu per satu saja.","Setelah pemulihan, pantau akses ke /uploads/scenario-f-marker.php dan aktivitas dari IP di daftar IOC."],"t":"ul"},{"t":"h","text":"Pembelajaran (lessons learned)"},{"items":["Simpan baseline webroot (daftar hash file) secara berkala supaya file baru atau berubah bisa dipastikan.","Aktifkan pemantauan integritas file (FIM) pada webroot.","Catat nama file upload di log aplikasi, karena access log tidak mencatat isi POST."],"t":"ul"}],"title":"10. Tindakan yang Disarankan"},{"blocks":[{"items":["Laporan ini dibuat otomatis dengan aturan deterministik. Kesimpulannya perlu diverifikasi analis.","Isi request POST tidak tercatat di access log. Payload SQL injection lewat POST dan nama file upload tidak terlihat.","Penyerang dengan akses root bisa memalsukan timestamp file. Alat ini hanya mendeteksi ketidakkonsistenan, tidak bisa membuktikan keaslian.","Penyerang dengan akses root bisa menghapus baris log. Yang bisa dideteksi hanya celah waktu yang mencolok.","IP yang dipakai bersama (NAT, proxy, CDN tanpa X-Forwarded-For) bisa menggabungkan beberapa orang menjadi satu aktor.","Analisis kode hanya mencari SQL injection di file PHP yang terlibat dan file yang di-include-nya (satu tingkat, dari pola path include), per file dan per fungsi. Alur lewat pemanggilan fungsi, input dari framework, dan ORM tidak dilacak, jadi \"tidak ditemukan\" bukan berarti aman. Celah upload belum dilokalisasi di kode."],"t":"ul"}],"title":"11. Keterbatasan"}]},{"id":"case","label":"Info kasus","sections":[{"blocks":[{"pairs":[["ID kasus","WF-E887DEB66B"],["Analis","-"],["Host target","563daf0056be"],["Laporan dibuat","2026-10-28 09:00:00 WIB"],["Zona waktu laporan","WIB (UTC+07:00)"]],"t":"dl"},{"t":"h","text":"Cakupan bukti"},{"pairs":[["Periode access log","2026-10-29 12:19:47 WIB s.d. 2026-10-29 12:19:59 WIB"],["Access log","7 baris terbaca"],["Webroot","11 file"],["Bukti dikumpulkan","2026-10-29 12:20:10 WIB"],["Baseline","tidak ada"]],"t":"dl"}],"title":"2. Informasi Kasus"},{"blocks":[{"headers":["Rujukan","Kutipan"],"hl":[],"rows":[[{"mark":null,"text":"access.log:1"},{"mark":null,"text":"172.30.0.1 - - [29/Oct/2026:05:19:47 +0000] \"GET / HTTP/1.1\" 200 298 \"-\" \"webforensics-lab/1.0 scenario-f\" \"-\""}],[{"mark":null,"text":"access.log:4"},{"mark":null,"text":"172.30.0.1 - - [29/Oct/2026:05:19:53 +0000] \"GET /admin/login.php?username=admin\u0026password=wrong-lab-password HTTP/1.1\" 401 355 \"-\" \"webforensics-lab/1.0 scenario-f\" \"-\""}],[{"mark":null,"text":"access.log:5"},{"mark":null,"text":"172.30.0.1 - - [29/Oct/2026:05:19:55 +0000] \"GET /admin/login.php?username=admin%27+OR+%271%27%3D%271+--+\u0026password= HTTP/1.1\" 200 359 \"-\" \"webforensics-lab/1.0 scenario-f\" \"-\""}],[{"mark":null,"text":"access.log:6"},{"mark":null,"text":"172.30.0.1 - - [29/Oct/2026:05:19:57 +0000] \"POST /admin/auth_upload.php HTTP/1.1\" 200 51 \"-\" \"webforensics-lab/1.0 scenario-f\" \"-\""}],[{"mark":null,"text":"uploads/scenario-f-marker.php @c2f45202f02a"},{"mark":null,"text":"SHA-256 c2f45202f02ab18a6ad3965db67be368436a3a245819798ad1601464405f838c"}],[{"mark":null,"text":"access.log:7"},{"mark":null,"text":"172.30.0.1 - - [29/Oct/2026:05:19:59 +0000] \"GET /uploads/scenario-f-marker.php HTTP/1.1\" 200 37 \"-\" \"webforensics-lab/1.0 scenario-f\" \"-\""}],[{"mark":null,"text":"admin/login.php @fa2a9d556bc9"},{"mark":null,"text":"SHA-256 fa2a9d556bc98ba3751bc6f7eee860d187cd579c6658a6b962c0f32cbac77d45"}]],"t":"table"}],"title":"Lampiran A. Rujukan Bukti"},{"blocks":[{"pairs":[["Versi alat","0.1.0"],["Versi ruleset","0.1.0"],["Hash konfigurasi","7cabfdcdf016d39c2da7bcee773e1d9849ef20e55c633338b4fe17124069ca0d"]],"t":"dl"},{"t":"h","text":"File input"},{"headers":["File","SHA-256","Ukuran"],"hl":[],"rows":[[{"mark":null,"text":"access.log"},{"mark":null,"text":"d790e8e4e30e74b214ba5a76d631e9b48355ba6e2004189ffe7d72d01172bdb4"},{"mark":null,"text":"980 byte"}],[{"mark":null,"text":"manifest.tsv"},{"mark":null,"text":"dc514b240fa3667f9b7af0ce486c823e96b308dac532485ad6e4c45e91d98d7f"},{"mark":null,"text":"1987 byte"}]],"t":"table"},{"t":"p","text":"Input, versi, dan konfigurasi yang sama menghasilkan laporan yang sama persis."}],"title":"Lampiran B. Reproduksibilitas"}]}],"title":"Laporan Insiden Website","tool":"0.1.0","ui":{"cat.exploit":"Eksploitasi","cat.file":"Perubahan file","cat.login":"Login","cat.other":"Lainnya","cat.recon":"Pengintaian","cat.use":"Pemakaian file","cat.write":"Penulisan","chart.empty":"Kronologi kosong: tidak ada kejadian yang terkait insiden.","chart.files":"bukti file","chart.hint":"Klik tanda atau baris untuk membuka lembar buktinya. Seret di grafik untuk memperbesar. Area abu-abu adalah celah bukti.","chart.others":"aktor lain","chart.reset":"Kembalikan","chart.root":"akar","chart.title":"Kronologi per aktor","col.actor":"Aktor","col.confidence":"Keyakinan","col.event":"Kejadian","col.n":"No.","col.time":"Jam","copied":"Tersalin","copy":"Salin","detail.actor":"Aktor","detail.basis":"Dasar waktu","detail.close":"Tutup","detail.confidence":"Keyakinan","detail.empty":"Pilih kejadian di grafik atau di register untuk membuka lembar buktinya.","detail.evidence":"Kutipan bukti","detail.notes":"Catatan keyakinan","detail.phase":"Fase ATT\u0026CK","detail.root":"Akar masalah","detail.time":"Waktu","detail.title":"Lembar bukti","filter.actor":"Semua aktor","filter.count":"{shown} dari {total} kejadian","filter.more":"Tampilkan {count} lagi","filter.none":"Tidak ada kejadian yang cocok dengan filter.","filter.search":"Cari path, IP, atau kata","filter.story":"Hanya alur serangan","generated_by":"Dibuat oleh webforensics dari report.json. Halaman ini offline dan tidak memuat apa pun dari internet.","kicker":"Berkas insiden","meta.case":"No. kasus","meta.generated":"Dibuat","meta.tool":"Alat","meta.zone":"Zona waktu","run.collapse":"Tutup","run.expand":"Buka {count}","run.summary":"Rentetan {count} request yang ditandai dari aktor ini: {endpoints}. Jenis: {rules}.","stamp.clean":"Tidak ada kompromi terdeteksi","stamp.compromised":"Terkompromi","stat.actors":"aktor","stat.events":"kejadian","stat.files":"file terdampak","stat.gaps":"celah bukti","tab.actions":"Tindakan","tab.case":"Info kasus","tab.files":"File","tab.gaps":"Celah bukti","tab.iocs":"IOC","tab.overview":"Ringkasan","tab.root":"Akar masalah","tab.timeline":"Kronologi","verdict.clean":"Tidak ada file atau skrip yang terkait penyerang. Lihat celah bukti sebelum menyimpulkan situs ini bersih.","verdict.from":"dari","verdict.no_root":"Titik masuk belum bisa ditentukan dari bukti yang ada.","verdict.result":"Hasil","verdict.root":"Titik masuk"},"verdict":{"compromised":true,"root":{"actor":"172.30.0.1","clock":"12:19:55","conf":"medium","confLabel":"sedang","day":"29 Okt 2026","n":3,"text":"Bypass login dengan SQL injection: GET /admin/login.php → 200.","time":"2026-10-29 12:19:55 WIB","vuln":"SQL injection pada login (bypass autentikasi)"},"stats":{"actors":1,"events":6,"files":1,"gaps":1}},"zone":"WIB (UTC+07:00)","zoneShort":"WIB"}</script>
+<script type="application/json" id="data">{"attackers":["172.30.0.1"],"caseId":"WF-E887DEB66B","categories":[{"id":"recon","label":"Pengintaian"},{"id":"exploit","label":"Eksploitasi"},{"id":"login","label":"Login"},{"id":"write","label":"Penulisan"},{"id":"file","label":"Perubahan file"},{"id":"use","label":"Pemakaian file"},{"id":"other","label":"Lainnya"}],"cites":[{"ex":"172.30.0.1 - - [29/Oct/2026:05:19:47 +0000] \"GET / HTTP/1.1\" 200 298 \"-\" \"webforensics-lab/1.0 scenario-f\" \"-\"","ref":"access.log:1"},{"ex":"172.30.0.1 - - [29/Oct/2026:05:19:53 +0000] \"GET /admin/login.php?username=admin\u0026password=wrong-lab-password HTTP/1.1\" 401 355 \"-\" \"webforensics-lab/1.0 scenario-f\" \"-\"","ref":"access.log:4"},{"ex":"172.30.0.1 - - [29/Oct/2026:05:19:55 +0000] \"GET /admin/login.php?username=admin%27+OR+%271%27%3D%271+--+\u0026password= HTTP/1.1\" 200 359 \"-\" \"webforensics-lab/1.0 scenario-f\" \"-\"","ref":"access.log:5"},{"ex":"172.30.0.1 - - [29/Oct/2026:05:19:57 +0000] \"POST /admin/auth_upload.php HTTP/1.1\" 200 51 \"-\" \"webforensics-lab/1.0 scenario-f\" \"-\"","ref":"access.log:6"},{"ex":"SHA-256 c2f45202f02ab18a6ad3965db67be368436a3a245819798ad1601464405f838c","ref":"uploads/scenario-f-marker.php @c2f45202f02a"},{"ex":"172.30.0.1 - - [29/Oct/2026:05:19:59 +0000] \"GET /uploads/scenario-f-marker.php HTTP/1.1\" 200 37 \"-\" \"webforensics-lab/1.0 scenario-f\" \"-\"","ref":"access.log:7"}],"events":[{"actor":"172.30.0.1","basis":"log","cat":"recon","cites":[0],"clock":"12:19:47","conf":"high","confLabel":"tinggi","day":"29 Okt 2026","ms":1793251187000,"n":1,"notes":[],"phase":"-","root":false,"run":null,"story":false,"text":"Request pertama aktor ini di log: GET / → 200.","time":"2026-10-29 12:19:47 WIB"},{"actor":"172.30.0.1","basis":"log","cat":"login","cites":[1],"clock":"12:19:53","conf":"high","confLabel":"tinggi","day":"29 Okt 2026","ms":1793251193000,"n":2,"notes":["Server membalas 401."],"phase":"-","root":false,"run":null,"story":false,"text":"Login gagal: GET /admin/login.php → 401.","time":"2026-10-29 12:19:53 WIB"},{"actor":"172.30.0.1","basis":"log","cat":"exploit","cites":[2],"clock":"12:19:55","conf":"medium","confLabel":"sedang","day":"29 Okt 2026","ms":1793251195000,"n":3,"notes":["Login dengan payload SQL injection berhasil, lalu aktor yang sama menulis file di area yang sama.","Respons berbeda dari login yang gagal dan tidak diikuti percobaan ulang.","Kaitan login dan upload disimpulkan dari IP dan area yang sama, karena cookie sesi tidak tercatat."],"phase":"Initial Access (akses awal) · T1190","root":true,"run":null,"story":true,"text":"Bypass login dengan SQL injection: GET /admin/login.php → 200.","time":"2026-10-29 12:19:55 WIB"},{"actor":"172.30.0.1","basis":"log","cat":"write","cites":[3,4],"clock":"12:19:57","conf":"high","confLabel":"tinggi","day":"29 Okt 2026","ms":1793251197000,"n":4,"notes":["Hanya satu request penulis yang cocok dengan waktu file dibuat.","Aktor yang sama kemudian mengakses file ini.","Isi POST tidak tercatat di access log, jadi nama file yang diupload tidak terbukti dari log."],"phase":"Persistence (bertahan) · T1505.003","root":false,"run":null,"story":true,"text":"Request yang menulis uploads/scenario-f-marker.php: POST /admin/auth_upload.php → 200.","time":"2026-10-29 12:19:57 WIB"},{"actor":"","basis":"btime","cat":"file","cites":[4],"clock":"12:19:57","conf":"high","confLabel":"tinggi","day":"29 Okt 2026","ms":1793251197000,"n":5,"notes":["Waktu dari btime (waktu file lahir), yang tidak bisa diubah dengan touch."],"phase":"Persistence (bertahan) · T1505.003","root":false,"run":null,"story":true,"text":"File uploads/scenario-f-marker.php dibuat (SHA-256 c2f45202f02a…).","time":"2026-10-29 12:19:57 WIB"},{"actor":"172.30.0.1","basis":"log","cat":"use","cites":[5],"clock":"12:19:59","conf":"high","confLabel":"tinggi","day":"29 Okt 2026","ms":1793251199000,"n":6,"notes":[],"phase":"Persistence (bertahan) · T1505.003","root":false,"run":null,"story":true,"text":"File uploads/scenario-f-marker.php diakses: GET /uploads/scenario-f-marker.php → 200.","time":"2026-10-29 12:19:59 WIB"}],"gaps":[],"generated":"2026-10-28 09:00:00 WIB","labels":{"noActor":"-","rootMarker":"AKAR MASALAH"},"lanes":["172.30.0.1",""],"offsetMin":420,"runs":[],"subtitle":"WF-E887DEB66B · 2026-10-28 09:00:00 WIB","tabs":[{"id":"overview","label":"Ringkasan","sections":[{"blocks":[{"items":["Ditemukan 1 file mencurigakan yang terkait dengan 1 alamat IP. Aktivitas pertama aktor pada 2026-10-29 12:19:47 WIB, terakhir pada 2026-10-29 12:19:59 WIB.","Titik masuk yang paling mungkin: SQL injection pada login (bypass autentikasi) lewat GET /admin/login.php pada 2026-10-29 12:19:55 WIB (keyakinan sedang)."],"t":"ul"},{"t":"h","text":"Alur serangan"},{"items":["#3 2026-10-29 12:19:55 WIB: Bypass login dengan SQL injection: GET /admin/login.php → 200.","#4 2026-10-29 12:19:57 WIB: Request yang menulis uploads/scenario-f-marker.php: POST /admin/auth_upload.php → 200.","#5 2026-10-29 12:19:57 WIB: File uploads/scenario-f-marker.php dibuat (SHA-256 c2f45202f02a…).","#6 2026-10-29 12:19:59 WIB: File uploads/scenario-f-marker.php diakses: GET /uploads/scenario-f-marker.php → 200."],"t":"ul"}],"title":"1. Ringkasan"}]},{"id":"timeline","label":"Kronologi","sections":[]},{"id":"flow","label":"Alur serangan","sections":[]},{"id":"space","label":"Ruang 3D","sections":[]},{"id":"root","label":"Akar masalah","sections":[{"blocks":[{"pairs":[["Kejadian","#3 Bypass login dengan SQL injection: GET /admin/login.php → 200."],["Jenis kelemahan","SQL injection pada login (bypass autentikasi)"],["Keyakinan","sedang"],["Bukti","access.log:5"]],"t":"dl"},{"t":"h","text":"Baris log asli"},{"lines":["172.30.0.1 - - [29/Oct/2026:05:19:55 +0000] \"GET /admin/login.php?username=admin%27+OR+%271%27%3D%271+--+\u0026password= HTTP/1.1\" 200 359 \"-\" \"webforensics-lab/1.0 scenario-f\" \"-\""],"t":"code"},{"t":"h","text":"Alasan"},{"items":["Login dengan payload SQL injection berhasil, lalu aktor yang sama menulis file di area yang sama.","Respons berbeda dari login yang gagal dan tidak diikuti percobaan ulang.","Kaitan login dan upload disimpulkan dari IP dan area yang sama, karena cookie sesi tidak tercatat."],"t":"ul"},{"t":"h","text":"Baris kode yang rentan"},{"pairs":[["Lokasi","admin/login.php:13"],["Kenapa dianalisis","endpoint titik masuk (akar masalah atau kandidatnya)"],["Keyakinan","tinggi"],["Input dari","$_GET, $_POST"],["Query dijalankan di","admin/login.php:14 ($pdo-\u003equery)"],["Bukti","admin/login.php @fa2a9d556bc9"]],"t":"dl"},{"lines":["$query = \"SELECT id, username FROM users WHERE username = '$username' AND password = '$password'\";"],"t":"code"},{"t":"p","text":"Contoh perbaikan (prepared statement)"},{"lines":["$stmt = $pdo-\u003eprepare(\"SELECT id, username FROM users WHERE username = ? AND password = ?\");","$stmt-\u003eexecute([$username, $password]);"],"t":"code"},{"pairs":[["File yang dianalisis","admin/auth_upload.php, admin/login.php"]],"t":"dl"}],"title":"4. Akar Masalah"}]},{"id":"files","label":"File","sections":[{"blocks":[{"t":"h","text":"uploads/scenario-f-marker.php"},{"pairs":[["SHA-256","c2f45202f02ab18a6ad3965db67be368436a3a245819798ad1601464405f838c"],["Ukuran","26 byte"],["Status baseline","tidak diketahui (tanpa baseline)"],["Timestamp","btime 2026-10-29 12:19:57 WIB; ctime 2026-10-29 12:19:57 WIB; mtime 2026-10-29 12:19:57 WIB"],["Sumber timestamp","manifest webroot"],["URL","/uploads/scenario-f-marker.php"]],"t":"dl"},{"t":"p","text":"Temuan"},{"items":["File skrip di folder yang bisa ditulis: uploads/scenario-f-marker.php (FILE-WEBSHELL-WRITABLE-EXEC, keyakinan sedang)"],"t":"ul"}],"title":"5. File Terdampak"},{"blocks":[{"t":"p","text":"Tidak ada."}],"title":"6. Perubahan yang Perlu Ditinjau"}]},{"id":"iocs","label":"IOC","sections":[{"blocks":[{"t":"h","text":"Alamat IP"},{"lines":["172.30.0.1"],"t":"code"},{"t":"h","text":"User agent"},{"lines":["webforensics-lab/1.0 scenario-f"],"t":"code"},{"t":"h","text":"Hash SHA-256"},{"lines":["c2f45202f02ab18a6ad3965db67be368436a3a245819798ad1601464405f838c"],"t":"code"},{"t":"h","text":"Path file"},{"lines":["uploads/scenario-f-marker.php"],"t":"code"},{"t":"h","text":"URL"},{"lines":["/uploads/scenario-f-marker.php"],"t":"code"}],"title":"7. Indikator Kompromi (IOC)"},{"blocks":[{"t":"p","text":"Tidak ada."}],"title":"9. Aktivitas Serangan Lain (Tidak Terkait Insiden)"}]},{"id":"gaps","label":"Celah bukti","sections":[{"blocks":[{"headers":["ID","Jenis","Rentang waktu","Keterangan","Melemahkan"],"hl":[],"rows":[[{"mark":null,"text":"G1"},{"mark":null,"text":"Tanpa baseline"},{"mark":null,"text":"-"},{"mark":null,"text":"Tidak ada baseline (salinan bersih) untuk pembanding, jadi status file hanya dari heuristik."},{"mark":null,"text":"-"}]],"t":"table"}],"title":"8. Celah Bukti"}]},{"id":"actions","label":"Tindakan","sections":[{"blocks":[{"t":"h","text":"Penahanan (containment)"},{"items":["Amankan bukti dulu: salin log dan webroot beserta hash-nya sebelum mengubah apa pun di server.","Batasi akses ke situs (mode maintenance atau firewall) sampai file berbahaya dihapus.","Blokir sementara IP berikut: 172.30.0.1."],"t":"ul"},{"t":"h","text":"Pembersihan (eradication)"},{"items":["Karantina lalu hapus file berikut setelah disalin sebagai bukti: uploads/scenario-f-marker.php.","Perbaiki query login di /admin/login.php dengan prepared statement, lalu periksa query lain yang menyusun SQL dari input user.","Perbaiki endpoint /admin/auth_upload.php: batasi ekstensi dan tipe file, simpan upload di luar webroot, dan matikan eksekusi skrip di folder upload.","Ganti query di admin/login.php baris 13 dengan prepared statement (contoh perbaikan ada di bagian Akar Masalah)."],"t":"ul"},{"t":"h","text":"Pemulihan (recovery)"},{"items":["Ganti password admin aplikasi, database, dan semua kredensial yang tersimpan di file konfigurasi webroot.","Pulihkan webroot dari sumber yang terpercaya (git atau backup sebelum insiden), bukan dengan menghapus file satu per satu saja.","Setelah pemulihan, pantau akses ke /uploads/scenario-f-marker.php dan aktivitas dari IP di daftar IOC."],"t":"ul"},{"t":"h","text":"Pembelajaran (lessons learned)"},{"items":["Simpan baseline webroot (daftar hash file) secara berkala supaya file baru atau berubah bisa dipastikan.","Aktifkan pemantauan integritas file (FIM) pada webroot.","Catat nama file upload di log aplikasi, karena access log tidak mencatat isi POST."],"t":"ul"}],"title":"10. Tindakan yang Disarankan"},{"blocks":[{"items":["Laporan ini dibuat otomatis dengan aturan deterministik. Kesimpulannya perlu diverifikasi analis.","Isi request POST tidak tercatat di access log. Payload SQL injection lewat POST dan nama file upload tidak terlihat.","Penyerang dengan akses root bisa memalsukan timestamp file. Alat ini hanya mendeteksi ketidakkonsistenan, tidak bisa membuktikan keaslian.","Penyerang dengan akses root bisa menghapus baris log. Yang bisa dideteksi hanya celah waktu yang mencolok.","IP yang dipakai bersama (NAT, proxy, CDN tanpa X-Forwarded-For) bisa menggabungkan beberapa orang menjadi satu aktor.","Analisis kode hanya mencari SQL injection di file PHP yang terlibat dan file yang di-include-nya (satu tingkat, dari pola path include), per file dan per fungsi. Alur lewat pemanggilan fungsi, input dari framework, dan ORM tidak dilacak, jadi \"tidak ditemukan\" bukan berarti aman. Celah upload belum dilokalisasi di kode."],"t":"ul"}],"title":"11. Keterbatasan"}]},{"id":"case","label":"Info kasus","sections":[{"blocks":[{"pairs":[["ID kasus","WF-E887DEB66B"],["Analis","-"],["Host target","563daf0056be"],["Laporan dibuat","2026-10-28 09:00:00 WIB"],["Zona waktu laporan","WIB (UTC+07:00)"]],"t":"dl"},{"t":"h","text":"Cakupan bukti"},{"pairs":[["Periode access log","2026-10-29 12:19:47 WIB s.d. 2026-10-29 12:19:59 WIB"],["Access log","7 baris terbaca"],["Webroot","11 file"],["Bukti dikumpulkan","2026-10-29 12:20:10 WIB"],["Baseline","tidak ada"]],"t":"dl"}],"title":"2. Informasi Kasus"},{"blocks":[{"headers":["Rujukan","Kutipan"],"hl":[],"rows":[[{"mark":null,"text":"access.log:1"},{"mark":null,"text":"172.30.0.1 - - [29/Oct/2026:05:19:47 +0000] \"GET / HTTP/1.1\" 200 298 \"-\" \"webforensics-lab/1.0 scenario-f\" \"-\""}],[{"mark":null,"text":"access.log:4"},{"mark":null,"text":"172.30.0.1 - - [29/Oct/2026:05:19:53 +0000] \"GET /admin/login.php?username=admin\u0026password=wrong-lab-password HTTP/1.1\" 401 355 \"-\" \"webforensics-lab/1.0 scenario-f\" \"-\""}],[{"mark":null,"text":"access.log:5"},{"mark":null,"text":"172.30.0.1 - - [29/Oct/2026:05:19:55 +0000] \"GET /admin/login.php?username=admin%27+OR+%271%27%3D%271+--+\u0026password= HTTP/1.1\" 200 359 \"-\" \"webforensics-lab/1.0 scenario-f\" \"-\""}],[{"mark":null,"text":"access.log:6"},{"mark":null,"text":"172.30.0.1 - - [29/Oct/2026:05:19:57 +0000] \"POST /admin/auth_upload.php HTTP/1.1\" 200 51 \"-\" \"webforensics-lab/1.0 scenario-f\" \"-\""}],[{"mark":null,"text":"uploads/scenario-f-marker.php @c2f45202f02a"},{"mark":null,"text":"SHA-256 c2f45202f02ab18a6ad3965db67be368436a3a245819798ad1601464405f838c"}],[{"mark":null,"text":"access.log:7"},{"mark":null,"text":"172.30.0.1 - - [29/Oct/2026:05:19:59 +0000] \"GET /uploads/scenario-f-marker.php HTTP/1.1\" 200 37 \"-\" \"webforensics-lab/1.0 scenario-f\" \"-\""}],[{"mark":null,"text":"admin/login.php @fa2a9d556bc9"},{"mark":null,"text":"SHA-256 fa2a9d556bc98ba3751bc6f7eee860d187cd579c6658a6b962c0f32cbac77d45"}]],"t":"table"}],"title":"Lampiran A. Rujukan Bukti"},{"blocks":[{"pairs":[["Versi alat","0.1.0"],["Versi ruleset","0.1.0"],["Hash konfigurasi","7cabfdcdf016d39c2da7bcee773e1d9849ef20e55c633338b4fe17124069ca0d"]],"t":"dl"},{"t":"h","text":"File input"},{"headers":["File","SHA-256","Ukuran"],"hl":[],"rows":[[{"mark":null,"text":"access.log"},{"mark":null,"text":"d790e8e4e30e74b214ba5a76d631e9b48355ba6e2004189ffe7d72d01172bdb4"},{"mark":null,"text":"980 byte"}],[{"mark":null,"text":"manifest.tsv"},{"mark":null,"text":"dc514b240fa3667f9b7af0ce486c823e96b308dac532485ad6e4c45e91d98d7f"},{"mark":null,"text":"1987 byte"}]],"t":"table"},{"t":"p","text":"Input, versi, dan konfigurasi yang sama menghasilkan laporan yang sama persis."}],"title":"Lampiran B. Reproduksibilitas"}]}],"title":"Laporan Insiden Website","tool":"0.1.0","ui":{"cat.exploit":"Eksploitasi","cat.file":"Perubahan file","cat.login":"Login","cat.other":"Lainnya","cat.recon":"Pengintaian","cat.use":"Pemakaian file","cat.write":"Penulisan","chart.empty":"Kronologi kosong: tidak ada kejadian yang terkait insiden.","chart.files":"bukti file","chart.hint":"Klik tanda atau baris untuk membuka lembar buktinya. Seret di grafik untuk memperbesar. Area abu-abu adalah celah bukti.","chart.others":"aktor lain","chart.reset":"Kembalikan","chart.root":"akar","chart.title":"Kronologi per aktor","col.actor":"Aktor","col.confidence":"Keyakinan","col.event":"Kejadian","col.n":"No.","col.time":"Jam","copied":"Tersalin","copy":"Salin","detail.actor":"Aktor","detail.basis":"Dasar waktu","detail.close":"Tutup","detail.confidence":"Keyakinan","detail.empty":"Pilih kejadian di grafik atau di register untuk membuka lembar buktinya.","detail.evidence":"Kutipan bukti","detail.notes":"Catatan keyakinan","detail.phase":"Fase ATT\u0026CK","detail.root":"Akar masalah","detail.time":"Waktu","detail.title":"Lembar bukti","filter.actor":"Semua aktor","filter.count":"{shown} dari {total} kejadian","filter.more":"Tampilkan {count} lagi","filter.none":"Tidak ada kejadian yang cocok dengan filter.","filter.search":"Cari path, IP, atau kata","filter.story":"Hanya alur serangan","flow.actor":"Penyerang","flow.hint":"Langkah utama insiden, dari penyerang sampai file yang dipakai. Klik langkah untuk membuka lembar buktinya di Kronologi.","flow.none":"Tidak ada alur serangan: tidak ada file atau skrip yang terkait penyerang.","flow.rel.exploit":"masuk lewat","flow.rel.file":"file tercipta","flow.rel.login":"login","flow.rel.other":"lalu","flow.rel.recon":"mengintai","flow.rel.use":"file dipakai","flow.rel.write":"menulis file","flow.title":"Alur serangan","generated_by":"Dibuat oleh webforensics dari report.json. Halaman ini offline dan tidak memuat apa pun dari internet.","kicker":"Berkas insiden","meta.case":"No. kasus","meta.generated":"Dibuat","meta.tool":"Alat","meta.zone":"Zona waktu","run.collapse":"Tutup","run.expand":"Buka {count}","run.summary":"Rentetan {count} request yang ditandai dari aktor ini: {endpoints}. Jenis: {rules}.","space.actor":"aktor","space.hint":"Setiap titik adalah satu kejadian: kiri ke kanan waktu, ke belakang aktor, ke atas jenis kejadian. Seret untuk memutar, scroll untuk zoom, klik titik untuk membuka lembar buktinya.","space.kind":"jenis","space.reset":"Atur ulang","space.time":"waktu","space.title":"Ruang 3D","stamp.clean":"Tidak ada kompromi terdeteksi","stamp.compromised":"Terkompromi","stat.actors":"aktor","stat.events":"kejadian","stat.files":"file terdampak","stat.gaps":"celah bukti","tab.actions":"Tindakan","tab.case":"Info kasus","tab.files":"File","tab.flow":"Alur serangan","tab.gaps":"Celah bukti","tab.iocs":"IOC","tab.overview":"Ringkasan","tab.root":"Akar masalah","tab.space":"Ruang 3D","tab.timeline":"Kronologi","verdict.clean":"Tidak ada file atau skrip yang terkait penyerang. Lihat celah bukti sebelum menyimpulkan situs ini bersih.","verdict.from":"dari","verdict.no_root":"Titik masuk belum bisa ditentukan dari bukti yang ada.","verdict.result":"Hasil","verdict.root":"Titik masuk"},"verdict":{"compromised":true,"root":{"actor":"172.30.0.1","clock":"12:19:55","conf":"medium","confLabel":"sedang","day":"29 Okt 2026","n":3,"text":"Bypass login dengan SQL injection: GET /admin/login.php → 200.","time":"2026-10-29 12:19:55 WIB","vuln":"SQL injection pada login (bypass autentikasi)"},"stats":{"actors":1,"events":6,"files":1,"gaps":1}},"zone":"WIB (UTC+07:00)","zoneShort":"WIB"}</script>
 <script>"use strict";
 (function () {
   // Every string comes from the embedded JSON (often attacker-controlled log text).
@@ -297,36 +419,118 @@ dl.fields dd{margin-bottom:6px}
   };
   D.categories.forEach(function (c) { state.cats[c.id] = true; });
 
-  // --- shell -----------------------------------------------------------------------------
+  // Motion is decoration: it is skipped entirely when the viewer asks for less of it.
+  var REDUCED = !!(window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches);
+  var POP_LIMIT = 400;  // more marks than this appear at once instead of one by one
+  var chartPlayed = false, flowShown = false, spaceView = null;
 
+  // A motion class is always taken off again after its run. If a renderer never plays CSS
+  // animations (some screenshot tools, previews), the page still ends up fully visible.
+  function playOnce(node, cls, ms) {
+    if (REDUCED) return;
+    node.classList.remove(cls);
+    void node.getBoundingClientRect();
+    node.classList.add(cls);
+    setTimeout(function () { node.classList.remove(cls); }, ms);
+  }
+
+  function css(name) {
+    return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+  }
+
+  // --- icons: small line drawings, 24x24, stroked with the current colour ---------------
+
+  var ICONS = {
+    overview: "M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z",
+    timeline: "M3 12h4l3-8 4 16 3-8h4",
+    flow: "M6 3v6M6 15v6M6 9a3 3 0 1 0 0 6 3 3 0 0 0 0-6M6 12h6a6 6 0 0 0 6-6V3M18 3l-2 2M18 3l2 2",
+    space: "M12 2l9 5v10l-9 5-9-5V7zM12 22V12M21 7l-9 5-9-5",
+    root: "M12 3v4M12 17v4M3 12h4M17 12h4M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8",
+    files: "M14 3H6v18h12V7zM14 3v4h4M9 13h6M9 17h6",
+    iocs: "M12 3l9 16H3zM12 10v4M12 17h.01",
+    gaps: "M4 6h4M12 6h4M20 6h0M4 18h4M12 18h4M4 12h16",
+    actions: "M9 6h11M9 12h11M9 18h11M4 6l1 1 2-2M4 12l1 1 2-2M4 18l1 1 2-2",
+    "case": "M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18M12 11v5M12 8h.01",
+    events: "M3 12h4l3-8 4 16 3-8h4",
+    actors: "M12 4a4 4 0 1 0 0 8 4 4 0 0 0 0-8M4 21a8 8 0 0 1 16 0",
+    shield: "M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"
+  };
+
+  function icon(name, cls) {
+    var svg = sv("svg", { viewBox: "0 0 24 24", "class": "ic" + (cls ? " " + cls : ""), "aria-hidden": "true" });
+    svg.appendChild(sv("path", { d: ICONS[name] || ICONS.overview }));
+    return svg;
+  }
+
+  // Cards lean a few degrees toward the pointer. Pure decoration: off for reduced motion
+  // and for touch, where there is no hover.
+  var CAN_TILT = !REDUCED && !!(window.matchMedia && window.matchMedia("(hover: hover)").matches);
+  function tilt(node) {
+    if (!CAN_TILT) return node;
+    node.classList.add("tilt");
+    node.addEventListener("pointermove", function (ev) {
+      var b = node.getBoundingClientRect();
+      var px = (ev.clientX - b.left) / b.width - 0.5, py = (ev.clientY - b.top) / b.height - 0.5;
+      node.style.setProperty("--ry", (px * 6).toFixed(2) + "deg");
+      node.style.setProperty("--rx", (-py * 6).toFixed(2) + "deg");
+      node.style.setProperty("--gx", Math.round((px + 0.5) * 100) + "%");
+      node.style.setProperty("--gy", Math.round((py + 0.5) * 100) + "%");
+    });
+    node.addEventListener("pointerleave", function () {
+      node.style.setProperty("--rx", "0deg"); node.style.setProperty("--ry", "0deg");
+    });
+    return node;
+  }
+
+  // --- shell: sidebar with the case and the sections, content on the right -----------------
+
+  playOnce(document.documentElement, "motion", 1600);
   var app = document.getElementById("app");
-  var wrap = el("div", { cls: "wrap" });
-  app.appendChild(wrap);
-  wrap.appendChild(cover());
-  wrap.appendChild(finding());
+  var shellEl = el("div", { cls: "shell" });
+  var side = el("aside", { cls: "side" });
+  var mainEl = el("main", { cls: "main" });
+  shellEl.appendChild(side); shellEl.appendChild(mainEl);
+  app.appendChild(shellEl);
 
-  var nav = el("nav", { cls: "tabs", role: "tablist" });
+  var bad = D.verdict.compromised;
+  side.appendChild(el("div", { cls: "brand" }, icon("shield", "brand-ic"),
+    el("span", { text: "webforensics" })));
+  side.appendChild(el("div", { cls: "side-case" },
+    el("div", { cls: "label", text: U["meta.case"] }), el("div", { cls: "side-id", text: D.caseId }),
+    el("div", { cls: "status" + (bad ? "" : " clean"), text: bad ? U["stamp.compromised"] : U["stamp.clean"] })));
+
+  var nav = el("nav", { cls: "tabs", role: "tablist", "aria-orientation": "vertical" });
   var panels = {};
-  wrap.appendChild(nav);
-  D.tabs.forEach(function (tab, i) {
+  side.appendChild(nav);
+  side.appendChild(el("div", { cls: "side-foot", text: "webforensics " + D.tool }));
+
+  mainEl.appendChild(cover());
+  mainEl.appendChild(finding());
+  var stage = el("div", { cls: "stage" });
+  mainEl.appendChild(stage);
+  D.tabs.forEach(function (tab) {
     var btn = el("button", {
       role: "tab", id: "tab-" + tab.id, "aria-controls": "panel-" + tab.id,
       onclick: function () { showTab(tab.id, true); }
-    }, el("span", { cls: "i", text: (i < 9 ? "0" : "") + (i + 1) }), tab.label);
+    }, icon(tab.id), el("span", { text: tab.label }));
     nav.appendChild(btn);
     var panel = el("div", { role: "tabpanel", id: "panel-" + tab.id, "aria-labelledby": "tab-" + tab.id });
     panel.hidden = true;
     panels[tab.id] = panel;
-    wrap.appendChild(panel);
+    stage.appendChild(panel);
     if (tab.id === "timeline") buildTimeline(panel);
+    else if (tab.id === "flow") buildFlow(panel);
+    else if (tab.id === "space") spaceView = buildSpace(panel);
     else tab.sections.forEach(function (s) { panel.appendChild(docSection(s)); });
   });
-  wrap.appendChild(el("footer", { text: U.generated_by }));
+  mainEl.appendChild(el("footer", { text: U.generated_by }));
 
   nav.addEventListener("keydown", function (ev) {
-    if (ev.key !== "ArrowRight" && ev.key !== "ArrowLeft") return;
+    var back = ev.key === "ArrowUp" || ev.key === "ArrowLeft";
+    if (!back && ev.key !== "ArrowDown" && ev.key !== "ArrowRight") return;
+    ev.preventDefault();
     var ids = D.tabs.map(function (t) { return t.id; });
-    var i = ids.indexOf(state.tab) + (ev.key === "ArrowRight" ? 1 : -1);
+    var i = ids.indexOf(state.tab) + (back ? -1 : 1);
     showTab(ids[(i + ids.length) % ids.length], true);
     document.getElementById("tab-" + state.tab).focus();
   });
@@ -342,7 +546,14 @@ dl.fields dd{margin-bottom:6px}
       b.tabIndex = on ? 0 : -1;
     });
     if (push && location.hash !== "#" + id) history.replaceState(null, "", "#" + id);
+    var panel = panels[id];
+    playOnce(panel, "enter", 400);
     if (id === "timeline") drawChart();
+    if (id === "flow" && !flowShown) {
+      flowShown = true;
+      playOnce(panel, "play", 700 + panel.querySelectorAll(".flow-node,.flow-link").length * 90);
+    }
+    if (spaceView) { if (id === "space") spaceView.start(); else spaceView.stop(); }
   }
 
   window.addEventListener("hashchange", function () { showTab(location.hash.slice(1), false); });
@@ -351,11 +562,9 @@ dl.fields dd{margin-bottom:6px}
 
   function cover() {
     var meta = el("div", { cls: "meta" });
-    [[U["meta.case"], D.caseId], [U["meta.generated"], D.generated], [U["meta.zone"], D.zone],
-      [U["meta.tool"], "webforensics " + D.tool]].forEach(function (p) {
+    [[U["meta.generated"], D.generated], [U["meta.zone"], D.zone]].forEach(function (p) {
       meta.appendChild(el("div", null, el("span", { cls: "label", text: p[0] }), el("span", { text: p[1] })));
     });
-    var bad = D.verdict.compromised;
     return el("header", { cls: "cover" },
       el("div", null, el("div", { cls: "label", text: U.kicker }), el("h1", { text: D.title }), meta),
       el("div", { cls: "stamp" + (bad ? "" : " clean"), role: "img",
@@ -364,28 +573,47 @@ dl.fields dd{margin-bottom:6px}
   }
 
   function finding() {
-    var v = D.verdict, left = el("div");
+    var v = D.verdict, hero = el("div", { cls: "hero card" + (v.root ? " is-root" : "") });
     if (v.root) {
       var r = v.root;
-      left.appendChild(el("div", { cls: "label", text: U["verdict.root"] }));
-      left.appendChild(el("p", { cls: "entry" },
+      hero.appendChild(el("div", { cls: "label" }, icon("root", "lab-ic"), U["verdict.root"]));
+      hero.appendChild(el("p", { cls: "entry" },
         el("a", { cls: "n", href: "#timeline", text: no(r.n),
           onclick: function (ev) { ev.preventDefault(); showTab("timeline", true); select(r.n, true); } }),
         el("span", { cls: "when", text: r.day + " " + r.clock + " " + D.zoneShort }), r.text));
-      left.appendChild(el("p", { cls: "entry-sub" }, el("span", { text: r.vuln }),
+      hero.appendChild(el("p", { cls: "entry-sub" }, el("span", { text: r.vuln }),
         meter(r.conf, r.confLabel),
         r.actor ? el("span", { text: U["verdict.from"] + " " + r.actor }) : null));
     } else {
-      left.appendChild(el("div", { cls: "label", text: v.compromised ? U["verdict.root"] : U["verdict.result"] }));
-      left.appendChild(el("p", { cls: "entry-sub", text: v.compromised ? U["verdict.no_root"] : U["verdict.clean"] }));
+      hero.appendChild(el("div", { cls: "label" }, icon(v.compromised ? "root" : "shield", "lab-ic"),
+        v.compromised ? U["verdict.root"] : U["verdict.result"]));
+      hero.appendChild(el("p", { cls: "entry-sub", text: v.compromised ? U["verdict.no_root"] : U["verdict.clean"] }));
     }
-    var ledger = el("dl", { cls: "ledger" });
-    [["events", v.stats.events], ["files", v.stats.files], ["actors", v.stats.actors],
-      ["gaps", v.stats.gaps]].forEach(function (s) {
-      ledger.appendChild(el("div", null, el("dt", { cls: "label", text: U["stat." + s[0]] }),
-        el("dd", { text: String(s[1]) })));
+    var kpis = el("div", { cls: "kpis" });
+    [["events", "events", v.stats.events], ["files", "files", v.stats.files],
+      ["actors", "actors", v.stats.actors], ["gaps", "gaps", v.stats.gaps]].forEach(function (s, i) {
+      kpis.appendChild(tilt(el("div", { cls: "kpi card", style: "--i:" + i },
+        el("div", { cls: "kpi-top" }, el("span", { cls: "label", text: U["stat." + s[0]] }), icon(s[1], "kpi-ic")),
+        countUp(el("div", { cls: "kpi-val", text: REDUCED ? String(s[2]) : "0" }), s[2]))));
     });
-    return el("section", { cls: "finding" }, left, ledger);
+    return el("section", { cls: "finding" }, tilt(hero), kpis);
+  }
+
+  // Counts rise to their value once, over about 0.7 s.
+  function countUp(node, target) {
+    if (REDUCED || !target) { node.textContent = String(target); return node; }
+    var start = null, dur = 700, finished = false;
+    function step(t) {
+      if (finished) return;
+      if (start === null) start = t;
+      var k = Math.min(1, (t - start) / dur), eased = 1 - Math.pow(1 - k, 3);
+      node.textContent = String(Math.round(target * eased));
+      if (k < 1) requestAnimationFrame(step); else finished = true;
+    }
+    requestAnimationFrame(step);
+    // The final value is guaranteed even where animation frames are throttled.
+    setTimeout(function () { finished = true; node.textContent = String(target); }, dur + 150);
+    return node;
   }
 
   // --- static sections (same content as the HTML report) ---------------------------------
@@ -532,11 +760,11 @@ dl.fields dd{margin-bottom:6px}
   // One SVG mark per event: the shape says what kind of event it is.
   function mark(cat, x, y, root) {
     var r = root ? 6.5 : 5, color = "var(--c-" + cat + ")", node;
-    if (cat === "recon") node = sv("circle", { cx: x, cy: y, r: r - 1, fill: "var(--bg)", stroke: color, "stroke-width": 2 });
+    if (cat === "recon") node = sv("circle", { cx: x, cy: y, r: r - 1, fill: "var(--surface)", stroke: color, "stroke-width": 2 });
     else if (cat === "exploit") node = sv("polygon", { points: [x, y - r - 1, x + r + 1, y + r, x - r - 1, y + r].join(" "), fill: color });
     else if (cat === "login") node = sv("polygon", { points: [x, y - r - 1, x + r + 1, y, x, y + r + 1, x - r - 1, y].join(" "), fill: color });
     else if (cat === "write") node = sv("rect", { x: x - r + 0.5, y: y - r + 0.5, width: 2 * r - 1, height: 2 * r - 1, fill: color });
-    else if (cat === "file") node = sv("rect", { x: x - r + 1, y: y - r + 1, width: 2 * r - 2, height: 2 * r - 2, fill: "var(--bg)", stroke: color, "stroke-width": 2 });
+    else if (cat === "file") node = sv("rect", { x: x - r + 1, y: y - r + 1, width: 2 * r - 2, height: 2 * r - 2, fill: "var(--surface)", stroke: color, "stroke-width": 2 });
     else if (cat === "use") node = sv("circle", { cx: x, cy: y, r: r - 0.5, fill: color });
     else node = sv("circle", { cx: x, cy: y, r: 2.5, fill: color });
     return node;
@@ -605,10 +833,14 @@ dl.fields dd{margin-bottom:6px}
       svg.appendChild(label);
     }
 
+    // The first drawing plays once: marks appear in time order, then the root line is drawn.
+    var play = !chartPlayed && !REDUCED && shown.length <= POP_LIMIT;
+    chartPlayed = true;
     var root = events.filter(function (e) { return e.root; })[0];
     if (root && root.ms >= lo && root.ms <= hi && matches(root)) {
       var rx = x(root.ms);
-      svg.appendChild(sv("line", { "class": "rootline", x1: rx, x2: rx, y1: top - 4, y2: top + plotH }));
+      svg.appendChild(sv("line", { "class": "rootline", x1: rx, x2: rx,
+        y1: top - 4, y2: top + plotH }));
       var tagText = U["chart.root"].toUpperCase() + " " + no(root.n);
       var tagW = tagText.length * 6.2 + 8, tagX = Math.min(rx, width - right - tagW);
       svg.appendChild(sv("rect", { "class": "roottagbg", x: tagX, y: top - 19, width: tagW, height: 14 }));
@@ -622,8 +854,10 @@ dl.fields dd{margin-bottom:6px}
     marks = {};
     shown.forEach(function (e) {
       var lane = e.actor in laneOf ? laneOf[e.actor] : othersLane;
-      var node = mark(e.cat, x(e.ms), top + lane * laneH + laneH / 2, e.root);
+      var mx = x(e.ms);
+      var node = mark(e.cat, mx, top + lane * laneH + laneH / 2, e.root);
       node.setAttribute("class", "ev" + (state.sel === e.n ? " sel" : ""));
+      if (play) node.style.animationDelay = Math.round((mx - left) / plotW * 700) + "ms";
       node.appendChild(titleNode(no(e.n) + " " + e.clock + " · " + (e.actor || U["chart.files"]) + "\n" + e.text));
       node.addEventListener("click", function (ev) { ev.stopPropagation(); select(e.n, true); });
       marks[e.n] = node;
@@ -666,6 +900,7 @@ dl.fields dd{margin-bottom:6px}
 
     svgHost.textContent = "";
     svgHost.appendChild(svg);
+    if (play) playOnce(svg, "pop", 1600);
   }
 
   function titleNode(text) {
@@ -845,6 +1080,234 @@ dl.fields dd{margin-bottom:6px}
         c.ex ? el("pre", { text: c.ex }) : null));
     });
     detailEl.appendChild(body);
+    playOnce(body, "enter", 400);
+  }
+
+  function openEvent(n) {
+    showTab("timeline", true);
+    select(n, true);
+  }
+
+  // --- attack flow: the incident's main steps as a chain ---------------------------------
+
+  function buildFlow(panel) {
+    var steps = events.filter(function (e) { return e.story || e.root; });
+    panel.appendChild(el("div", { cls: "chart-head" }, el("h2", { text: U["flow.title"] })));
+    panel.appendChild(el("p", { cls: "hint", text: steps.length ? U["flow.hint"] : U["flow.none"] }));
+    if (!steps.length) return;
+    var list = el("ol", { cls: "flow" });
+    var actors = D.attackers.length ? D.attackers.join(", ") : D.labels.noActor;
+    list.appendChild(el("li", { cls: "flow-node actor", style: "--i:0" },
+      el("div", { cls: "label", text: U["flow.actor"] }), el("div", { cls: "flow-actor", text: actors })));
+    steps.forEach(function (e, i) {
+      list.appendChild(el("li", { cls: "flow-link", style: "--i:" + (2 * i + 1) },
+        el("span", { text: U["flow.rel." + e.cat] || U["flow.rel.other"] })));
+      var open = function () { openEvent(e.n); };
+      list.appendChild(el("li", {
+        cls: "flow-node" + (e.root ? " root" : ""), style: "--i:" + (2 * i + 2), tabindex: "0",
+        role: "button", onclick: open,
+        onkeydown: function (ev) { if (ev.key === "Enter" || ev.key === " ") { ev.preventDefault(); open(); } }
+      },
+        el("div", { cls: "flow-meta" }, glyph(e.cat), el("span", { cls: "n", text: no(e.n) }),
+          el("span", { text: e.day + " " + e.clock + " " + D.zoneShort }),
+          e.root ? el("span", { cls: "tag", text: D.labels.rootMarker }) : null),
+        el("div", { cls: "flow-text", text: e.text }),
+        el("div", { cls: "flow-foot" }, el("span", { text: e.actor || D.labels.noActor }),
+          meter(e.conf, e.confLabel))));
+    });
+    panel.appendChild(list);
+  }
+
+  // --- 3D space: time x actor x kind, drawn on a canvas without any library -----------------
+
+  function buildSpace(panel) {
+    var canvas = el("canvas", { cls: "space", role: "img", "aria-label": U["space.title"] });
+    var tip = el("div", { cls: "space-tip", hidden: true });
+    var reset = el("button", { cls: "btn", text: U["space.reset"], onclick: function () { home(); draw(); } });
+    var legend = el("div", { cls: "legend" });
+    present().forEach(function (c) { legend.appendChild(el("span", null, glyph(c.id), c.label)); });
+    panel.appendChild(el("div", { cls: "chart-head" }, el("h2", { text: U["space.title"] }), reset));
+    panel.appendChild(el("p", { cls: "hint", text: events.length ? U["space.hint"] : U["chart.empty"] }));
+    if (!events.length) return { start: function () {}, stop: function () {} };
+    panel.appendChild(el("div", { cls: "space-box" }, canvas, tip));
+    panel.appendChild(legend);
+
+    var kinds = present().map(function (c) { return c.id; });
+    var lanes = D.lanes.concat(hasOthers ? [null] : []);
+    var t0 = events[0].ms, t1 = events[events.length - 1].ms;
+    var span = Math.max(1, t1 - t0);
+    var FLOOR = -0.55;
+    function laneZ(i) { return lanes.length > 1 ? -0.7 + 1.4 * i / (lanes.length - 1) : 0; }
+    var pts = events.map(function (e) {
+      var lane = e.actor in laneOf ? laneOf[e.actor] : lanes.length - 1;
+      return {
+        e: e,
+        x: -1 + 2 * (e.ms - t0) / span,
+        y: FLOOR + 1.1 * (kinds.indexOf(e.cat) + 1) / (kinds.length + 1),
+        z: laneZ(lane)
+      };
+    });
+    var cam, drag = null, moved = false, running = false, auto = !REDUCED, raf = 0, hover = null;
+    var proj = [];
+
+    function home() { cam = { yaw: -0.65, pitch: 0.42, dist: 3.6 }; }
+    home();
+
+    function project(x, y, z, W, H) {
+      var cy = Math.cos(cam.yaw), sy = Math.sin(cam.yaw), cp = Math.cos(cam.pitch), sp = Math.sin(cam.pitch);
+      var x1 = x * cy - z * sy, z1 = x * sy + z * cy;
+      var y1 = y * cp - z1 * sp, z2 = y * sp + z1 * cp;
+      var f = Math.min(W, H * 1.7) * 1.05 / (cam.dist - z2);
+      return { x: W / 2 + x1 * f, y: H * 0.5 - y1 * f, d: z2, s: f };
+    }
+
+    function size() {
+      var ratio = window.devicePixelRatio || 1, w = canvas.clientWidth || 800;
+      var h = Math.max(300, Math.min(560, Math.round(w * 0.56)));
+      if (canvas.width !== Math.round(w * ratio) || canvas.height !== Math.round(h * ratio)) {
+        canvas.width = Math.round(w * ratio); canvas.height = Math.round(h * ratio);
+        canvas.style.height = h + "px";
+      }
+      return { w: w, h: h, r: ratio };
+    }
+
+    function line(g, a, b) { g.beginPath(); g.moveTo(a.x, a.y); g.lineTo(b.x, b.y); g.stroke(); }
+
+    function shape(g, cat, p, r, color, bg) {
+      g.fillStyle = color; g.strokeStyle = color; g.lineWidth = 1.6;
+      g.beginPath();
+      if (cat === "exploit") { g.moveTo(p.x, p.y - r * 1.15); g.lineTo(p.x + r, p.y + r * 0.8); g.lineTo(p.x - r, p.y + r * 0.8); g.closePath(); g.fill(); }
+      else if (cat === "login") { g.moveTo(p.x, p.y - r); g.lineTo(p.x + r, p.y); g.lineTo(p.x, p.y + r); g.lineTo(p.x - r, p.y); g.closePath(); g.fill(); }
+      else if (cat === "write") { g.rect(p.x - r * 0.85, p.y - r * 0.85, r * 1.7, r * 1.7); g.fill(); }
+      else if (cat === "file") { g.fillStyle = bg; g.rect(p.x - r * 0.8, p.y - r * 0.8, r * 1.6, r * 1.6); g.fill(); g.stroke(); }
+      else if (cat === "recon") { g.fillStyle = bg; g.arc(p.x, p.y, r * 0.85, 0, 6.2832); g.fill(); g.stroke(); }
+      else if (cat === "use") { g.arc(p.x, p.y, r * 0.9, 0, 6.2832); g.fill(); }
+      else { g.arc(p.x, p.y, r * 0.45, 0, 6.2832); g.fill(); }
+    }
+
+    function draw() {
+      var S = size(), g = canvas.getContext("2d"), W = S.w, H = S.h;
+      g.setTransform(S.r, 0, 0, S.r, 0, 0);
+      g.clearRect(0, 0, W, H);
+      var rule = css("--rule"), rule2 = css("--rule-2"), muted = css("--muted"), ink = css("--ink"),
+        bg = css("--surface"), red = css("--red"), mono = "11px " + css("--mono");
+      var colors = {};
+      kinds.concat(["other"]).forEach(function (k) { colors[k] = css("--c-" + k); });
+      // Floor grid: one line per lane and one per time tick.
+      g.strokeStyle = rule; g.lineWidth = 1;
+      lanes.forEach(function (a, i) {
+        line(g, project(-1, FLOOR, laneZ(i), W, H), project(1, FLOOR, laneZ(i), W, H));
+      });
+      var tk = ticks(t0, t0 + span);
+      tk.forEach(function (t) {
+        var x = -1 + 2 * (t.ms - t0) / span;
+        line(g, project(x, FLOOR, -0.8, W, H), project(x, FLOOR, 0.8, W, H));
+      });
+      // Axes from the near-left corner.
+      g.strokeStyle = rule2; g.lineWidth = 1.2;
+      var o = project(-1.05, FLOOR, -0.8, W, H);
+      line(g, o, project(1.1, FLOOR, -0.8, W, H));
+      line(g, o, project(-1.05, 0.65, -0.8, W, H));
+      line(g, o, project(-1.05, FLOOR, 0.85, W, H));
+      g.font = mono; g.fillStyle = muted;
+      var at = project(1.12, FLOOR - 0.08, -0.95, W, H); g.fillText(U["space.time"], at.x, at.y);
+      var ak = project(-1.05, 0.72, -0.8, W, H); g.fillText(U["space.kind"], ak.x - 10, ak.y);
+      var aa = project(-1.05, FLOOR, 0.95, W, H); g.fillText(U["space.actor"], aa.x - 10, aa.y);
+      tk.forEach(function (t) {
+        var p = project(-1 + 2 * (t.ms - t0) / span, FLOOR, -0.92, W, H);
+        g.fillText(t.label, p.x - 14, p.y + 12);
+      });
+      lanes.forEach(function (a, i) {
+        var p = project(1.05, FLOOR, laneZ(i), W, H);
+        var name = a === null ? U["chart.others"] : (a || U["chart.files"]);
+        g.fillStyle = attacker[a] ? ink : muted;
+        g.fillText(name.length > 16 ? name.slice(0, 15) + "…" : name, p.x + 4, p.y + 4);
+      });
+      // Points, far to near, each with a faint drop line to the floor.
+      proj = pts.map(function (q) {
+        return { q: q, p: project(q.x, q.y, q.z, W, H), f: project(q.x, FLOOR, q.z, W, H) };
+      });
+      proj.sort(function (a, b) { return a.p.d - b.p.d; });
+      var drops = proj.length <= 600;
+      proj.forEach(function (it) {
+        var e = it.q.e, r = Math.max(2.5, Math.min(8, it.p.s * 0.022)) * (e.root ? 1.35 : 1);
+        if (drops) { g.strokeStyle = rule; g.lineWidth = 1; line(g, it.p, it.f); }
+        shape(g, e.cat, it.p, r, colors[e.cat] || colors.other, bg);
+        if (e.root) {
+          g.strokeStyle = red; g.lineWidth = 1.5; g.beginPath(); g.arc(it.p.x, it.p.y, r + 5, 0, 6.2832); g.stroke();
+          g.fillStyle = red; g.font = mono;
+          g.fillText(U["chart.root"].toUpperCase() + " " + no(e.n), it.p.x + r + 8, it.p.y - r - 4);
+        }
+        if (state.sel === e.n || hover === e.n) {
+          g.strokeStyle = ink; g.lineWidth = 2; g.beginPath(); g.arc(it.p.x, it.p.y, r + 3, 0, 6.2832); g.stroke();
+        }
+      });
+    }
+
+    function loop() {
+      if (!running) return;
+      if (auto && !drag) cam.yaw += 0.0025;
+      draw();
+      raf = requestAnimationFrame(loop);
+    }
+
+    function pick(ev) {
+      var b = canvas.getBoundingClientRect(), mx = ev.clientX - b.left, my = ev.clientY - b.top;
+      var best = null, bd = 144;
+      proj.forEach(function (it) {
+        var dx = it.p.x - mx, dy = it.p.y - my, d = dx * dx + dy * dy;
+        if (d < bd) { bd = d; best = it; }
+      });
+      return best;
+    }
+
+    canvas.addEventListener("pointerdown", function (ev) {
+      drag = { x: ev.clientX, y: ev.clientY }; moved = false; auto = false;
+      canvas.setPointerCapture(ev.pointerId);
+    });
+    canvas.addEventListener("pointermove", function (ev) {
+      if (drag) {
+        var dx = ev.clientX - drag.x, dy = ev.clientY - drag.y;
+        if (Math.abs(dx) + Math.abs(dy) > 3) moved = true;
+        cam.yaw += dx * 0.008;
+        cam.pitch = Math.max(-0.1, Math.min(1.35, cam.pitch + dy * 0.006));
+        drag = { x: ev.clientX, y: ev.clientY };
+        if (!running) draw();
+        return;
+      }
+      var it = pick(ev);
+      hover = it ? it.q.e.n : null;
+      canvas.style.cursor = it ? "pointer" : "grab";
+      if (it) {
+        var b = canvas.getBoundingClientRect();
+        tip.hidden = false;
+        tip.textContent = no(it.q.e.n) + "  " + it.q.e.clock + "  " + (it.q.e.actor || U["chart.files"]) +
+          "\n" + it.q.e.text;
+        tip.style.left = Math.max(0, Math.min(it.p.x + 14, b.width - 300)) + "px";
+        tip.style.top = (it.p.y + 12) + "px";
+      } else { tip.hidden = true; }
+      if (!running) draw();
+    });
+    canvas.addEventListener("pointerup", function (ev) {
+      var wasDrag = moved;
+      drag = null;
+      if (!wasDrag) { var it = pick(ev); if (it) openEvent(it.q.e.n); }
+    });
+    canvas.addEventListener("pointerleave", function () { hover = null; tip.hidden = true; if (!running) draw(); });
+    canvas.addEventListener("wheel", function (ev) {
+      ev.preventDefault(); auto = false;
+      cam.dist = Math.max(2.2, Math.min(7, cam.dist * (ev.deltaY > 0 ? 1.08 : 0.93)));
+      if (!running) draw();
+    }, { passive: false });
+
+    return {
+      start: function () {
+        if (running) return;
+        if (REDUCED) { draw(); return; }
+        running = true; loop();
+      },
+      stop: function () { running = false; cancelAnimationFrame(raf); }
+    };
   }
 
   function copy(text, btn) {
