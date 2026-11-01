@@ -14,3 +14,7 @@ tests/golden/** -text
 
 # The example viewer is compared byte for byte with a fresh render.
 docs/examples/** -text
+
+# The viewer embeds these files and hashes the script for its CSP: keep the bytes the same
+# on every platform.
+src/webforensics/report/viewer_assets/** text eol=lf
