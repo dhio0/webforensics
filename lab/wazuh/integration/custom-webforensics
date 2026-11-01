@@ -1,0 +1,10 @@
+#!/bin/sh
+# Wazuh integration wrapper for webforensics (M6+, D92).
+# integratord calls it with: $1 alert file, $2 api_key, $3 hook_url (unused here).
+# webforensics needs Python 3.11+, newer than the Python bundled with Wazuh 4.14
+# (3.10), so it lives in its own virtual environment.
+# Install: copy to /var/ossec/integrations/, then chown root:wazuh and chmod 750.
+WF_PYTHON="${WF_PYTHON:-/opt/webforensics/venv/bin/python}"
+WF_TRIGGER_CONFIG="${WF_TRIGGER_CONFIG:-/var/ossec/etc/webforensics/trigger.json}"
+export WF_TRIGGER_CONFIG
+exec "$WF_PYTHON" -m webforensics.adapters.wazuh.trigger alert "$1"

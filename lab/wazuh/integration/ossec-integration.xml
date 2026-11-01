@@ -1,0 +1,21 @@
+<!--
+  Add inside <ossec_config> of the manager's /var/ossec/etc/ossec.conf (M6+, D92).
+  Two blocks, because rule_id and group in one block must BOTH match:
+  - webroot changes: FIM alerts (group syscheck);
+  - web attacks: the web rules listed in trigger.py (DEFAULT_WEB_RULES).
+  The script itself checks the agent, the docroot and the access-log location again,
+  ignores its own write-back alerts, and runs at most one analysis per agent per
+  cool-down period.
+-->
+<integration>
+  <name>custom-webforensics</name>
+  <group>syscheck</group>
+  <level>5</level>
+  <alert_format>json</alert_format>
+</integration>
+
+<integration>
+  <name>custom-webforensics</name>
+  <rule_id>31103,31104,31105,31106,31164,31165,31170,31171</rule_id>
+  <alert_format>json</alert_format>
+</integration>

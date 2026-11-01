@@ -13,7 +13,9 @@ Status: **Approved.** M0–M6 complete. Extended on 2026-10-29 with M8 (realisti
 | M6 | done: WazuhAdapter (`pull`, `analyze --wazuh-recording`, D73–D81); live lab test agrees with the FileAdapter on all five scenarios; benchmark re-recorded with Wazuh recordings, `eval` scores both adapters (all fully correct) |
 | M7 | done: PHP SQLi localization (`codeloc/`, D83) on implicated files, prepared-statement fixes in the report; lab app and hand-made fixtures correct; real CVE fixes 5/13 detected (8 misses out of scope), 0 findings on fixed code; eval Code line column |
 | M8 | in progress: first independent case done (Ali Hadi "Web Server Case", answer key written before the run; run 1 found 10 false accusations, a missed root cause and an unreadable report; general fixes D84, D85; benchmark/external/). Second case held out (Ali Hadi Linux web server): run 1 poor (missed exploit, wrong root cause, 1 false IP, 2 false files), fixes D86. Third case held out (BND 2016): run 1 missed the compromise (defacement, cut log), fixes D87. Fourth case held out at real scale (Zenodo 20001206, 7.6M lines): no false accusations, admin-panel incident missed, memory and report-size limits found, fixes D88; one run over all sites then showed scripts must be keyed by site, D89. Next: more untouched cases, then benchmark v2 (real apps, real attack tools, real background logs, third-party ground truth) |
-| M9 | planned: wider coverage (more attack classes, log tampering check against Wazuh, log formats, multi-server, M6+) |
+| M6+ | built (D92): `custom-webforensics` integration triggers pull + analysis on webroot FIM or web-attack alerts; `writeback` sends summary, files and attacker IPs to the Wazuh queue, raised by rules 100800–100806. Each link verified on a live 4.14.9 manager; the full lab chain is still to run |
+| Viewer | done (D91): `webforensics view` writes an interactive offline viewer.html |
+| M9 | planned: wider coverage (more attack classes, log tampering check against Wazuh, log formats, multi-server) |
 Source of truth: `CLAUDE.md`. Design decisions are logged in `docs/decisions.md` (referenced here as D1, D2, ...).
 
 ---

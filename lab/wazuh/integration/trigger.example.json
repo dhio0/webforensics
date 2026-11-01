@@ -1,0 +1,18 @@
+{
+  "indexer": "https://wazuh.indexer:9200",
+  "ca_cert": "/var/ossec/etc/webforensics/root-ca.pem",
+  "user": "webforensics_reader",
+  "password_file": "/var/ossec/etc/webforensics/reader.pass",
+  "out_dir": "/var/ossec/logs/webforensics",
+  "lookback_minutes": 120,
+  "settle_seconds": 30,
+  "cooldown_minutes": 15,
+  "display_offset": "+07:00",
+  "sites": {
+    "web01": {
+      "docroot": "/var/www/html",
+      "access_logs": ["/var/log/nginx/access.log"],
+      "error_logs": ["/var/log/nginx/error.log"]
+    }
+  }
+}

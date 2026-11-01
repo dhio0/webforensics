@@ -71,6 +71,13 @@ webforensics analyze --wazuh-recording case01.jsonl --out case01/report
 
 In the lab (Wazuh 4.14.9), all five scenarios were replayed with Wazuh on, and the evidence from that same run was analyzed through both adapters. Root cause, affected files and attacker IPs were identical in every scenario (`tests/integration/test_wazuh_lab.py`, marked `lab`). Building that test exposed two problems: a deploy inside the pull window made every new app file look like an attack (now held to the same standard as lonely writes, D79), and FIM misses a file written while the agent restarts. That blind spot is a limitation of FIM itself; the report states it. Details: [docs/wazuh-notes.md](docs/wazuh-notes.md).
 
+### Automatic trigger and write-back (M6+)
+The tool can also run by itself when Wazuh sees something, and send its conclusions back as Wazuh alerts:
+- **Trigger.** A custom integration, `custom-webforensics` ([lab/wazuh/integration/](lab/wazuh/integration/)), receives FIM alerts and web-attack alerts (rules 31103–31106, 31164/31165/31170/31171). It starts an analysis only for a file change inside a configured docroot or an attack on a configured access log, at most once per agent per cool-down, and never for its own alerts. A detached worker pulls the window from the indexer, analyzes it, and writes the report and viewer into a case folder.
+- **Write-back.** `webforensics writeback report.json --socket /var/ossec/queue/sockets/queue` (or the worker) sends one summary event, one per affected file and one per attacker IP to the manager's queue, the way Wazuh's own integrations do. Rules 100800–100806 ([lab/wazuh/rules/webforensics_rules.xml](lab/wazuh/rules/webforensics_rules.xml)) turn them into alerts under the web server's agent, for example level 12: *"webforensics: website compromise reconstructed, entry GET /admin/login.php (sql_injection_auth_bypass, confidence medium), 1 affected file(s)"*.
+
+Checked on a live Wazuh 4.14.9 manager: integratord calls the wrapper for a realtime FIM alert and for rule 31106, `wazuh-logtest` matches every event type, and events sent to the live socket appear in `alerts.json` under the right agent. The whole chain on the lab (alert → pull → analysis → alerts) is the remaining check (D92, [docs/wazuh-notes.md](docs/wazuh-notes.md) section 11).
+
 ## Vulnerable code (M7)
 Give the webroot copy with `--webroot` and the report names the vulnerable line in the implicated PHP files (the root cause's endpoint and the endpoints that wrote files), for SQL injection:
 ```

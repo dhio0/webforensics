@@ -272,3 +272,23 @@ End-to-end check of the adapter (2026-10-29), `tests/integration/test_wazuh_lab.
 - **Pull windows must start at the replay.** Back-to-back replays with a window that started 30 s early pulled the previous scenario's upload, which the adapter then correctly reported. Events stay indexed; the window decides what is evidence.
 
 Resolved from source since the first draft: the meaning of `timestamp`, the archive event structure, the archive/alert `id` relation, the `mode` values, the `mtime_after` time zone, and the OpenSearch version and pagination method.
+
+## 11. Trigger and write-back (M6+, checked 2026-11-01)
+
+Same rules as above: [doc], [src] at `v4.14.9`, and [lab] for what was run on a live manager. The [lab] checks here used a throwaway `wazuh/wazuh-manager:4.14.9` container with no network (`--network none`) and only the files below added; no indexer and no agent.
+
+**Integration (trigger).** [doc] https://documentation.wazuh.com/4.14/user-manual/manager/integration-with-external-apis.html
+- A custom integration's `<name>` must start with `custom-`; the script with that name goes in `/var/ossec/integrations/`, owned `root:wazuh`, mode 750, first line naming the interpreter.
+- Filters: `<level>`, `<rule_id>`, `<group>`, `<event_location>`; "when you combine `rule_id` and `group`, an alert must match both". So the FIM trigger and the web-attack trigger are two `<integration>` blocks with the same name.
+- The script gets the alert file (JSON with `<alert_format>json`), the API key and the hook URL as its first three arguments.
+- [lab] Two blocks with the same name are accepted: integratord logged "Enabling integration for: 'custom-webforensics'" twice and kept running.
+- [lab] A file written into a realtime-monitored `/var/www/html` gave rule 554 (`syscheck.mode=realtime`) and integratord called the wrapper with `/tmp/custom-webforensics-<time>-<random>.alert`. An SQLi line appended to a monitored access log gave rule 31106 (level 6, "attack answered 200") and the same call. Both alerts, with the host name replaced, are the fixtures of `tests/unit/test_wazuh_trigger.py`.
+- Wazuh 4.14's bundled Python is 3.10 without pydantic; webforensics needs 3.11+, so the wrapper runs it from its own virtual environment (`/opt/webforensics/venv`).
+
+**Write-back.** [src] `integrations/virustotal.py`, `ruleset/rules/0490-virustotal_rules.xml`
+- Results go to analysisd through the Unix datagram socket `<ossec dir>/queue/sockets/queue`, as `1:<location>:<json>`. The location is the integration name, or `[<id>] (<name>) <ip>-><integration>` to file it under an agent, with `|` doubled and `:` written `|:`.
+- The JSON carries `"integration": "<name>"`; the rules match it after the built-in JSON decoder, with a level-0 parent rule and child rules on the fields.
+- [lab] `wazuh-logtest` with `webforensics_rules.xml`: the scenario F events matched 100801 (level 12, summary with an entry point), 100804 (affected file) and 100805 (attacker IP), and scenario D's summary matched 100803 (level 3, no compromise). Field substitution in descriptions works (`$(webforensics.root_cause.path)` became `/admin/login.php`), and lists decode as arrays.
+- [lab] `queue.py`, run by the manager's own Python 3.10, sent the same three events to the live socket; all three appeared in `alerts.json`. Events sent with an agent location were filed under that agent (`agent.name` `web01`, `agent.id` `001`); the one without went to the manager (`000`).
+
+**Not yet run live:** the whole chain on the lab (FIM alert → worker → `pull` from the indexer → analysis → write-back alerts). Each link above was run on a real manager, and the worker is covered by unit tests with the real alerts; the lab run needs the indexer and an agent and is the remaining check for the M6+ "done" test.

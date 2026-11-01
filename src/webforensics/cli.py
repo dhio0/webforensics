@@ -1,5 +1,6 @@
 """Command-line interface."""
 
+import hashlib
 import json
 import os
 from collections import Counter
@@ -19,6 +20,12 @@ from webforensics.adapters.file_adapter import (
 from webforensics.adapters.wazuh.client import Credentials, IndexerClient, IndexerError
 from webforensics.adapters.wazuh.pull import PullError, PullRequest
 from webforensics.adapters.wazuh.pull import pull as run_pull
+from webforensics.adapters.wazuh.queue import Agent as WazuhAgent
+from webforensics.adapters.wazuh.queue import WritebackError
+from webforensics.adapters.wazuh.queue import message as queue_message
+from webforensics.adapters.wazuh.queue import send as send_to_queue
+from webforensics.adapters.wazuh.writeback import build_events as build_writeback_events
+from webforensics.adapters.wazuh.writeback import write_jsonl as write_events_jsonl
 from webforensics.analysis import CaseOptions, EvidenceInputs
 from webforensics.analysis import analyze as run_analysis
 from webforensics.correlate import CorrelationConfig
@@ -311,6 +318,48 @@ def view(
     target.parent.mkdir(parents=True, exist_ok=True)
     target.write_text(render_viewer(report, tz), encoding="utf-8", newline="\n")
     typer.echo(_ascii(f"Wrote {target}"))
+
+
+@app.command()
+def writeback(
+    report_json: Annotated[Path, typer.Argument(help="report.json written by `analyze`.")],
+    out: Annotated[
+        Path | None, typer.Option(help="Also write the events here as JSON lines.")
+    ] = None,
+    send_to: Annotated[
+        Path | None,
+        typer.Option("--socket", help="Send to this Wazuh queue socket (on the manager: "
+                                      "/var/ossec/queue/sockets/queue)."),
+    ] = None,
+    agent_id: Annotated[
+        str | None, typer.Option(help="File the events under this agent (Wazuh agent id).")
+    ] = None,
+    agent_name: Annotated[str | None, typer.Option(help="Agent name for --agent-id.")] = None,
+    agent_ip: Annotated[str, typer.Option(help="Agent IP for --agent-id.")] = "any",
+) -> None:
+    """Turn a report's conclusions into Wazuh events (summary, affected files, attacker
+    IPs) and send them to the manager's queue, where the webforensics rules raise alerts."""
+    if send_to is None and out is None:
+        typer.echo("error: give --socket, --out, or both", err=True)
+        raise typer.Exit(code=2)
+    if (agent_id is None) != (agent_name is None):
+        typer.echo("error: --agent-id and --agent-name go together", err=True)
+        raise typer.Exit(code=2)
+    try:
+        raw = report_json.read_bytes()
+        events = build_writeback_events(load_report(report_json),
+                                        report_sha256=hashlib.sha256(raw).hexdigest())
+        agent = WazuhAgent(agent_id, agent_name, agent_ip) if agent_id and agent_name else None
+        messages = [queue_message(e, agent) for e in events]
+        if out is not None:
+            write_events_jsonl(events, out)
+            typer.echo(_ascii(f"Wrote {len(events)} event(s) to {out}"))
+        if send_to is not None:
+            sent = send_to_queue(messages, send_to)
+            typer.echo(_ascii(f"Sent {sent} event(s) to {send_to}"))
+    except (OSError, ValueError, WritebackError) as exc:
+        typer.echo(_ascii(f"error: {exc}"), err=True)
+        raise typer.Exit(code=2) from exc
 
 
 @app.command("eval")
