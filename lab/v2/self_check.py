@@ -7,6 +7,7 @@ import gzip
 import hashlib
 import json
 import os
+import random
 import re
 import tempfile
 from collections import Counter
@@ -57,6 +58,29 @@ def timing_checks(access_rows: list[dict], background_rows: list[dict], actors: 
             r["request"].split()[1] for r in background_rows if r["request"].startswith("POST ")
         ).most_common(10),
     }
+
+
+def analyst_selection(
+    access_rows: list[dict], background_rows: list[dict], actors: set[str], seed: int
+) -> dict:
+    actor_lines = [row["line_no"] for row in access_rows if row["client_ip"] in actors]
+    return {
+        "sample_seed": seed,
+        "sample_background_line_numbers": sorted(random.Random(seed).sample(
+            [row["line_no"] for row in background_rows], 50
+        )),
+        "attack_window": {"start_line": min(actor_lines), "end_line": max(actor_lines)},
+    }
+
+
+def analyst_proof(path: Path, selection: dict, access_sha256: str) -> dict:
+    expected = {**selection, "access_log_sha256": access_sha256}
+    if not path.is_file():
+        return {"result": "PENDING analyst read before commit", **expected}
+    proof = json.loads(path.read_text(encoding="utf-8"))
+    if proof.get("result") != "PASS" or any(proof.get(k) != v for k, v in expected.items()):
+        raise ValueError("analyst review selection or access-log hash does not match")
+    return {"result": "PASS", **expected, "notes": "notes.md"}
 
 
 def _rows(path: Path, parser) -> list[dict[str, Any]]:
@@ -280,7 +304,12 @@ def check_scenario(root: Path, scenario_id: str) -> dict[str, Any]:
             "restore": proof,
             "restore_with_app_images_removed": "PASS" if clean_image_proof else "PENDING",
             "defender_scan": "PASS; detections=0; real-time protection enabled",
-            "analyst_read": "pending human/assistant review before scenario commit",
+            "analyst_read": analyst_proof(
+                replay / "analyst-review.json",
+                analyst_selection(access_rows, actual_background, set(truth["attacker_ips"]),
+                                  7000 + int(scenario_id[1:])),
+                hashlib.sha256((evidence / access_name).read_bytes()).hexdigest(),
+            ),
             "replay_started_at_utc": replay_run["started_at_utc"],
             "replay_ended_at_utc": replay_run["ended_at_utc"],
             "uninterrupted_run": "PASS; no part resumed",

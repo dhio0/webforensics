@@ -48,7 +48,7 @@ def prepare_restore(replay: Path, app: str) -> None:
         result = ctypes.windll.kernel32.SetThreadExecutionState(0x80000001)
         if not result:
             raise OSError("could not keep recording host awake")
-    for name in ("attack.done", "attack-error.json", "hand-pacing.json"):
+    for name in ("attack.done", "attack-error.json", "hand-pacing.json", "analyst-review.json"):
         (replay / name).unlink(missing_ok=True)
     hashes = public_files(app)
     (replay / "public-hashes.json").write_text(json.dumps(sorted(hashes)) + "\n", encoding="utf-8")

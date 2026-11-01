@@ -13,7 +13,7 @@ from urllib.error import HTTPError
 import pytest
 from lab.v2 import background, collect, crawl_app, pacing, portable, prepare_background
 from lab.v2 import restore_webroot as restore
-from lab.v2.self_check import timing_checks
+from lab.v2.self_check import analyst_proof, analyst_selection, timing_checks
 
 
 def test_schedule_preserves_source_gaps_and_bounds_rolling_bursts() -> None:
@@ -244,3 +244,20 @@ def test_timing_metrics_report_native_attack_bursts_separately() -> None:
     assert metrics["background_writes_to_static_assets"] == 0
     with pytest.raises(ValueError, match="20 requests"):
         timing_checks(bg + actor, bg + [bg[0]] * 30, {"actor"})
+
+
+def test_analyst_proof_binds_seeded_sample_window_and_log_hash(tmp_path: Path) -> None:
+    bg = [{"line_no": i, "client_ip": "bg"} for i in range(1, 101)]
+    actors = [{"line_no": 101, "client_ip": "actor"}, {"line_no": 111, "client_ip": "actor"}]
+    selection = analyst_selection(bg + actors, bg, {"actor"}, 7001)
+    assert len(selection["sample_background_line_numbers"]) == 50
+    assert selection["attack_window"] == {"start_line": 101, "end_line": 111}
+    assert selection == analyst_selection(bg + actors, bg, {"actor"}, 7001)
+    path = tmp_path / "review.json"
+    expected = analyst_proof(path, selection, "a" * 64)
+    assert expected["result"].startswith("PENDING")
+    expected["result"] = "PASS"
+    path.write_text(json.dumps(expected))
+    assert analyst_proof(path, selection, "a" * 64)["result"] == "PASS"
+    with pytest.raises(ValueError, match="log hash"):
+        analyst_proof(path, selection, "b" * 64)
