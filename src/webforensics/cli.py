@@ -303,6 +303,11 @@ def eval_command(
         typer.Option(help="file and/or wazuh (default: every adapter a scenario has "
                           "evidence for)."),
     ] = None,
+    webroot_root: Annotated[
+        Path | None,
+        typer.Option(help="Folder holding a restored webroot per scenario id "
+                          "(benchmark v2: lab/v2/restore_webroot.py)."),
+    ] = None,
 ) -> None:
     """Score the analyzer against the benchmark ground truth."""
     try:
@@ -310,7 +315,10 @@ def eval_command(
         if unknown:
             raise ValueError(f"unknown --adapter {', '.join(unknown)} (use file, wazuh)")
         folders = evaluate.scenario_folders(benchmark, tuple(scenario or ()))
-        scores = evaluate.evaluate_all(folders, tuple(adapter or evaluate.ADAPTERS))
+        if webroot_root is not None and not webroot_root.is_dir():
+            raise FileNotFoundError(f"--webroot-root is not a folder: {webroot_root}")
+        scores = evaluate.evaluate_all(folders, tuple(adapter or evaluate.ADAPTERS),
+                                       webroot_root)
     except (FileNotFoundError, ManifestError, ValueError, KeyError) as exc:
         typer.echo(_ascii(f"error: {exc}"), err=True)
         raise typer.Exit(code=2) from exc

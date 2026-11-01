@@ -95,10 +95,50 @@ def _expected(step: dict) -> bool:
     return step.get("expected_in_timeline", step["category"] != "benign_request")
 
 
-def scenario_inputs(folder: Path, truth: dict) -> tuple[EvidenceInputs, CorrelationConfig]:
-    """The analysis a scenario asks for, with names relative to its evidence folder."""
+@dataclass(frozen=True)
+class FileTruth:
+    """How each ground-truth file counts (D90).
+
+    required: the tool must report it (`expected_in_report`, default true).
+    neutral: a real change the tool may report or not, e.g. a side effect of the app.
+    benign: a legitimate change (role `benign_*`); reporting it is a false accusation.
+    """
+
+    required: frozenset[str]
+    neutral: frozenset[str]
+    benign: frozenset[str]
+
+
+def file_truth(truth: dict) -> FileTruth:
+    required, neutral, benign = set(), set(), set()
+    for f in truth["files"]:
+        if f.get("expected_in_report", True):
+            required.add(f["path"])
+        elif str(f.get("role", "")).startswith("benign"):
+            benign.add(f["path"])
+        else:
+            neutral.add(f["path"])
+    return FileTruth(frozenset(required), frozenset(neutral), frozenset(benign))
+
+
+def _deleted(truth: dict) -> set[str]:
+    return {f["path"] for f in truth["files"] if f.get("change") == "deleted"}
+
+
+def _rel(url_or_path: str) -> str:
+    return url_or_path.split("?", 1)[0].lstrip("/")
+
+
+def scenario_inputs(folder: Path, truth: dict, webroot: Path | None = None
+                    ) -> tuple[EvidenceInputs, CorrelationConfig]:
+    """The analysis a scenario asks for, with names relative to its evidence folder.
+
+    `webroot` replaces `evidence/webroot`, e.g. a full tree rebuilt outside the repository
+    by `lab/v2/restore_webroot.py` (benchmark v2 commits only the changed files)."""
     evidence = folder / "evidence"
     spec = truth.get("analysis", {})
+    if webroot is None and (evidence / "webroot").is_dir():
+        webroot = evidence / "webroot"
     inputs = EvidenceInputs(
         logs=tuple(evidence / p for p in spec.get("access_logs", ["access.log"])),
         manifest=evidence / spec.get("manifest", "manifest.tsv"),
@@ -108,7 +148,7 @@ def scenario_inputs(folder: Path, truth: dict) -> tuple[EvidenceInputs, Correlat
         error_utc_offset=spec.get("error_log_utc_offset", "+0000"),
         base_dir=evidence,
         # The app's code, copied only where it hashes to the manifest (M7 analyzes it).
-        webroot=evidence / "webroot" if (evidence / "webroot").is_dir() else None,
+        webroot=webroot,
     )
     config = CorrelationConfig(trusted_proxies=tuple(spec.get("trusted_proxies", ())))
     return inputs, config
@@ -186,8 +226,12 @@ def code_verdict(truth: dict, findings: tuple[CodeLocation, ...]) -> CodeVerdict
         return CodeVerdict.NONE
     if spec.get("vuln_class") not in LOCALIZED:
         return CodeVerdict.NOT_LOCALIZED
-    path = Path(spec["file"]).relative_to("lab/app").as_posix()
-    in_file = [f for f in findings if f.file == path]
+    path = Path(spec["file"]).as_posix()
+    if path.startswith("lab/app/"):
+        path = path.removeprefix("lab/app/")
+    # v2 names the file as in the app's source repository (e.g. `phpmyfaq/src/...`),
+    # one folder above the webroot: match on whole trailing path segments.
+    in_file = [f for f in findings if f.file == path or path.endswith("/" + f.file)]
     if any(f.line == spec["line"] for f in in_file):
         return CodeVerdict.CORRECT
     return CodeVerdict.WRONG if in_file else CodeVerdict.MISSED
@@ -200,8 +244,14 @@ def score(truth: dict, result: CorrelationResult, runtime_s: float,
     expected = [s for s in truth["steps"] if _expected(s)]
     missed = tuple(s["id"] for s in expected if (s["log_file"], s["line_no"]) not in cited)
     attackers = set(truth["attacker_ips"])
-    truth_files = {f["path"] for f in truth["files"]}
+    files = file_truth(truth)
+    truth_files = set(files.required)
     reported_files = {f.path for f in result.affected_files}
+    # A deleted file cannot be in the affected list; it counts as found when the tool
+    # names it as deleted or as a script seen only in the logs (D85, D90).
+    elsewhere = {_rel(p) for p in (*result.deleted_paths, *result.log_only_files)}
+    found_files = reported_files | (elsewhere & _deleted(truth))
+    allowed = files.required | files.neutral
     reported_rules = {f.rule_id for f in result.findings}
     rules = tuple(truth.get("expected_rule_ids", ()))
     return ScenarioScore(
@@ -211,8 +261,8 @@ def score(truth: dict, result: CorrelationResult, runtime_s: float,
         attacker_ips=len(attackers), reported_ips=len(result.iocs.ips),
         false_ips=tuple(sorted(set(result.iocs.ips) - attackers)),
         truth_files=len(truth_files), reported_files=len(reported_files),
-        false_files=tuple(sorted(reported_files - truth_files)),
-        missed_files=tuple(sorted(truth_files - reported_files)),
+        false_files=tuple(sorted(reported_files - allowed)),
+        missed_files=tuple(sorted(truth_files - found_files)),
         rules_expected=rules, missed_rules=tuple(r for r in rules if r not in reported_rules),
         runtime_s=runtime_s, adapter=adapter, code_line=code_verdict(truth, code),
     )
@@ -222,9 +272,13 @@ def available_adapters(folder: Path) -> tuple[str, ...]:
     return ADAPTERS if (folder / "evidence" / RECORDING).is_file() else ("file",)
 
 
-def evaluate_scenario(folder: Path, adapter: str = "file") -> ScenarioScore:
+def evaluate_scenario(folder: Path, adapter: str = "file",
+                      webroot_root: Path | None = None) -> ScenarioScore:
+    """`webroot_root/<scenario folder name>` is used as the webroot when it exists."""
     truth = json.loads((folder / "ground_truth.json").read_text(encoding="utf-8"))
-    inputs, config = scenario_inputs(folder, truth)
+    restored = webroot_root / folder.name if webroot_root is not None else None
+    inputs, config = scenario_inputs(
+        folder, truth, restored if restored is not None and restored.is_dir() else None)
     line_map = None
     if adapter == "wazuh":
         inputs = EvidenceInputs(wazuh_recording=folder / "evidence" / RECORDING,
@@ -242,15 +296,18 @@ def evaluate_scenario(folder: Path, adapter: str = "file") -> ScenarioScore:
     return score(truth, result, time.perf_counter() - start, line_map, adapter, code)
 
 
-def evaluate_all(folders: list[Path], adapters: tuple[str, ...] = ADAPTERS
-                 ) -> list[ScenarioScore]:
+def evaluate_all(folders: list[Path], adapters: tuple[str, ...] = ADAPTERS,
+                 webroot_root: Path | None = None) -> list[ScenarioScore]:
     """Every folder through every requested adapter it has evidence for."""
-    return [evaluate_scenario(folder, adapter) for folder in folders
+    return [evaluate_scenario(folder, adapter, webroot_root) for folder in folders
             for adapter in adapters if adapter in available_adapters(folder)]
 
 
 def scenario_folders(benchmark: Path, only: tuple[str, ...] = ()) -> list[Path]:
-    folders = sorted(p.parent for p in (benchmark / "scenarios").glob("*/ground_truth.json"))
+    """`<benchmark>/scenarios/<id>/` (v1), or `<benchmark>/<id>/` when there is no
+    `scenarios` folder (benchmark v2)."""
+    root = benchmark / "scenarios" if (benchmark / "scenarios").is_dir() else benchmark
+    folders = sorted(p.parent for p in root.glob("*/ground_truth.json"))
     if only:
         known = {p.name for p in folders}
         unknown = sorted(set(only) - known)
@@ -258,7 +315,7 @@ def scenario_folders(benchmark: Path, only: tuple[str, ...] = ()) -> list[Path]:
             raise ValueError(f"unknown scenario(s): {', '.join(unknown)}")
         folders = [p for p in folders if p.name in only]
     if not folders:
-        raise ValueError(f"no scenarios found under {benchmark / 'scenarios'}")
+        raise ValueError(f"no scenarios found under {root}")
     return folders
 
 

@@ -1,0 +1,28 @@
+| Scenario | Adapter | Split | Step recall | Root cause | False IPs | False files | IP precision | File precision | Expected rules | Code line | Runtime |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| S01 | file | dev | 4/4 | correct | 0 | 0 | 1.00 | 1.00 | - | - | 6.43 s |
+| S02 | file | held_out | 4/4 | wrong | 0 | 0 | 1.00 | 1.00 | - | - | 0.70 s |
+| S03 | file | dev | 0/3 | missed | 0 | 0 | - | - | - | missed | 6.19 s |
+| S04 | file | dev | 0/4 | missed | 0 | 0 | - | - | - | n/a | 6.27 s |
+| S05 | file | dev | 0/5 | missed | 0 | 0 | - | - | - | - | 0.57 s |
+| S06 | file | held_out | 0/1 | missed | 0 | 0 | - | - | - | - | 0.90 s |
+| S07 | file | dev | 0/7 | wrong | 1 | 0 | 0.00 | 1.00 | - | - | 6.38 s |
+| S08 | file | dev | 0/6 | missed | 0 | 0 | - | - | - | - | 6.57 s |
+| S09 | file | held_out | 1/1 | wrong | 0 | 0 | 1.00 | 1.00 | - | - | 6.53 s |
+| S10 | file | dev | 2/5 | wrong | 0 | 0 | 1.00 | 1.00 | - | - | 6.51 s |
+| S11 | file | held_out | - | correct | 0 | 0 | - | - | - | - | 6.14 s |
+| S12 | file | dev | - | false_root | 1 | 2 | 0.00 | 0.00 | - | - | 6.51 s |
+
+**file, dev**: 1/8 scenarios fully correct, step recall 0.18, root cause 1/8, false accusations 4.
+**file, held_out**: 1/4 scenarios fully correct, step recall 0.83, root cause 1/4, false accusations 0.
+
+S02: root cause: wrong
+S03: missed steps: editor_login, news_editor_open, save_news_sql_injection; root cause: missed; code line: missed
+S04: missed steps: editor_login, category_editor_open, category_image_upload, uploaded_file_execution; root cause: missed; missed files: images/category-1-.php..
+S05: missed steps: editor_login, security_page_open, security_level_set, command_injection_file_write, marker_file_check; root cause: missed; missed files: hackable/uploads/m8v2-s05-marker.txt
+S06: missed steps: lfi_file_read; root cause: missed
+S07: missed steps: hydra_valid_login, login_form, editor_login, plugin_upload_form, plugin_upload, plugin_activation, marker_check; root cause: wrong; false IPs: 10.0.18.63; missed files: wp-content/uploads/m8v2-s07-marker.txt
+S08: missed steps: unauthenticated_file_upload, agent_identity, agent_working_directory, agent_user, agent_deleted, agent_absent_check; root cause: missed; missed files: wp-content/plugins/wp-file-manager/lib/files/m8v2-s08-agent.php
+S09: root cause: wrong
+S10: missed steps: login_form, plugin_upload_form, persistence_upload; root cause: wrong; missed files: wp-content/plugins/m8v2-persistence/m8v2-photo.jpg
+S12: root cause: false_root; false IPs: 192.0.2.131; false files: wp-content/cache/m8v2-s12-page.php, wp-content/plugins/m8v2-cache-fixture/m8v2-cache-fixture.php
