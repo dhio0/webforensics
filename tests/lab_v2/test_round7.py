@@ -70,6 +70,15 @@ def test_crawl_reads_form_methods_including_relative_actions() -> None:
     assert parser.forms == [("POST", "../login.php"), ("GET", "/search")]
 
 
+def test_crawl_rejects_static_html_fallback_and_deduplicates_tracking_ids() -> None:
+    assert crawl_app.static_html_fallback("/assets/missing.js", "text/html; charset=utf-8")
+    assert not crawl_app.static_html_fallback("/assets/real.js", "text/javascript")
+    assert not crawl_app.static_html_fallback("/index.php", "text/html")
+    assert crawl_app.crawl_query("sid=123&action=search&lang=en") == "action=search&lang=en"
+    assert crawl_app.crawl_query("sid=456&action=search&lang=en") == "action=search&lang=en"
+    assert crawl_app.crawl_query("q=a%20b&value=%2f") == "q=a%20b&value=%2f"
+
+
 def test_prepare_routes_write_methods_and_preserves_scanner_and_timing(tmp_path: Path) -> None:
     source = tmp_path / "source.log"
     methods = ["POST", "PUT", "PATCH", "GET", "HEAD", "POST"]
@@ -78,14 +87,15 @@ def test_prepare_routes_write_methods_and_preserves_scanner_and_timing(tmp_path:
         scanner = index == 5
         lines.append(
             f'198.18.0.{index + 1} - - [30/Oct/2026:12:00:{index:02} +0000] '
-            f'"{method} /original{index}.css HTTP/1.1" {404 if scanner else 200} 1 '
+            f'"{method} /original{index}.css?action=unrelated HTTP/1.1" '
+            f'{404 if scanner else 200} 1 '
             f'"-" "{"scanner" if scanner else "Browser"}"\n'
         )
     source.write_text("".join(lines))
     urls = tmp_path / "app_urls.txt"
     urls.write_text("/style.css\n/index.php\n")
     (tmp_path / "app_methods.json").write_text(json.dumps({
-        "POST": ["/login.php"], "PUT": ["/profile"], "PATCH": ["/settings"]
+        "POST": ["/login.php?action=login"], "PUT": ["/profile"], "PATCH": ["/settings"]
     }))
     output = tmp_path / "background.log.gz"
     report = prepare_background.prepare(
@@ -93,10 +103,12 @@ def test_prepare_routes_write_methods_and_preserves_scanner_and_timing(tmp_path:
     )
     with gzip.open(output, "rt") as stream:
         rows = [background.parse_line(line, "") for line in stream]
-    assert [r["target"] for r in rows[:3]] == ["/login.php", "/profile", "/settings"]
-    assert rows[5]["target"] == "/original5.css"  # scanner stays unchanged
+    assert [r["target"] for r in rows[:3]] == ["/login.php?action=login", "/profile", "/settings"]
+    assert rows[5]["target"] == "/original5.css?action=unrelated"  # scanner stays unchanged
     assert rows[4]["timestamp"] == "30/Oct/2026:12:00:04 +0000"
-    assert report["post_target_counts"] == {"/login.php": 1, "/original5.css": 1}
+    assert report["post_target_counts"] == {
+        "/login.php?action=login": 1, "/original5.css?action=unrelated": 1
+    }
 
 
 def test_archive_pin_rejects_corrupted_cache(tmp_path: Path) -> None:

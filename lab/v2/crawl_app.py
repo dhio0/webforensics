@@ -10,11 +10,24 @@ import xml.etree.ElementTree as ET
 from collections import deque
 from html.parser import HTMLParser
 from pathlib import Path
-from urllib.parse import quote, urljoin, urlsplit, urlunsplit
+from urllib.parse import parse_qsl, quote, urlencode, urljoin, urlsplit, urlunsplit
 from urllib.request import ProxyHandler, Request, build_opener
 
 BASE = "http://wp"
 SEEDS = ("forensics", "incident", "security", "report", "wordpress")
+STATIC_PATH = re.compile(r"\.(?:css|js|map|jpe?g|png|gif|svg|webp|ico|woff2?|ttf|eot)$", re.I)
+
+
+def crawl_query(query: str) -> str:
+    """Drop phpMyFAQ's per-visit tracking IDs so crawling cannot manufacture variants."""
+    fields = parse_qsl(query, keep_blank_values=True)
+    if not any(key == "sid" for key, _value in fields):
+        return query
+    return urlencode([(key, value) for key, value in fields if key != "sid"])
+
+
+def static_html_fallback(path: str, content_type: str) -> bool:
+    return bool(STATIC_PATH.search(path)) and "html" in content_type.lower()
 
 
 class Links(HTMLParser):
@@ -64,7 +77,7 @@ def crawl(output: Path, base: str = BASE) -> int:
             for width in range(1, (len(segments) - start) // 2 + 1):
                 if segments[start : start + width] == segments[start + width : start + 2 * width]:
                     return None
-        return urlunsplit(("http", host, path, parts.query, ""))
+        return urlunsplit(("http", host, path, crawl_query(parts.query), ""))
 
     while queue and len(visited) < 250:
         url = normalize(queue.popleft(), base)
@@ -90,6 +103,8 @@ def crawl(output: Path, base: str = BASE) -> int:
                 content_type = response.headers.get("Content-Type", "")
         except Exception:
             continue
+        if static_html_fallback(parts.path, content_type):
+            continue
         urls.add(parts.path + (("?" + parts.query) if parts.query else ""))
         if "json" in content_type:
             for match in re.findall(rb'"link"\s*:\s*"([^"\\]+)', body):
@@ -112,7 +127,9 @@ def crawl(output: Path, base: str = BASE) -> int:
             parser.feed(body.decode("utf-8", "replace"))
             for method, action in parser.forms:
                 normalized = normalize(action, response.geturl())
-                if normalized and method in methods:
+                if normalized and method in methods and not STATIC_PATH.search(
+                    urlsplit(normalized).path
+                ):
                     form = urlsplit(normalized)
                     methods[method].add(form.path + (f"?{form.query}" if form.query else ""))
             for href in parser.values:

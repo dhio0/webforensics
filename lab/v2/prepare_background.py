@@ -95,7 +95,11 @@ def prepare(
             else:
                 ranked_url = rank_map[row["target"].split("?", 1)[0]]
             ranked_path, _separator, ranked_query = ranked_url.partition("?")
-            query = source_query or ranked_query
+            # Form routing often lives in its query string. A source query must
+            # never replace the crawled form's action or invent another route.
+            query = ranked_query if row["method"] in {"POST", "PUT", "PATCH"} else (
+                source_query or ranked_query
+            )
             row["target"] = f"{ranked_path}?{query}" if query else ranked_path
         classified.append(row)
     expanded = [classified[index % len(classified)] for index in range(limit)]
