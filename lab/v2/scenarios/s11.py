@@ -134,7 +134,7 @@ def scan() -> None:
             "baseline": "baseline.tsv",
             "trusted_proxies": [],
         },
-        "split": "heldout",
+        "split": "held_out",
         "expected_rule_ids": [],
     }
     Path("/replay/records.json").write_text(

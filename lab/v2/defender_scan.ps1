@@ -3,6 +3,8 @@ param(
     [Parameter(Mandatory = $true)][string]$OutputPath
 )
 
+$ErrorActionPreference = "Stop"
+
 $resolvedPath = (Resolve-Path -LiteralPath $ScanPath).Path
 $status = Get-MpComputerStatus
 if (-not $status.AntivirusEnabled -or -not $status.RealTimeProtectionEnabled) {
