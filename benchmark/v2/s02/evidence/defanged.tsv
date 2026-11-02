@@ -1,2 +1,3 @@
 path	original_sha256	original_size	role	reason
-hackable/uploads/m8v2-s02-agent.php	e6742c05c7035be569758489171c87e748ba59af3a2627b7acc5c53843b00c4f	516	webshell_agent	new or changed executable, script-tagged, zip, or phar file
+hackable/uploads/m8v2-s02-agent.php	5d511b99906182c7ffb7257a25f92b35f6339d38cfeac75135a80df3e0c868e9	518	webshell_agent	new or changed executable, script-tagged, zip, or phar file
+config/config.inc.php	fb3633e82bdfc394e4b3440e9549a0885ed7d3ad70bb73ecd73abd9a9130df3b	2437	install_file	secret install configuration; credentials and salts omitted

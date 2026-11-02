@@ -1,0 +1,14 @@
+{
+  "result": "PASS",
+  "manifest_entries_verified": 252,
+  "destination": "C:\\Users\\Pongo\\Documents\\cases\\benchmark-v2-full\\restore-round7\\s02-6d281cad20",
+  "destination_was_empty": true,
+  "local_app_images_removed_and_absence_verified": [
+    "sha256:227f09c1e5093416545c4e4377f5fa108d574ed37c73c84b7cde35cab14eb3d8",
+    "sha256:6aa609c47d86f9b97787b26a627cf1f86d2edf1492d6b0cd01e89b4a6853ff3c"
+  ],
+  "recorded_app_image_absent_before_restore": true,
+  "image_removal_proof": "PASS",
+  "completed_at_utc": "2026-11-02T18:06:22.318639+00:00",
+  "inputs": "repository, public digest-pinned base, SHA-256-pinned source archives"
+}
