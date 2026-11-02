@@ -276,3 +276,5 @@ Encrypted full captures remain outside Git under the directory configured by `la
 - Session continuation: s07 final analyst proof and clean-image restore passed (2846 manifest files); self-check has no PENDING; full pytest and Ruff passed before its separate commit.
 
 - Session continuation: s08 final analyst proof and clean-image restore passed (2844 manifest files); self-check has no PENDING; full pytest and Ruff passed before its separate commit.
+
+- Session continuation: s10 final analyst proof and clean-image restore passed (2847 manifest files); self-check has no PENDING; full pytest and Ruff passed before its separate commit.

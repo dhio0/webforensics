@@ -1,5 +1,7 @@
 # s10 recording notes
 
+The earlier numerical summary below records round 6. The Round 7 analyst read and `replay/self-check.txt` give the current recording's measurements.
+
 s10 exercises persistence through Apache configuration in the isolated WordPress
 5.5.3 lab. A WordPress administrator installs a ZIP plugin package containing an
 `.htaccess` rule and a Weevely agent named with a `.jpg` extension. The agent then
@@ -41,3 +43,5 @@ evidence validation, self-check, restoration of all 2,847 manifest entries,
 and Defender scan passed. The scenario folder is 3,249,869 bytes. Defender
 realtime protection was enabled and the scan found zero
 detections.
+
+Round 7 analyst read: I read the 50 seeded final background lines (seed 7010) and inspected all 1,736 lines of the activity window, lines 6,452–8,187, including 14 actor requests. I checked methods and paths, statuses, timestamps, attribution, and static-file writes. The background sample has WordPress pages, feeds, assets, login and comment forms, uptime checks, and retained scanner probes. The actor sequence shows reconnaissance, login, plugin installation, and six native agent POSTs to an image-suffix path over 443 seconds. Those six POSTs belong to the actor and are the intended handler behavior; no background visitor posts to a static asset. No window response is 5xx.

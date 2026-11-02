@@ -82,8 +82,8 @@
       ],
       "label_method": "attacker_ip_time_window",
       "attacker_ip": "192.0.2.131",
-      "started_at": "2026-10-31T15:25:51.278214+00:00",
-      "ended_at": "2026-10-31T15:25:51.636656+00:00",
+      "started_at": "2026-11-01T18:00:12.294221+00:00",
+      "ended_at": "2026-11-01T18:01:07.343431+00:00",
       "request": "POST /wp-content/plugins/m8v2-persistence/m8v2-photo.jpg HTTP/1.1",
       "status": 200,
       "candidate_ordinal": 1
