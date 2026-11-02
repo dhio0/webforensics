@@ -1,0 +1,7 @@
+{
+  "POST": [
+    "/login.php"
+  ],
+  "PUT": [],
+  "PATCH": []
+}

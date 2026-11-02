@@ -12,7 +12,7 @@
         "T1078"
       ],
       "log_file": "access.log.gz",
-      "line_no": 4502,
+      "line_no": 5578,
       "is_root_cause": false,
       "expected_in_timeline": false
     },
@@ -23,7 +23,7 @@
         "T1005"
       ],
       "log_file": "access.log.gz",
-      "line_no": 4505,
+      "line_no": 6652,
       "is_root_cause": true,
       "expected_in_timeline": true
     }

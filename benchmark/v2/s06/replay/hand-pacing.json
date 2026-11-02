@@ -1,0 +1,32 @@
+[
+  {
+    "action": "form_navigation",
+    "offset_seconds": 0.02396438300002046,
+    "started_at_utc": "2026-11-02T10:16:35.678765+00:00"
+  },
+  {
+    "action": "training_account_login",
+    "offset_seconds": 47.5512900409999,
+    "started_at_utc": "2026-11-02T10:17:23.204957+00:00"
+  },
+  {
+    "action": "form_navigation",
+    "offset_seconds": 103.86511491700003,
+    "started_at_utc": "2026-11-02T10:18:19.515988+00:00"
+  },
+  {
+    "action": "form_navigation",
+    "offset_seconds": 158.50389451299998,
+    "started_at_utc": "2026-11-02T10:19:14.151749+00:00"
+  },
+  {
+    "action": "form_navigation",
+    "offset_seconds": 205.6187853219999,
+    "started_at_utc": "2026-11-02T10:20:01.264029+00:00"
+  },
+  {
+    "action": "lfi_file_read",
+    "offset_seconds": 261.749033027,
+    "started_at_utc": "2026-11-02T10:20:57.393108+00:00"
+  }
+]
