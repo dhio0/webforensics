@@ -1,0 +1,57 @@
+[
+  {
+    "action": "admin_login_form",
+    "offset_seconds": 0.000343668999903457,
+    "started_at_utc": "2026-11-01T17:49:47.236919+00:00"
+  },
+  {
+    "action": "admin_login",
+    "offset_seconds": 45.96071509500007,
+    "started_at_utc": "2026-11-01T17:50:33.190680+00:00"
+  },
+  {
+    "action": "core_update_check",
+    "offset_seconds": 103.19519178299993,
+    "started_at_utc": "2026-11-01T17:51:30.421887+00:00"
+  },
+  {
+    "action": "plugin_update_form",
+    "offset_seconds": 153.46418043099993,
+    "started_at_utc": "2026-11-01T17:52:20.688412+00:00"
+  },
+  {
+    "action": "plugin_update_package",
+    "offset_seconds": 207.42926162999993,
+    "started_at_utc": "2026-11-01T17:53:14.646171+00:00"
+  },
+  {
+    "action": "plugin_update_apply",
+    "offset_seconds": 264.19533881200005,
+    "started_at_utc": "2026-11-01T17:54:11.408601+00:00"
+  },
+  {
+    "action": "cache_warm_form",
+    "offset_seconds": 317.7544351490001,
+    "started_at_utc": "2026-11-01T17:55:04.963021+00:00"
+  },
+  {
+    "action": "cache_generation",
+    "offset_seconds": 362.92021565699997,
+    "started_at_utc": "2026-11-01T17:55:50.126117+00:00"
+  },
+  {
+    "action": "media_upload_form",
+    "offset_seconds": 415.9294193200001,
+    "started_at_utc": "2026-11-01T17:56:43.131478+00:00"
+  },
+  {
+    "action": "media_upload",
+    "offset_seconds": 475.46019171500006,
+    "started_at_utc": "2026-11-01T17:57:42.658394+00:00"
+  },
+  {
+    "action": "scanner_catchall_probe",
+    "offset_seconds": 528.818589837,
+    "started_at_utc": "2026-11-01T17:58:36.013193+00:00"
+  }
+]

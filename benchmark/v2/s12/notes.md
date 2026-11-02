@@ -1,5 +1,7 @@
 # s12 recording notes
 
+The earlier numerical summary below records round 6. The Round 7 analyst read and `replay/self-check.txt` give the current recording's measurements.
+
 s12 is a no-compromise WordPress 5.5.3 scenario. The administrator opens the
 core update page, updates a local cache-plugin fixture from 1.0 to 1.1 through
 WordPress's ZIP installer, uploads a small PNG to the media library, and warms
@@ -51,3 +53,5 @@ Defender scan passed. The scenario folder is 3,263,416 bytes including these
 notes and scan record; Defender realtime protection was enabled and the scan
 found zero detections. Isolation checks refused a non-allowlisted service and
 confirmed external addresses were unreachable.
+
+Round 7 analyst read: I read the 50 seeded final background lines (seed 7012) and inspected all 2,316 lines of the activity window, lines 5,254–7,569, including 11 benign administrator and scanner requests. I checked methods and paths, statuses, timestamps, attribution, static-file writes, and whether any step implied a compromise. The background sample has WordPress pages, feeds, assets, login and comment forms, uptime checks, and retained scanner probes. The labelled sequence shows a normal login, local cache-plugin update, cache warming, media upload, and a catch-all scanner 200 over 529 seconds. There is no attacker file or root cause. Some unrelated requests receive ordinary 400/405 answers; no window response is 5xx and background static-file writes are zero.
