@@ -1,0 +1,32 @@
+[
+  {
+    "action": "form_navigation",
+    "offset_seconds": 0.0004791549999936251,
+    "started_at_utc": "2026-11-02T10:21:18.960684+00:00"
+  },
+  {
+    "action": "administrator_login",
+    "offset_seconds": 59.806135154,
+    "started_at_utc": "2026-11-02T10:22:18.763697+00:00"
+  },
+  {
+    "action": "plugin_upload_form",
+    "offset_seconds": 109.52714443200011,
+    "started_at_utc": "2026-11-02T10:23:08.482201+00:00"
+  },
+  {
+    "action": "agent_upload",
+    "offset_seconds": 158.14049589200022,
+    "started_at_utc": "2026-11-02T10:23:57.093851+00:00"
+  },
+  {
+    "action": "agent_command",
+    "offset_seconds": 210.96171296800003,
+    "started_at_utc": "2026-11-02T10:24:49.911351+00:00"
+  },
+  {
+    "action": "agent_command",
+    "offset_seconds": 261.3224375030002,
+    "started_at_utc": "2026-11-02T10:25:40.269724+00:00"
+  }
+]

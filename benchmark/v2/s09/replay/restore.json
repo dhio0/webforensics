@@ -1,7 +1,9 @@
 {
   "application": "WordPress 5.5.3",
   "app_type": "wordpress",
-  "image": "sha256:2cda068e6d8f26aeb66aee0fdec26319b1682fd6a4af44711e13868ba52798d1",
-  "attacker_image": "sha256:dc978dfe4c1d98cca5d0b55b3e5901cdf35882e0ee8288d2b77ecc95d97ddf3a",
-  "webroot": "/var/www/html"
+  "attacker_image": "sha256:7f204b8e3a5c6b44cbcc38772557520f8c08f8348fbfc42f70472d53919ddbf8",
+  "webroot": "/var/www/html",
+  "recording_image": "sha256:6aa609c47d86f9b97787b26a627cf1f86d2edf1492d6b0cd01e89b4a6853ff3c",
+  "version": 2,
+  "inputs": "lab/v2/portable-inputs.json"
 }
