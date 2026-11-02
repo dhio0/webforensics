@@ -314,3 +314,11 @@ Encrypted full captures remain outside Git under the directory configured by `la
 - Expected replay end: 2026-11-02T11:21:59.263926+00:00.
 - Background and attack are detached in their isolated containers.
 - Windows sleep prevention requested. Any interruption invalidates the run.
+
+## Held-out activity review progress (2026-11-02 17:29 WIB)
+
+- All four scripted activity sequences completed without error markers. Background replays continue uninterrupted; expected ends remain approximately 18:21-18:22 WIB.
+- Complete live activity windows were read in lossless row/dictionary views: s02 lines 6605-8408 (1,804 rows, 249 actor requests, 417 seconds); s06 5254-6652 (1,399 rows, six actor requests, 262 seconds); s09 6604-7527 (924 rows, 14 actor requests, 262 seconds); s11 5553-6490 (938 rows, 104 actor requests, 189 seconds). Full request, User-Agent, referrer, status/size dictionaries were read.
+- No recording defect was found. s09 includes two ordinary app-address WordPress loopback cron requests. Native scanner/sqlmap/agent bursts remain distinct from human action spacing. Claims retain the existing limits for SQLi, local-file read, authenticated installation, and no-compromise scanning.
+- Hashes and findings are in ignored `.cache/sXX-window-review-progress.json`. Final normalized-UA confirmation and seeded 50-line background samples remain pending until collection; no final analyst proof has been written for a held-out case.
+- Exact next step: keep polling without touching live logs, then confirm core window hashes, read the final samples, write analyst proofs/notes, remove app images, restore each held-out case and rerun self-checks.
