@@ -1,26 +1,11 @@
 {
   "result": "PASS",
   "manifest_entries_verified": 2845,
-  "destination": "C:\\Users\\Pongo\\Documents\\cases\\benchmark-v2-full\\restore-round7\\s01-0f15bb83cb",
+  "destination": "C:\\Users\\Pongo\\Documents\\cases\\benchmark-v2-full\\restore-round7\\s01-66c8efad55",
   "destination_was_empty": true,
   "local_app_images_removed_and_absence_verified": [],
   "recorded_app_image_absent_before_restore": true,
   "image_removal_proof": "PASS",
-  "completed_at_utc": "2026-11-01T08:09:59.545574+00:00",
-  "inputs": "repository, public digest-pinned base, SHA-256-pinned source archives",
-  "prior_image_removal_and_restore_proof": {
-    "result": "PASS",
-    "manifest_entries_verified": 2845,
-    "destination": "C:\\Users\\Pongo\\Documents\\cases\\benchmark-v2-full\\restore-round7\\s01-6ba1bb8034",
-    "destination_was_empty": true,
-    "local_app_images_removed_and_absence_verified": [
-      "sha256:30b8ac3e94bc090ef546752e06509f494731a2310ea23c22b3ca0f774b6baf3a",
-      "sha256:8a32825062d4dfbe4dc4fa8460e00c61857faf47fc0358335c9298ac6534b601",
-      "sha256:94eeb0d7fcdb6a1c1587de506a1db776eaff0e7cb02489ac5030bd60e64bcd58"
-    ],
-    "recorded_app_image_absent_before_restore": true,
-    "image_removal_proof": "PASS",
-    "completed_at_utc": "2026-11-01T08:04:28.921358+00:00",
-    "inputs": "repository, public digest-pinned base, SHA-256-pinned source archives"
-  }
+  "completed_at_utc": "2026-11-02T18:13:25.641194+00:00",
+  "inputs": "repository, public digest-pinned base, SHA-256-pinned source archives"
 }

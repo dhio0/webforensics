@@ -5,7 +5,8 @@
 - All four inherited held-out recordings were preserved, finalized, and committed separately: s02 `cff2660`, s06 `22c9a33`, s09 `4f190e1`, s11 `371d603`. Every self-check passes without PENDING, including final analyst reads, real Defender scans and clean-empty portable restores after local app-image removal.
 - Fixed s11's split spelling at the configuration source and regenerated via `label.py`; Defender errors now stop before writing success (`8bb71fc`). s02 was scanned alone successfully at 2026-11-02 18:05:34 UTC, zero detections.
 - HELDOUT now lists replacement hashes and recording commits. Full pytest (564 passed, 8 skipped) and Ruff passed before each recording commit.
-- Exact next step: finish the independent all-twelve restore batch now running into new empty external destinations, rerun self-checks against those proofs and commit them. Then finish README/SOURCES/ROUND7 report and STATUS complete; restore AC lid-close Sleep (1).
+- All-twelve clean restore batch completed successfully; all twelve final self-checks pass without PENDING and bind the new proofs. Aggregate proof: `restore-all-round7.json`. AC and DC lid-close are verified as Sleep (1); see `power-restored-round7.txt`.
+- Exact next step: commit the all-twelve proofs, then finish README/SOURCES/ROUND7 and mark STATUS complete.
 - Leftovers: inherited README/SOURCES edits and draft ROUND7 remain uncommitted for final docs. Ignored resume helpers/stdout are in `lab/v2/.cache/`. All external captures and restore trees are preserved. No capture/log timestamps were rewritten; no results or scorer were read or changed.
 
 ## Session continuation (2026-11-02, WIB)

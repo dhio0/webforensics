@@ -63,12 +63,12 @@
   "restore": {
     "result": "PASS",
     "manifest_entries_verified": 2844,
-    "destination": "C:\\Users\\Pongo\\Documents\\cases\\benchmark-v2-full\\restore-round7\\s11-a2ec7baec5",
+    "destination": "C:\\Users\\Pongo\\Documents\\cases\\benchmark-v2-full\\restore-round7\\s11-3c59badda6",
     "destination_was_empty": true,
     "local_app_images_removed_and_absence_verified": [],
     "recorded_app_image_absent_before_restore": true,
     "image_removal_proof": "PASS",
-    "completed_at_utc": "2026-11-02T18:10:48.659479+00:00",
+    "completed_at_utc": "2026-11-02T18:15:16.992638+00:00",
     "inputs": "repository, public digest-pinned base, SHA-256-pinned source archives"
   },
   "restore_with_app_images_removed": "PASS",
@@ -166,6 +166,6 @@
     0.36809
   ],
   "defanged_files": 4,
-  "scenario_bytes": 3360822,
+  "scenario_bytes": 3364866,
   "ground_truth_sha256": "f93c41e1eacdf7887f4b7199ed6a39e9f7a67534dadb53ec356caccb7ecd7971"
 }
