@@ -231,6 +231,7 @@ def render(scenario: Path) -> str:
         f"`{ROUND7[index]}` replaced the recording with live pacing and portable restore "
         "proof. Round eight: `76034f5` fixed the backup-index expectation and added "
         "file-role checks; `249452b` corrected background addresses without recording again. "
+        "`abac921` replaced the stale notes with current measurements. "
         "This note replaces superseded measurements.\n"
     )
     assert hashlib.sha256((scenario / "evidence/access.log.gz").read_bytes()).hexdigest() == (

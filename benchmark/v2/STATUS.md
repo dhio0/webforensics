@@ -1,4 +1,10 @@
-# Benchmark v2 status - round 8 in progress
+# Benchmark v2 status - round 8 complete
+
+## Round 8 completion (2026-11-03, WIB)
+
+- All five fixes are complete. The fresh final analyst pass read every step line, twenty new seeded background lines and the final note for every scenario. No new recording defect was found. Full evidence and hash tables are in ROUND8.md.
+- Known limits are mirrored in README, ROUND7 and SOURCES; HELDOUT has current log hashes. Referrer wording is precise: all background referrers are empty, while fifteen application cron self-requests have nonempty referrers and remain intact.
+- Full pytest: 571 passed, 8 skipped. Ruff passed. No uncommitted task work is intended after the final documentation commit; ignored round8-final-read.json is only the review view, with no live attacker code.
 
 ## Round 8: current notes complete
 
@@ -31,9 +37,9 @@
 ## Round 8: fixes 1 and 2
 
 - s07 backup index is a side effect excluded from reports; replay records and scenario source agree. Ground truth was regenerated with label.py twice, byte-identically.
-- Ground-truth SHA-256 before: `e9d8600bef80213e10e7473c88a9a54abb12b23325ff254976700150a446ef1f`; after: `98eac551a0af55b4c1b75dbd888e3cb6d4dee4620f2f855c4dc94be3e58fa9df`.
+- Historical ground-truth SHA-256 before: `e9d8600bef80213e10e7473c88a9a54abb12b23325ff254976700150a446ef1f`; after: `98eac551a0af55b4c1b75dbd888e3cb6d4dee4620f2f855c4dc94be3e58fa9df`.
 - New file-role rule rejects unexplained unclassified changes and requires non-attacker changes to be excluded or benign. All twelve self-checks pass; no defect in the other eleven scenarios.
-- Exact next step: document known limits and perform the final analyst pass after all fixes.
+- Exact next step: none; round 8 complete and ready for review/merge by Claude.
 - No recording, Docker, restore rerun, v2 analysis/evaluation, results read, push, pull or merge.
 
 # Benchmark v2 status - round 7 complete
