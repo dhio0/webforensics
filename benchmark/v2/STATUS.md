@@ -1,3 +1,13 @@
+# Benchmark v2 status - round 8 in progress
+
+## Round 8: fixes 1 and 2
+
+- s07 backup index is a side effect excluded from reports; replay records and scenario source agree. Ground truth was regenerated with label.py twice, byte-identically.
+- Ground-truth SHA-256 before: `e9d8600bef80213e10e7473c88a9a54abb12b23325ff254976700150a446ef1f`; after: `98eac551a0af55b4c1b75dbd888e3cb6d4dee4620f2f855c4dc94be3e58fa9df`.
+- New file-role rule rejects unexplained unclassified changes and requires non-attacker changes to be excluded or benign. All twelve self-checks pass; no defect in the other eleven scenarios.
+- Exact next step: replace the private overflow pool and deterministically rewrite recorded background addresses, with per-scenario mapping and field comparison proofs.
+- No recording, Docker, restore rerun, v2 analysis/evaluation, results read, push, pull or merge.
+
 # Benchmark v2 status - round 7 complete
 
 ## Completion (2026-11-03, WIB)

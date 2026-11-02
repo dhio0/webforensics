@@ -137,7 +137,8 @@
       "path": "wp-content/uploads/wp-file-manager-pro/fm_backup/index.php",
       "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "change": "modified",
-      "role": "unclassified_change"
+      "role": "side_effect",
+      "expected_in_report": false
     }
   ],
   "root_cause_step": "plugin_upload",

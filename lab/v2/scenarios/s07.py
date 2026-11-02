@@ -89,6 +89,11 @@ def perform_attack() -> None:
         "files": [
             {"path": f"/wp-content/plugins/{PLUGIN_PATH}", "role": "malicious_plugin"},
             {"path": MARKER_PATH, "role": "plugin_marker"},
+            {
+                "path": "/wp-content/uploads/wp-file-manager-pro/fm_backup/index.php",
+                "role": "side_effect",
+                "expected_in_report": False,
+            },
         ],
         "analysis": {
             "access_logs": ["access.log.gz"],

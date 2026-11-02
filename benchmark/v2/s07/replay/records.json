@@ -112,6 +112,11 @@
     {
       "path": "/wp-content/uploads/m8v2-s07-marker.txt",
       "role": "plugin_marker"
+    },
+    {
+      "path": "/wp-content/uploads/wp-file-manager-pro/fm_backup/index.php",
+      "role": "side_effect",
+      "expected_in_report": false
     }
   ],
   "analysis": {

@@ -33,6 +33,30 @@ def activity_ips(truth: dict, access_rows: list[dict]) -> set[str]:
     }
 
 
+ATTACKER_FILE_ROLES = {
+    "webshell", "webshell_agent", "attacker_file", "shell", "malicious_plugin",
+    "attacker_plugin", "plugin_marker", "persistence_config",
+}
+
+
+def check_file_roles(truth: dict, records: dict) -> None:
+    """Require an explicit decision for every non-attacker file change."""
+    configured = {item["path"].lstrip("/"): item for item in records.get("files", [])}
+    for item in truth["files"]:
+        role = item["role"]
+        if role == "unclassified_change":
+            reason = configured.get(item["path"].lstrip("/"), {}).get(
+                "classification_justification"
+            )
+            if not isinstance(reason, str) or not reason.strip():
+                raise ValueError(
+                    f"unclassified_change has no scenario justification: {item['path']}"
+                )
+        if (role not in ATTACKER_FILE_ROLES and not role.startswith("benign_")
+                and item.get("expected_in_report") is not False):
+            raise ValueError(f"non-attacker file must set expected_in_report false: {item['path']}")
+
+
 def timing_checks(access_rows: list[dict], background_rows: list[dict], actors: set[str]) -> dict:
     span = max(r["timestamp"] for r in access_rows) - min(r["timestamp"] for r in access_rows)
     rate = len(access_rows) / span if span else float("inf")
@@ -110,6 +134,7 @@ def check_scenario(root: Path, scenario_id: str) -> dict[str, Any]:
     records = json.loads((replay / "records.json").read_text(encoding="utf-8"))
     truth_path = scenario / "ground_truth.json"
     truth = json.loads(truth_path.read_text(encoding="utf-8"))
+    check_file_roles(truth, records)
 
     access_name = truth["analysis"]["access_logs"][0]
     access_rows = label.access_index(evidence / access_name)
@@ -345,6 +370,7 @@ def check_scenario(root: Path, scenario_id: str) -> dict[str, Any]:
         **round7,
         "scenario": scenario_id,
         "schema": "PASS",
+        "file_role_expectations": "PASS",
         "ground_truth_regeneration": "PASS",
         "access_rows": len(access_rows),
         "background_rows": len(actual_background),

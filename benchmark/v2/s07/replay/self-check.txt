@@ -149,6 +149,7 @@
   },
   "scenario": "s07",
   "schema": "PASS",
+  "file_role_expectations": "PASS",
   "ground_truth_regeneration": "PASS",
   "access_rows": 15023,
   "background_rows": 15000,
@@ -167,6 +168,6 @@
     0.54936
   ],
   "defanged_files": 5,
-  "scenario_bytes": 3345433,
-  "ground_truth_sha256": "e9d8600bef80213e10e7473c88a9a54abb12b23325ff254976700150a446ef1f"
+  "scenario_bytes": 3345613,
+  "ground_truth_sha256": "98eac551a0af55b4c1b75dbd888e3cb6d4dee4620f2f855c4dc94be3e58fa9df"
 }

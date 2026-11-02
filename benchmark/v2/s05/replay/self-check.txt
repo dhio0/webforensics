@@ -147,6 +147,7 @@
   },
   "scenario": "s05",
   "schema": "PASS",
+  "file_role_expectations": "PASS",
   "ground_truth_regeneration": "PASS",
   "access_rows": 15021,
   "background_rows": 15000,

@@ -150,6 +150,7 @@
   },
   "scenario": "s10",
   "schema": "PASS",
+  "file_role_expectations": "PASS",
   "ground_truth_regeneration": "PASS",
   "access_rows": 15017,
   "background_rows": 15000,

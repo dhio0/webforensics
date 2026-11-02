@@ -143,6 +143,7 @@
   "write_candidates_within_5_seconds_of_ctime": {},
   "scenario": "s06",
   "schema": "PASS",
+  "file_role_expectations": "PASS",
   "ground_truth_regeneration": "PASS",
   "access_rows": 15006,
   "background_rows": 15000,
