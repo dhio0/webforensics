@@ -3,7 +3,7 @@
 This file records verification performed while selecting v2 dependencies. A source
 listed as a candidate is not evidence that a scenario has been replayed.
 
-## Verified release candidates
+## Verified sources and historical image provenance
 
 | Name | Exact version / digest | License | URL / advisory |
 |---|---|---|---|
@@ -54,10 +54,18 @@ listed as a candidate is not evidence that a scenario has been replayed.
 | requests | 2.32.4 | Apache-2.0 | [PyPI release](https://pypi.org/project/requests/2.32.4/) |
 
 The external image digests above are pinned for this Docker Desktop `linux/amd64` host.
-The locally built image IDs identify the artifacts used for each scenario as recorded in
-its `replay/restore.json`. The Zenodo API metadata
+The locally built image IDs in the table are historical round-6 recording provenance.
+Current round-7 recording image IDs are in each `replay/restore.json`; restore never
+requires those local images. The machine-readable pins for portable reconstruction
+are in [`portable-inputs.json`](../../lab/v2/portable-inputs.json): WordPress core
+uses `wordpress@sha256:cf7c7a9c9cc8614a7357dac77d401612c67af5e0ab1ab19e0777f643af3d3a3c`,
+and the DVWA, phpMyFAQ, File Manager and Composer dependency archives are each
+SHA-256 pinned. The older WordPress manifest in the table records the original
+release verification, while the portable-inputs digest is the restore input. The Zenodo API metadata
 reports MIT and describes Organization X/Y web-server logs. Organization X supplies
 real methods, request targets, statuses, and User-Agent values for v2 background rows.
+The dataset's own anonymization rewrites some browser version strings into
+IP-like numbers; those source User-Agent values are retained as published.
 Its public access log anonymizes nearly all client addresses to the same value, so the
 replay corpus pairs those request rows in chronological order with evenly sampled NASA
 client identities. NASA User-Agent values are never substituted into visitor requests.

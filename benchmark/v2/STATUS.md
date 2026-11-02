@@ -1,13 +1,17 @@
-# Benchmark v2 status - round 7 in progress
+# Benchmark v2 status - round 7 complete
 
-## Session continuation (2026-11-03, WIB)
+## Completion (2026-11-03, WIB)
 
-- All four inherited held-out recordings were preserved, finalized, and committed separately: s02 `cff2660`, s06 `22c9a33`, s09 `4f190e1`, s11 `371d603`. Every self-check passes without PENDING, including final analyst reads, real Defender scans and clean-empty portable restores after local app-image removal.
-- Fixed s11's split spelling at the configuration source and regenerated via `label.py`; Defender errors now stop before writing success (`8bb71fc`). s02 was scanned alone successfully at 2026-11-02 18:05:34 UTC, zero detections.
-- HELDOUT now lists replacement hashes and recording commits. Full pytest (564 passed, 8 skipped) and Ruff passed before each recording commit.
-- All-twelve clean restore batch completed successfully; all twelve final self-checks pass without PENDING and bind the new proofs. Aggregate proof: `restore-all-round7.json`. AC and DC lid-close are verified as Sleep (1); see `power-restored-round7.txt`.
-- Exact next step: commit the all-twelve proofs, then finish README/SOURCES/ROUND7 and mark STATUS complete.
-- Leftovers: inherited README/SOURCES edits and draft ROUND7 remain uncommitted for final docs. Ignored resume helpers/stdout are in `lab/v2/.cache/`. All external captures and restore trees are preserved. No capture/log timestamps were rewritten; no results or scorer were read or changed.
+- Round 7 is complete on `m8-benchmark-v2`. All twelve uninterrupted recordings have completed analyst reads, valid byte-identically regenerated ground truth, clean Defender scans, and self-checks without PENDING.
+- Held-out replacement commits: s02 `cff2660`, s06 `22c9a33`, s09 `4f190e1`, s11 `371d603`; hashes and provenance are in HELDOUT.md. s11 split was fixed at the configuration source, then regenerated with `label.py`. s02 Defender was rerun alone; scan errors now terminate before success is written (`8bb71fc`).
+- All twelve clean-empty restores passed again after local app-image removal. Proof commit: `41c60fe`; exact destinations and counts are in `restore-all-round7.json` and each `replay/restore-validation.txt`.
+- README, SOURCES and ROUND7 report are current. The report lists all scenario metrics, write ambiguity counts, hashes, commits, portable inputs/overlay behavior and adaptations. Deleted s08 agent ctime is unavailable and explicitly N/A.
+- Full pytest: **564 passed, 8 skipped**; `ruff check .`: **all checks passed** before every commit. Goldens/original scenarios remain identical to main; scorer/unit tests unchanged from `fbdb09f`. No v2 analysis/evaluation was run and results were not read.
+- AC lid-close restored to **Sleep (1)**; DC remains Sleep (1), both verified in `power-restored-round7.txt`.
+- Half-done work: none. Exact next step: none for this recording task; ready for Claude's independent review/merge. No push, pull or merge was performed.
+- Leftover files: no uncommitted task files after the final documentation commit. Ignored build/source caches, runner logs, analyst progress and resume helpers remain under `lab/v2/.cache/`. Encrypted current captures, all twelve preserved `old-round6/` captures, and external restore validation trees remain outside the repository in the locations documented below. No raw attacker file was exported.
+
+The following sections are historical session and recording provenance, including superseded next steps and discarded-run diagnoses; they do not describe active work.
 
 ## Session continuation (2026-11-02, WIB)
 
