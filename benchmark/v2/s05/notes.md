@@ -1,5 +1,7 @@
 # s05 recording notes
 
+The earlier numerical summary below records round 6. The Round 7 analyst read and `replay/self-check.txt` will give the current recording's measurements.
+
 s05 uses the deliberately vulnerable DVWA command-injection module from pinned
 upstream commit `a1978a2fed195acd093010af6395f86a281537ca`. The relevant source
 is `vulnerabilities/exec/source/low.php`, line 14, SHA-256
@@ -52,3 +54,7 @@ not need to defang anything. The scenario folder is 2,079,106 bytes. The ground
 truth validates, regenerates byte-identically, and all evidence logs parse.
 Restoring the pinned image reproduces all 252 manifest entries. Defender
 realtime protection was enabled and the scan found zero detections.
+
+## Round 7 analyst read
+
+Read all 1,880 rows of the final retry-3 activity window (lines 5553-7432), all 21 actor requests raw, complete request/User-Agent/status-size dictionaries, and all 50 seeded background sample lines (seed 7005). Checked methods and accepting routes, redirects before authentication, successful authenticated pages, response sizes, scanner failures, static reads, timing, client diversity, and normalized User-Agents. Visitor writes use the login form; CSS and images are read requests. The protected module redirects anonymous access. The login POST and later unlabelled landing-page GET are separate actions. Native Commix requests cluster within two seconds; later marker creation and read-back remain human-spaced. No server-error or recording defect was found. IP-like browser version numbers come from source anonymization and are retained. The window has 1,265 HTTP 200, 465 redirects, and 150 HTTP 404 responses. Current measurements and ground-truth hash are in replay/self-check.txt; the earlier numerical section is historical round 6.
