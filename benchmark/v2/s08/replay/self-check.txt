@@ -1,23 +1,170 @@
 {
+  "log_span_seconds": 4379.0,
+  "average_requests_per_second": 3.43046,
+  "maximum_background_requests_per_second": 20,
+  "maximum_overall_requests_per_second": 20,
+  "attack_span_seconds": 466.0,
+  "background_writes_to_static_assets": 0,
+  "scanner_disguised_api_static_suffix_probes": 1,
+  "top_10_post_targets": [
+    [
+      "/wp-comments-post.php",
+      661
+    ],
+    [
+      "/wp-login.php",
+      419
+    ],
+    [
+      "/wp-login.php?action=lostpassword",
+      210
+    ],
+    [
+      "/wp-admin/54.php",
+      37
+    ],
+    [
+      "/wp-admin/261.php?page=smartcode",
+      5
+    ],
+    [
+      "/ajax-api/2.0/mlflow/registered-models/create",
+      4
+    ],
+    [
+      "/wp-content/plugins/delightful-downloads/assets/vendor/jqueryFileTree/connectors/246.php",
+      3
+    ],
+    [
+      "/mgmt/shared/authn/login",
+      3
+    ],
+    [
+      "/wp-admin/92.php",
+      3
+    ],
+    [
+      "/wp-json/click5_sitemap/API/update_html_option_AJAX",
+      3
+    ]
+  ],
+  "activity_client_ips": [
+    "192.0.2.131"
+  ],
+  "whole_actor_window_position_range": [
+    0.4395553188656637,
+    0.5487951005192384
+  ],
+  "parse_failures": {
+    "access": 0,
+    "manifest": 0,
+    "error": 0
+  },
+  "restore": {
+    "result": "PASS",
+    "manifest_entries_verified": 2844,
+    "destination": "C:\\Users\\Pongo\\Documents\\cases\\benchmark-v2-full\\restore-round7\\s08-675bb83643",
+    "destination_was_empty": true,
+    "local_app_images_removed_and_absence_verified": [],
+    "recorded_app_image_absent_before_restore": true,
+    "image_removal_proof": "PASS",
+    "completed_at_utc": "2026-11-02T10:03:42.341811+00:00",
+    "inputs": "repository, public digest-pinned base, SHA-256-pinned source archives"
+  },
+  "restore_with_app_images_removed": "PASS",
+  "defender_scan": "PASS; detections=0; real-time protection enabled",
+  "analyst_read": {
+    "result": "PASS",
+    "sample_seed": 7008,
+    "sample_background_line_numbers": [
+      192,
+      549,
+      786,
+      1033,
+      1577,
+      1985,
+      2254,
+      2372,
+      2509,
+      2518,
+      2766,
+      2786,
+      2875,
+      3234,
+      3402,
+      3874,
+      4392,
+      4587,
+      4630,
+      4713,
+      4733,
+      4777,
+      5191,
+      5404,
+      5578,
+      6380,
+      6440,
+      6442,
+      6769,
+      7380,
+      8421,
+      8466,
+      8514,
+      10244,
+      10750,
+      10900,
+      10927,
+      11230,
+      11379,
+      11723,
+      11869,
+      11942,
+      12400,
+      12590,
+      13085,
+      13100,
+      13419,
+      13822,
+      14403,
+      15020
+    ],
+    "attack_window": {
+      "start_line": 6603,
+      "end_line": 8244
+    },
+    "access_log_sha256": "41dae3ac94acd54ded33886ad7e10b23285d7e0545185999693ed226bea7d422",
+    "notes": "notes.md"
+  },
+  "replay_started_at_utc": "2026-11-01T17:41:45.042248+00:00",
+  "replay_ended_at_utc": "2026-11-01T18:54:44.734768+00:00",
+  "uninterrupted_run": "PASS; no part resumed",
+  "native_tool_bursts_exempt": [
+    "Weevely internal exchanges within hand-paced agent commands"
+  ],
+  "hand_action_minimum_spacing_seconds": 45.18140206299995,
+  "write_candidates_within_5_seconds_of_ctime": {
+    "wp-content/uploads/wp-file-manager-pro/fm_backup/index.php": 2
+  },
   "scenario": "s08",
   "schema": "PASS",
   "ground_truth_regeneration": "PASS",
-  "access_rows": 15021,
+  "access_rows": 15022,
   "background_rows": 15000,
   "background_clients": 10384,
   "largest_background_client_share": 0.00973,
   "background_user_agents": 903,
   "largest_user_agent_share": 0.04407,
+  "largest_overall_user_agent_share": 0.044,
   "top_user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/217.155.106.155 Safari/537.36 Edg/217.155.106.155",
   "nested_path_share": 0.00027,
   "request_paths_with_lab_terms": 16,
-  "visitor_success_share": 0.96274,
+  "visitor_success_share": 0.99942,
   "scanner_rows": 2923,
   "attack_position_range": [
-    0.6891,
-    0.69043
+    0.43956,
+    0.5488
   ],
-  "defanged_files": 1,
-  "scenario_bytes": 3250618,
-  "ground_truth_sha256": "bd191ce98466319ccce0b7f3d321d8f1282d24f7db8a1fff8a9bd955ba20aabc"
+  "defanged_files": 4,
+  "scenario_bytes": 3344569,
+  "ground_truth_sha256": "2b417bfe1a40e674004320c0812f4cbb28e1830a1adb620d5a5ea0bd8740378a"
 }

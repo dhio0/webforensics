@@ -1,5 +1,7 @@
 # s08 recording notes
 
+The earlier numerical summary below records round 6. The Round 7 analyst read and `replay/self-check.txt` give the current recording's measurements.
+
 s08 is the log-only scenario: WordPress 5.5.3 with WordPress File Manager 6.0
 accepts an unauthenticated agent upload, the attacker uses it for short checks,
 and the agent is deleted before the collector takes its final snapshot. The
@@ -45,3 +47,5 @@ Schema validation, byte-identical label regeneration, zero-parse-failure
 evidence validation, self-check, restore of all 2,844 manifest entries, and
 Defender scan passed. The scenario folder is 3,250,508 bytes;
 Defender realtime protection was enabled and the scan found zero detections.
+
+Round 7 analyst read: I read the 50 seeded final background lines (seed 7008) and inspected all 1,642 lines of the activity window, lines 6,603–8,244, including 21 actor requests. I checked methods and paths, statuses, timestamps, attribution, and static-file writes. The background sample has WordPress pages, feeds, assets, login and comment forms, uptime checks, and retained scanner probes. The actor sequence shows the File Manager upload, native agent exchanges, deletion, and a final 404 absence check over 466 seconds. No window response is 5xx. Background writes to static assets are zero.

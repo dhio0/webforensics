@@ -1,0 +1,52 @@
+[
+  {
+    "action": "site_check",
+    "offset_seconds": 0.00043270200012557325,
+    "started_at_utc": "2026-11-01T17:54:04.184779+00:00"
+  },
+  {
+    "action": "plugin_version_check",
+    "offset_seconds": 45.181834765000076,
+    "started_at_utc": "2026-11-01T17:54:49.363803+00:00"
+  },
+  {
+    "action": "admin_probe",
+    "offset_seconds": 92.53656235800008,
+    "started_at_utc": "2026-11-01T17:55:36.713535+00:00"
+  },
+  {
+    "action": "xmlrpc_probe",
+    "offset_seconds": 141.93609419500012,
+    "started_at_utc": "2026-11-01T17:56:26.111418+00:00"
+  },
+  {
+    "action": "unauthenticated_file_upload",
+    "offset_seconds": 198.30848721400002,
+    "started_at_utc": "2026-11-01T17:57:22.479575+00:00"
+  },
+  {
+    "action": "agent_command",
+    "offset_seconds": 248.05986854699995,
+    "started_at_utc": "2026-11-01T17:58:12.226642+00:00"
+  },
+  {
+    "action": "agent_command",
+    "offset_seconds": 301.970314914,
+    "started_at_utc": "2026-11-01T17:59:06.133826+00:00"
+  },
+  {
+    "action": "agent_command",
+    "offset_seconds": 356.37408585899993,
+    "started_at_utc": "2026-11-01T18:00:00.533560+00:00"
+  },
+  {
+    "action": "agent_command",
+    "offset_seconds": 409.7845047170001,
+    "started_at_utc": "2026-11-01T18:00:53.942211+00:00"
+  },
+  {
+    "action": "agent_absent_check",
+    "offset_seconds": 466.1091506810001,
+    "started_at_utc": "2026-11-01T18:01:50.263042+00:00"
+  }
+]
