@@ -1,5 +1,7 @@
 # s03: phpMyFAQ authenticated Save News SQL injection
 
+The numerical evidence summary below records round 6. The Round 7 analyst read and `replay/self-check.txt` give the current recording's measurements.
+
 ## Scenario and provenance
 
 This replay uses phpMyFAQ 3.2.5 (MPL-2.0) and CVE-2024-27299. The maintainer advisory says the affected news editor requires an authenticated user with add/edit rights. The upstream fix changes `authorEmail` escaping in `phpmyfaq/src/phpMyFAQ/News.php` at lines 289 and 335. The pinned 3.2.5 source tag is `ee05654763ef0f16137d3bd21ec50e2f21ffb8f8`; the downloaded source archive SHA-256 is `282b638d7ecda25d6a803d16d9865c6b8aa0516ec9ed6d24bfadabdc6800d05f`.
@@ -18,6 +20,10 @@ The replay authenticates the seeded benchmark administrator, opens Save News, ru
 - Restore uses the pinned phpMyFAQ image plus five small setup-generated `index.html` files from `replay/restore-overlay/` and the locally configured database settings. The setup overlay contains no credentials.
 
 The tracking file changes with ordinary traffic and is recorded as a side effect with `expected_in_report: false`.
+
+## Round 7 analyst read
+
+I read the 50 background lines selected with seed 7003 from the final compressed access log and inspected every row in the 1,430-line activity window (lines 5,402–6,831), including all 23 actor requests. I checked method and target plausibility, response codes, timestamps, client and User-Agent attribution, static-file writes, and whether the generic sqlmap burst stayed distinct from hand-paced steps. The background sample contains ordinary phpMyFAQ pages, forms, assets, uptime probes, and retained scanner requests. The actor's reconnaissance, login, editor access, native sqlmap burst, and targeted confirmation span 260 seconds. All window responses are 200; there are no 5xx responses or static-file writes. Source scanner queries can receive the app's normal 200 fallback. The 15,000-line background is from one uninterrupted run; its final rate is 3.43 requests/second, with a maximum of 20 background requests in one second.
 
 ## Sources
 

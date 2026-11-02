@@ -1,0 +1,17 @@
+{
+  "POST": [
+    "/",
+    "/?action=password",
+    "/?action=register",
+    "/?lang=en&action=search",
+    "/admin/index.php",
+    "/index.php",
+    "/index.php?action=password",
+    "/index.php?action=register",
+    "/index.php?lang=en&action=add&cat=0",
+    "/index.php?lang=en&action=contact",
+    "/index.php?lang=en&action=search"
+  ],
+  "PUT": [],
+  "PATCH": []
+}

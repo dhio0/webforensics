@@ -1,5 +1,31 @@
 # Benchmark v2 status - round 7 in progress
 
+## Session continuation (2026-11-02, WIB)
+
+- All seven replacement dev recordings are complete and uninterrupted; preserve their uncommitted evidence. The earlier active/failed run entries below are historical.
+- s05 retry 3 analyst review is complete: all 1,880 final window rows, 21 raw actor rows, and 50 seed-7005 background rows were read; matching hash-bound proof and notes written. The old cached review was replaced.
+- Docker is running, and no recording project/container remains active. Both batch flags are cleared for clean-image validation; local lab app images have been removed by the restore helper. Seven fresh external empty-destination restores are running sequentially.
+- Full pytest: 564 passed, 8 skipped; Ruff passed.
+- Exact next step: finish seven restore proofs, rerun each self-check with no PENDING, commit each dev scenario separately, then record s02/s06/s09/s11 with unchanged stories. README/SOURCES edits inherited from the prior session remain uncommitted for final docs.
+
+## Failed seven-scenario batch diagnosis (2026-11-02)
+
+- The s03, s04, s05, s07, s08, s10 and s12 recordings begun on 2026-11-01 are invalid and must be re-recorded from clean volumes. Their `background-error.json` files show `RuntimeError`, `uninterrupted: false`, and termination near source line 11,950-12,100.
+- Windows System events identify the cause: Kernel-Power event 42 says the machine entered sleep at 2026-11-01 09:12:18 UTC because of **Button or Lid**; Power-Troubleshooter event 1 reports sleep at 09:12:13 UTC and wake at 09:12:32 UTC. All seven replay errors were written at 09:12:32-33 UTC. The replay clock intentionally rejects such a suspension. The existing `SetThreadExecutionState` request did not prevent a manual button/lid sleep transition.
+- Docker inspection of representative background and app containers reported `OOMKilled=false`; the later exit code 137 occurred when Docker was shut down at 11:09 UTC. The different HTTP error totals before suspension (4 to 5,182) are not the common stopping cause.
+- The seven scenario folders were restored to their last committed state and their untracked partial files were removed. Only those seven stopped Compose projects and their disposable volumes were removed.
+- For the new recordings, the active Balanced power plan's AC lid-close action was temporarily changed from Sleep (1) to Do nothing (0) and verified; the DC action remains Sleep (1). Restore the AC value to 1 after the recordings. Each host runner also requests continuous system execution. No partial log, file snapshot, label, or timestamp from the failed batch will be reused.
+- Ignored `.cache/sXX-window-review-progress.json` files for the failed batch are stale and must not be used to claim review of the new recordings.
+- The replacement recordings began from clean volumes in seven isolated projects. All seven scripted activity sequences finished without an attack error. The live windows have been parsed row by row for methods, statuses, clients, request targets, server errors, and writes to static suffixes; s10's six image-suffix POSTs are the intentional agent commands. The final 50-line samples, normalized User-Agents, and clean-image restore proofs remain pending until each background replay ends.
+- Next: let the seven uninterrupted background replays finish, complete each analyst review and validation, then continue held-out scenarios, all-twelve restore, and final docs.
+
+## s05 retry during replacement batch
+
+- The first replacement s05 background replay finished uninterrupted, but ground-truth generation rejected two sidecar rows with the same `editor_login` label: the DVWA login POST and its immediate redirect GET. That recording is discarded, including its log and encrypted capture; no part will be stitched into the retry.
+- Commit `75283d5` changes the labelled DVWA login in s05, s02, and s06 to keep the label on the POST and check the landing page with an unlabelled GET. Full pytest (564 passed, 8 skipped) and Ruff passed before the commit.
+- s05 retry 3 was launched on 2026-11-02 at approximately 01:50 WIB. Its runner removes the earlier s05 project and volumes before recording; expected completion is approximately 03:03 WIB. The other six replacement dev recordings continue in isolated projects.
+- The other six replacement dev recordings have now ended without replay errors. Their final analyst samples and activity windows were reviewed, and their self-checks pass with only the explicitly deferred image-removal proof. No six-scenario folder will be committed until s05 stops and the local images can be removed for clean restore validation.
+
 
 ## Round 7 progress (2026-11-01)
 
@@ -183,3 +209,61 @@ Encrypted full captures remain outside Git under the directory configured by `la
 
 - The benign s12 activity window is derived from clients of labelled steps, including unlabelled redirects from those clients. This validation-only correction preserves an empty attacker list and null root cause. Regression/full checks: 564 passed, 8 skipped; Ruff passed. No live evidence or timestamp was changed.
 - Batch runner PIDs/projects are in ignored `.cache/round7-dev-batch.json`; per-case host stdout/stderr are `.cache/round7-sXX-host.*.txt`. All seven attacks completed without error markers by 15:51 WIB; background replay continues.
+
+- Full activity windows have now been read for all seven active dev cases using complete lossless row/dictionary views plus raw actor lines: s03 5402-6830 (1,429 rows), s04 5703-7099 (1,397), s05 5553-7391 (1,839), s07 5853-8253 (2,401), s08 6605-8244 (1,640), s10 6452-8187 (1,736), s12 5254-7569 (2,316). Ignored `.cache/sXX-window-review-progress.json` files preserve hashes/findings. Final normalized-UA confirmation and the 50 seeded final background samples remain pending until collection. No completed analyst proof is claimed yet.
+
+## Active round-7 run: s04
+
+- Started: 2026-11-01T17:34:51.407493+00:00 (2026-11-02 00:34:51 WIB).
+- Expected replay end: 2026-11-01T18:47:51.086298+00:00.
+- Background and attack are detached in their isolated containers.
+- Windows sleep prevention requested. Any interruption invalidates the run.
+
+## Active round-7 run: s03
+
+- Started: 2026-11-01T17:34:51.478486+00:00 (2026-11-02 00:34:51 WIB).
+- Expected replay end: 2026-11-01T18:47:51.157291+00:00.
+- Background and attack are detached in their isolated containers.
+- Windows sleep prevention requested. Any interruption invalidates the run.
+
+## Active round-7 run: s05
+
+- Started: 2026-11-01T17:34:59.133923+00:00 (2026-11-02 00:34:59 WIB).
+- Expected replay end: 2026-11-01T18:47:58.812728+00:00.
+- Background and attack are detached in their isolated containers.
+- Windows sleep prevention requested. Any interruption invalidates the run.
+
+## Active round-7 run: s07
+
+- Started: 2026-11-01T17:41:41.651822+00:00 (2026-11-02 00:41:41 WIB).
+- Expected replay end: 2026-11-01T18:54:41.330627+00:00.
+- Background and attack are detached in their isolated containers.
+- Windows sleep prevention requested. Any interruption invalidates the run.
+
+## Active round-7 run: s10
+
+- Started: 2026-11-01T17:41:43.783079+00:00 (2026-11-02 00:41:43 WIB).
+- Expected replay end: 2026-11-01T18:54:43.461884+00:00.
+- Background and attack are detached in their isolated containers.
+- Windows sleep prevention requested. Any interruption invalidates the run.
+
+## Active round-7 run: s12
+
+- Started: 2026-11-01T17:41:44.524900+00:00 (2026-11-02 00:41:44 WIB).
+- Expected replay end: 2026-11-01T18:54:44.203705+00:00.
+- Background and attack are detached in their isolated containers.
+- Windows sleep prevention requested. Any interruption invalidates the run.
+
+## Active round-7 run: s08
+
+- Started: 2026-11-01T17:41:44.555875+00:00 (2026-11-02 00:41:44 WIB).
+- Expected replay end: 2026-11-01T18:54:44.234680+00:00.
+- Background and attack are detached in their isolated containers.
+- Windows sleep prevention requested. Any interruption invalidates the run.
+
+## Active round-7 run: s05
+
+- Started: 2026-11-01T18:51:31.495694+00:00 (2026-11-02 01:51:31 WIB).
+- Expected replay end: 2026-11-01T20:04:31.174499+00:00.
+- Background and attack are detached in their isolated containers.
+- Windows sleep prevention requested. Any interruption invalidates the run.

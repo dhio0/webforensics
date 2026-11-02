@@ -1,4 +1,154 @@
 {
+  "log_span_seconds": 4379.0,
+  "average_requests_per_second": 3.43069,
+  "maximum_background_requests_per_second": 20,
+  "maximum_overall_requests_per_second": 20,
+  "attack_span_seconds": 260.0,
+  "background_writes_to_static_assets": 0,
+  "scanner_disguised_api_static_suffix_probes": 1,
+  "top_10_post_targets": [
+    [
+      "/?lang=en&action=search",
+      379
+    ],
+    [
+      "/index.php?lang=en&action=contact",
+      221
+    ],
+    [
+      "/?action=password",
+      199
+    ],
+    [
+      "/?action=register",
+      174
+    ],
+    [
+      "/index.php?lang=en&action=add&cat=0",
+      95
+    ],
+    [
+      "/index.php",
+      62
+    ],
+    [
+      "/index.php?lang=en&action=search",
+      53
+    ],
+    [
+      "/admin/index.php",
+      48
+    ],
+    [
+      "/index.php?action=register",
+      45
+    ],
+    [
+      "/wp-admin/54.php",
+      37
+    ]
+  ],
+  "activity_client_ips": [
+    "192.0.2.131"
+  ],
+  "whole_actor_window_position_range": [
+    0.35958197430606403,
+    0.4547027890567796
+  ],
+  "parse_failures": {
+    "access": 0,
+    "manifest": 0,
+    "error": 0
+  },
+  "restore": {
+    "result": "PASS",
+    "manifest_entries_verified": 2880,
+    "destination": "C:\\Users\\Pongo\\Documents\\cases\\benchmark-v2-full\\restore-round7\\s03-61ab2ef293",
+    "destination_was_empty": true,
+    "local_app_images_removed_and_absence_verified": [
+      "sha256:185036f948b4ef34554878ff2ea6011c50ccdfb795c7dfdaf44ed92e273431fd",
+      "sha256:65c0d3f83fd612ad2e39f74ef851aa35d19e44512cf6d090d8f8930609df9922",
+      "sha256:8a745360f425878018b14078c6edeb79f7752adf901428f5845d62a4b80e66f1"
+    ],
+    "recorded_app_image_absent_before_restore": true,
+    "image_removal_proof": "PASS",
+    "completed_at_utc": "2026-11-02T09:58:09.708604+00:00",
+    "inputs": "repository, public digest-pinned base, SHA-256-pinned source archives"
+  },
+  "restore_with_app_images_removed": "PASS",
+  "defender_scan": "PASS; detections=0; real-time protection enabled",
+  "analyst_read": {
+    "result": "PASS",
+    "sample_seed": 7003,
+    "sample_background_line_numbers": [
+      107,
+      399,
+      510,
+      1041,
+      1097,
+      1441,
+      1459,
+      1567,
+      1573,
+      1707,
+      1795,
+      2046,
+      2079,
+      2145,
+      2499,
+      2856,
+      3575,
+      3864,
+      3987,
+      4107,
+      4583,
+      4803,
+      5057,
+      5323,
+      5450,
+      5568,
+      6081,
+      6150,
+      6370,
+      7220,
+      7711,
+      7774,
+      7956,
+      8209,
+      8592,
+      9669,
+      9705,
+      10330,
+      10383,
+      10510,
+      10823,
+      11143,
+      11377,
+      11451,
+      11601,
+      13092,
+      13791,
+      14129,
+      14503,
+      14894
+    ],
+    "attack_window": {
+      "start_line": 5402,
+      "end_line": 6831
+    },
+    "access_log_sha256": "4c4a1c4e7cf6df742bcb27ffb636c80267df43dd1bf06ae4d25f65181fa4a045",
+    "notes": "notes.md"
+  },
+  "replay_started_at_utc": "2026-11-01T17:34:51.812051+00:00",
+  "replay_ended_at_utc": "2026-11-01T18:47:51.441941+00:00",
+  "uninterrupted_run": "PASS; no part resumed",
+  "native_tool_bursts_exempt": [
+    "sqlmap (native burst)"
+  ],
+  "hand_action_minimum_spacing_seconds": 47.39234391299999,
+  "write_candidates_within_5_seconds_of_ctime": {
+    "data/tracking01112026": 2
+  },
   "scenario": "s03",
   "schema": "PASS",
   "ground_truth_regeneration": "PASS",
@@ -8,16 +158,17 @@
   "largest_background_client_share": 0.00973,
   "background_user_agents": 903,
   "largest_user_agent_share": 0.04407,
+  "largest_overall_user_agent_share": 0.044,
   "top_user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/217.155.106.155 Safari/537.36 Edg/217.155.106.155",
   "nested_path_share": 0.00027,
   "request_paths_with_lab_terms": 0,
-  "visitor_success_share": 0.99959,
+  "visitor_success_share": 1.0,
   "scanner_rows": 2923,
   "attack_position_range": [
-    0.33955,
-    0.34101
+    0.35958,
+    0.4547
   ],
-  "defanged_files": 1,
-  "scenario_bytes": 3440986,
-  "ground_truth_sha256": "339e5ddd20616f17a4278a8a0079779a71e173ea1856d0c3903800eecb86807e"
+  "defanged_files": 13,
+  "scenario_bytes": 3602726,
+  "ground_truth_sha256": "dd903488e8fc413836a42c621e12b708749da85fb686ce503ff29eef8e945005"
 }

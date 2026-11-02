@@ -1,7 +1,9 @@
 {
   "application": "phpMyFAQ 3.2.5",
   "app_type": "phpmyfaq",
-  "image": "sha256:375e21ecfe8e322c83567b110c8460a499fd14a55cf2c1961ce4b85a5dcd4534",
   "webroot": "/var/www/html",
-  "setup_overlay": "replay/restore-overlay"
+  "setup_overlay": "replay/restore-overlay",
+  "recording_image": "sha256:8a745360f425878018b14078c6edeb79f7752adf901428f5845d62a4b80e66f1",
+  "version": 2,
+  "inputs": "lab/v2/portable-inputs.json"
 }
