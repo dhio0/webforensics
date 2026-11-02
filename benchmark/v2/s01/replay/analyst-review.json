@@ -57,7 +57,13 @@
     "start_line": 6153,
     "end_line": 7888
   },
-  "access_log_sha256": "ad6b6342b9d13d57c4f82b3027c1594ae5f6fa760d6b94fa02aa870fcde764cf",
+  "access_log_sha256": "651e953a5e95cd5ab556f98e1409279e439aebee6444a63f48bba0ead8362d26",
   "reviewer": "Codex",
-  "notes": "notes.md"
+  "notes": "notes.md",
+  "round8_rebind": {
+    "historical_access_log_sha256": "ad6b6342b9d13d57c4f82b3027c1594ae5f6fa760d6b94fa02aa870fcde764cf",
+    "reason": "Approved background address remap only; all other fields byte-identical",
+    "field_comparison": "PASS",
+    "actor_lines_byte_identical": 17
+  }
 }

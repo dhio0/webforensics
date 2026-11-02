@@ -23,3 +23,14 @@ re-recorded in round 7 because of a replay-speed artifact; the analysis code sta
 | s11 | `f93c41e1eacdf7887f4b7199ed6a39e9f7a67534dadb53ec356caccb7ecd7971` | `371d603f829b0f5ff9a76f835a31e793d7d354ef` |
 
 The s11 configuration spelling was corrected from `heldout` to schema-valid `held_out`, and its ground truth regenerated with `label.py`; its no-compromise meaning is unchanged. Every replacement has a completed analyst read, an uninterrupted live replay, a clean Defender scan, and a portable restore proof after local app-image removal.
+
+## Round 8 evidence correction
+
+The held-out ground-truth meaning is unchanged; evidence logs changed only by the approved background address remap. Current access-log SHA-256 values:
+
+| ID | Access-log SHA-256 |
+|---|---|
+| s02 | `ebb9c26f22dbd9abb99b5bba1a5bf4ba624db6c7d060b93fbe4dd8938ae8599e` |
+| s06 | `594a4ac89cb11af16eb35d9d27fc6a3d37927fb15599db573825c4d4f8bf95f4` |
+| s09 | `8731fcd3d044c47f00e6f3a1e8d6aaef54c0022a89a445a3d31f76b2ef02c956` |
+| s11 | `2b5d1a0e799d65b6f3a4b0aebbd477bd96b676b9955a02ce16bf3b20f24001be` |

@@ -42,7 +42,7 @@ BACKGROUND_POOLS = (
     ipaddress.ip_network("198.51.100.0/24"),
     ipaddress.ip_network("203.0.113.0/24"),
     ipaddress.ip_network("192.0.2.0/24"),
-    ipaddress.ip_network("10.0.0.0/8"),
+    ipaddress.ip_network("198.18.0.0/15"),
 )
 RESERVED_ZERO = ipaddress.ip_network("0.0.0.0/8")
 SAFE_METHODS = {"GET", "HEAD", "POST"}

@@ -56,8 +56,14 @@
     "start_line": 6452,
     "end_line": 8187
   },
-  "access_log_sha256": "1f9c2b2b48df14b2ce7c53f122e74b2aec6e751523391b59b0e2c2d9588a42af",
+  "access_log_sha256": "bbcc00be2d3947acc03e8f53bd4bd85f093569aba9075ad2577680fd0645c9d4",
   "result": "PASS",
   "reviewer": "Codex",
-  "review_method": "50 seeded raw background lines plus every activity-window row"
+  "review_method": "50 seeded raw background lines plus every activity-window row",
+  "round8_rebind": {
+    "historical_access_log_sha256": "1f9c2b2b48df14b2ce7c53f122e74b2aec6e751523391b59b0e2c2d9588a42af",
+    "reason": "Approved background address remap only; all other fields byte-identical",
+    "field_comparison": "PASS",
+    "actor_lines_byte_identical": 14
+  }
 }

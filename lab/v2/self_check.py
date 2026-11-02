@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import gzip
 import hashlib
+import ipaddress
 import json
 import os
 import random
@@ -37,6 +38,15 @@ ATTACKER_FILE_ROLES = {
     "webshell", "webshell_agent", "attacker_file", "shell", "malicious_plugin",
     "attacker_plugin", "plugin_marker", "persistence_config",
 }
+PRIVATE_CLIENT_NETWORKS = tuple(map(ipaddress.ip_network, (
+    "10.0.0.0/8", "172.16.0.0/12", "192.168.0.0/16",
+)))
+
+
+def private_client_count(addresses) -> int:
+    """Count RFC1918 clients, not special-purpose benchmark addresses."""
+    return sum(any(ipaddress.ip_address(value) in network for network in PRIVATE_CLIENT_NETWORKS)
+               for value in set(addresses))
 
 
 def check_file_roles(truth: dict, records: dict) -> None:
@@ -183,6 +193,9 @@ def check_scenario(root: Path, scenario_id: str) -> dict[str, Any]:
     expected_background = [mapped[row["ip"]] for row in source]
     mapped_values = set(mapped.values())
     actual_background = [row for row in access_rows if row["client_ip"] in mapped_values]
+    private_background = private_client_count(row["client_ip"] for row in actual_background)
+    if private_background:
+        raise ValueError("private background client addresses must be zero")
     if len(actual_background) != len(source):
         raise ValueError("background request count does not match its access-log rows")
     expected_client_counts = Counter(expected_background)
@@ -375,6 +388,7 @@ def check_scenario(root: Path, scenario_id: str) -> dict[str, Any]:
         "access_rows": len(access_rows),
         "background_rows": len(actual_background),
         "background_clients": len(client_counts),
+        "private_background_client_addresses": private_background,
         "largest_background_client_share": round(max(client_counts.values()) / len(source), 5),
         "background_user_agents": len(source_uas),
         "largest_user_agent_share": round(max(source_uas.values()) / len(source), 5),

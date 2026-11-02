@@ -1,11 +1,34 @@
 # Benchmark v2 status - round 8 in progress
 
+## Round 8: address remap complete
+
+- Fix 3 applies the production mapper, retaining the first 635 mappings. Each new TSV matches a separate address-only rerun over the recorded seed and background input.
+- All non-client log fields, actor lines and labelled step lines are byte-identical. Client counts and top shares are unchanged. Ground truth regenerates identically and attacker addresses are unchanged.
+- Encrypted captures retain the original mapping. Webroot, manifests and restore inputs are unchanged; prior restore proofs remain valid.
+- Complete old-range search, including gzip files: only the historical range and its inventory entry in each ip-remap.json remain; no old-range client or scanner-path leftover.
+- All twelve parser checks and self-checks pass. Full pytest: 571 passed, 8 skipped; Ruff passed.
+
+| ID | Private clients before / after | Rows rewritten | All clients | Historical log SHA-256 before | Current log SHA-256 after | Self-check |
+|---|---:|---:|---:|---|---|---|
+| s01 | 9749 / 0 | 13190 | 10386 | `ad6b6342b9d13d57c4f82b3027c1594ae5f6fa760d6b94fa02aa870fcde764cf` | `651e953a5e95cd5ab556f98e1409279e439aebee6444a63f48bba0ead8362d26` | PASS |
+| s02 | 9749 / 0 | 13190 | 10385 | `fde6c98868469eca7e91da47730e4d73a3f6d473984d14de4123e8104813b16c` | `ebb9c26f22dbd9abb99b5bba1a5bf4ba624db6c7d060b93fbe4dd8938ae8599e` | PASS |
+| s03 | 9749 / 0 | 13190 | 10385 | `4c4a1c4e7cf6df742bcb27ffb636c80267df43dd1bf06ae4d25f65181fa4a045` | `aef7541b0ec11c684e5f924e344ee3c05c412452713e67ba8b18f74ab666151e` | PASS |
+| s04 | 9749 / 0 | 13190 | 10385 | `0accbb144f8c46671ce4cd75a906881230a236c25a3f58b5fc78d9dd0953fe2d` | `6237ecf2861109dd45ed3cfc813576b01160dd4b928b9fe7d137cdfafea3278d` | PASS |
+| s05 | 9749 / 0 | 13190 | 10385 | `c42f73e71d2d0b60148b1a0986a54c63192921d79bdba5cedb5ff36ce49124be` | `a99a7536f13d11078b730650e60c3947b682d7c21e9a32f66662f4934b8e3530` | PASS |
+| s06 | 9749 / 0 | 13190 | 10385 | `1c43bbf130af4a06c78ae5fd9be661c099518d2f4efd7e3da92c292d621cfd99` | `594a4ac89cb11af16eb35d9d27fc6a3d37927fb15599db573825c4d4f8bf95f4` | PASS |
+| s07 | 9749 / 0 | 13190 | 10386 | `b5121f5f3314296323f874c350f48b79a2a5b465d62e5309aad06eda55f14504` | `ceeebe499c897cb20e017d0406f8218e2c46916cdcae97d9ec881523a0dbc228` | PASS |
+| s08 | 9749 / 0 | 13190 | 10386 | `41dae3ac94acd54ded33886ad7e10b23285d7e0545185999693ed226bea7d422` | `b7693e3b6ab93992ebd8197c64037465ac30655fae5db5ef6fa7c29b52a0d6ae` | PASS |
+| s09 | 9749 / 0 | 13190 | 10386 | `1e00261c82f31500caac35c0a8a478aeeda020bfd64af4d409f7873e06fc30c7` | `8731fcd3d044c47f00e6f3a1e8d6aaef54c0022a89a445a3d31f76b2ef02c956` | PASS |
+| s10 | 9749 / 0 | 13190 | 10386 | `1f9c2b2b48df14b2ce7c53f122e74b2aec6e751523391b59b0e2c2d9588a42af` | `bbcc00be2d3947acc03e8f53bd4bd85f093569aba9075ad2577680fd0645c9d4` | PASS |
+| s11 | 9749 / 0 | 13190 | 10386 | `b38b72849f67566a0846ab241e5059694ba6f5313db79d6eaecec0d31b012640` | `2b5d1a0e799d65b6f3a4b0aebbd477bd96b676b9955a02ce16bf3b20f24001be` | PASS |
+| s12 | 9749 / 0 | 13190 | 10386 | `5cb56c159a934ba35f513b4fc2493f528e64b72f972a443fe6978963310aaa82` | `276c8355de25a0a68c66357cb38710ba9598e3566ce2ee30a660bb9ef5aaa3c2` | PASS |
+
 ## Round 8: fixes 1 and 2
 
 - s07 backup index is a side effect excluded from reports; replay records and scenario source agree. Ground truth was regenerated with label.py twice, byte-identically.
 - Ground-truth SHA-256 before: `e9d8600bef80213e10e7473c88a9a54abb12b23325ff254976700150a446ef1f`; after: `98eac551a0af55b4c1b75dbd888e3cb6d4dee4620f2f855c4dc94be3e58fa9df`.
 - New file-role rule rejects unexplained unclassified changes and requires non-attacker changes to be excluded or benign. All twelve self-checks pass; no defect in the other eleven scenarios.
-- Exact next step: replace the private overflow pool and deterministically rewrite recorded background addresses, with per-scenario mapping and field comparison proofs.
+- Exact next step: rewrite all twelve notes to contain only current measurements, then document known limits and perform the final analyst pass.
 - No recording, Docker, restore rerun, v2 analysis/evaluation, results read, push, pull or merge.
 
 # Benchmark v2 status - round 7 complete

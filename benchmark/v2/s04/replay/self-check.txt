@@ -132,7 +132,7 @@
       "start_line": 5703,
       "end_line": 7099
     },
-    "access_log_sha256": "0accbb144f8c46671ce4cd75a906881230a236c25a3f58b5fc78d9dd0953fe2d",
+    "access_log_sha256": "6237ecf2861109dd45ed3cfc813576b01160dd4b928b9fe7d137cdfafea3278d",
     "notes": "notes.md"
   },
   "replay_started_at_utc": "2026-11-01T17:34:51.726933+00:00",
@@ -151,6 +151,7 @@
   "access_rows": 15006,
   "background_rows": 15000,
   "background_clients": 10384,
+  "private_background_client_addresses": 0,
   "largest_background_client_share": 0.00973,
   "background_user_agents": 903,
   "largest_user_agent_share": 0.04407,
@@ -165,6 +166,6 @@
     0.47308
   ],
   "defanged_files": 14,
-  "scenario_bytes": 3602534,
+  "scenario_bytes": 3624131,
   "ground_truth_sha256": "4461b705fdf37281ea2b268bea257776b3e68f65ac6b44be2a1422e6102e2c2f"
 }
