@@ -1,5 +1,13 @@
 # Benchmark v2 status - round 7 in progress
 
+## Session continuation (2026-11-03, WIB)
+
+- All four inherited held-out recordings were preserved, finalized, and committed separately: s02 `cff2660`, s06 `22c9a33`, s09 `4f190e1`, s11 `371d603`. Every self-check passes without PENDING, including final analyst reads, real Defender scans and clean-empty portable restores after local app-image removal.
+- Fixed s11's split spelling at the configuration source and regenerated via `label.py`; Defender errors now stop before writing success (`8bb71fc`). s02 was scanned alone successfully at 2026-11-02 18:05:34 UTC, zero detections.
+- HELDOUT now lists replacement hashes and recording commits. Full pytest (564 passed, 8 skipped) and Ruff passed before each recording commit.
+- Exact next step: finish the independent all-twelve restore batch now running into new empty external destinations, rerun self-checks against those proofs and commit them. Then finish README/SOURCES/ROUND7 report and STATUS complete; restore AC lid-close Sleep (1).
+- Leftovers: inherited README/SOURCES edits and draft ROUND7 remain uncommitted for final docs. Ignored resume helpers/stdout are in `lab/v2/.cache/`. All external captures and restore trees are preserved. No capture/log timestamps were rewritten; no results or scorer were read or changed.
+
 ## Session continuation (2026-11-02, WIB)
 
 - Seven replacement dev recordings are complete and committed separately: s03 `368bd39`, s04 `e60a707`, s05 `6ed94b6`, s07 `be1c149`, s08 `1d11e98`, s10 `0fd5bf5`, s12 `4dfb7ed`. All have completed analyst reviews and clean-empty portable restore proofs after app-image removal, with no PENDING in self-checks. Full pytest (564 passed, 8 skipped) and Ruff passed before each commit.

@@ -1,6 +1,6 @@
 # Held-out scenarios
 
-The four held-out IDs are s02, s06, s09, and s11. No v2 scenario was scored before this round. Evidence or ground-truth changes listed here came from Claude's pre-scoring review (round 6).
+The four held-out IDs are s02, s06, s09, and s11. The round-7 recordings preserve the accepted stories, split and ground-truth meaning; the analysis code stayed frozen. Historical round-6 changes are retained below.
 
 | ID | Ground-truth SHA-256 | Original recording commit | Round 6 commit / change |
 |---|---|---|---|
@@ -10,3 +10,16 @@ The four held-out IDs are s02, s06, s09, and s11. No v2 scenario was scored befo
 | s11 | `b83497717db1ca3713400f0b6016fa4e42622e8dd081b3536b7ed53ad9ed4287` | `aff8cbf7dd4de3b153fe04693ccbe49f75e23bc6` | `0595d50`; scanner address is named as the actor; still no compromise and no root cause. |
 
 Recording order differed from the listed order: s11 was recorded first among held-outs, then s02, s06, and s09. The scenario notes document the observed behavior and limits.
+
+## Round 7 replacements
+
+re-recorded in round 7 because of a replay-speed artifact; the analysis code stayed frozen
+
+| ID | Ground-truth SHA-256 | Round 7 recording commit |
+|---|---|---|
+| s02 | `ae3903050ffbd03e7f72fb3dc1b2a897f302b2d06b517b96b9e2f2215d257525` | `cff266070feb5edf0805676d1feaf7671649994d` |
+| s06 | `2985a2f356736b985aed1e7723eb365294c01c5ae374b03ea920f2a967e90121` | `22c9a333a10dbecf6225e3ecc49872ff8d7a47bd` |
+| s09 | `671cd2a275938df75344de4f54482c78ee51ada24814c417096dc23645cc9484` | `4f190e153115db0031b21e046ebb5433e739958b` |
+| s11 | `f93c41e1eacdf7887f4b7199ed6a39e9f7a67534dadb53ec356caccb7ecd7971` | `371d603f829b0f5ff9a76f835a31e793d7d354ef` |
+
+The s11 configuration spelling was corrected from `heldout` to schema-valid `held_out`, and its ground truth regenerated with `label.py`; its no-compromise meaning is unchanged. Every replacement has a completed analyst read, an uninterrupted live replay, a clean Defender scan, and a portable restore proof after local app-image removal.
