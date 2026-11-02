@@ -1,5 +1,7 @@
 # s04 recording notes
 
+The earlier numerical summary below records round 6. The Round 7 analyst read and `replay/self-check.txt` give the current recording's measurements.
+
 s04 uses phpMyFAQ 3.2.5 and the authenticated category-image upload flaw,
 CVE-2024-28105. The maintainer advisory identifies `CategoryImage.php` lines
 66, 85, and 124 and describes how the uploaded content type and language value
@@ -49,3 +51,7 @@ ground-truth regeneration, evidence parsing, and replay self-check pass. The
 restore overlay contains the five static access-denial index files generated
 by phpMyFAQ setup. The restored tree includes all 2,881 manifest entries.
 Defender realtime protection was enabled and the scan found zero detections.
+
+## Round 7 analyst read
+
+I read the 50 background lines selected with seed 7004 from the final compressed access log and inspected every row in the 1,397-line activity window (lines 5,703–7,099), including all six actor requests. I checked method and target plausibility, response codes, timestamps, client and User-Agent attribution, static-file writes, and the trailing-dot upload path. The sample contains ordinary phpMyFAQ pages, forms, assets, uptime probes, and retained scanner requests. The actor's reconnaissance, login, category editor, upload, and executable-file request span 249 seconds. The uploaded trailing-dot path returns 200 with an 89-byte response; all window responses are 200, with no 5xx responses or background static-file writes. The 15,000-line background is from one uninterrupted run; its final rate is 3.43 requests/second, with a maximum of 20 background requests in one second.

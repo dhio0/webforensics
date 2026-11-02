@@ -6,7 +6,8 @@
 - s05 retry 3 analyst review is complete: all 1,880 final window rows, 21 raw actor rows, and 50 seed-7005 background rows were read; matching hash-bound proof and notes written. The old cached review was replaced.
 - Docker is running, and no recording project/container remains active. Both batch flags are cleared for clean-image validation; local lab app images have been removed by the restore helper. Seven fresh external empty-destination restores are running sequentially.
 - Full pytest: 564 passed, 8 skipped; Ruff passed.
-- Exact next step: finish seven restore proofs, rerun each self-check with no PENDING, commit each dev scenario separately, then record s02/s06/s09/s11 with unchanged stories. README/SOURCES edits inherited from the prior session remain uncommitted for final docs.
+- s03 committed as `368bd39`: clean-image restore verified all 2,880 exact manifest paths and hashes; self-check has no PENDING.
+- Exact next step: finish remaining six restore proofs, rerun each self-check with no PENDING, commit each dev scenario separately, then record s02/s06/s09/s11 with unchanged stories. README/SOURCES edits inherited from the prior session remain uncommitted for final docs.
 
 ## Failed seven-scenario batch diagnosis (2026-11-02)
 
@@ -267,3 +268,5 @@ Encrypted full captures remain outside Git under the directory configured by `la
 - Expected replay end: 2026-11-01T20:04:31.174499+00:00.
 - Background and attack are detached in their isolated containers.
 - Windows sleep prevention requested. Any interruption invalidates the run.
+
+- Session continuation: s04 final analyst proof and clean-image restore passed (2881 manifest files); self-check has no PENDING; full pytest and Ruff passed before its separate commit.

@@ -1,4 +1,149 @@
 {
+  "log_span_seconds": 4380.0,
+  "average_requests_per_second": 3.42603,
+  "maximum_background_requests_per_second": 20,
+  "maximum_overall_requests_per_second": 20,
+  "attack_span_seconds": 249.0,
+  "background_writes_to_static_assets": 0,
+  "scanner_disguised_api_static_suffix_probes": 1,
+  "top_10_post_targets": [
+    [
+      "/?lang=en&action=search",
+      379
+    ],
+    [
+      "/index.php?lang=en&action=contact",
+      221
+    ],
+    [
+      "/?action=password",
+      199
+    ],
+    [
+      "/?action=register",
+      174
+    ],
+    [
+      "/index.php?lang=en&action=add&cat=0",
+      95
+    ],
+    [
+      "/index.php",
+      62
+    ],
+    [
+      "/index.php?lang=en&action=search",
+      53
+    ],
+    [
+      "/admin/index.php",
+      48
+    ],
+    [
+      "/index.php?action=register",
+      45
+    ],
+    [
+      "/wp-admin/54.php",
+      37
+    ]
+  ],
+  "activity_client_ips": [
+    "192.0.2.131"
+  ],
+  "whole_actor_window_position_range": [
+    0.38004798080767693,
+    0.4730774356923897
+  ],
+  "parse_failures": {
+    "access": 0,
+    "manifest": 0,
+    "error": 0
+  },
+  "restore": {
+    "result": "PASS",
+    "manifest_entries_verified": 2881,
+    "destination": "C:\\Users\\Pongo\\Documents\\cases\\benchmark-v2-full\\restore-round7\\s04-a347701b63",
+    "destination_was_empty": true,
+    "local_app_images_removed_and_absence_verified": [],
+    "recorded_app_image_absent_before_restore": true,
+    "image_removal_proof": "PASS",
+    "completed_at_utc": "2026-11-02T09:59:19.222242+00:00",
+    "inputs": "repository, public digest-pinned base, SHA-256-pinned source archives"
+  },
+  "restore_with_app_images_removed": "PASS",
+  "defender_scan": "PASS; detections=0; real-time protection enabled",
+  "analyst_read": {
+    "result": "PASS",
+    "sample_seed": 7004,
+    "sample_background_line_numbers": [
+      400,
+      754,
+      1003,
+      1264,
+      1745,
+      1749,
+      1855,
+      2182,
+      2447,
+      2461,
+      3171,
+      3177,
+      3497,
+      3711,
+      3879,
+      3962,
+      4089,
+      4284,
+      4802,
+      5148,
+      5537,
+      5719,
+      6276,
+      6294,
+      6354,
+      7210,
+      7808,
+      9148,
+      9807,
+      9987,
+      10044,
+      10654,
+      10822,
+      11013,
+      11164,
+      11243,
+      11791,
+      11848,
+      12280,
+      12855,
+      12884,
+      13105,
+      13247,
+      13285,
+      13401,
+      13599,
+      13631,
+      13815,
+      14114,
+      14618
+    ],
+    "attack_window": {
+      "start_line": 5703,
+      "end_line": 7099
+    },
+    "access_log_sha256": "0accbb144f8c46671ce4cd75a906881230a236c25a3f58b5fc78d9dd0953fe2d",
+    "notes": "notes.md"
+  },
+  "replay_started_at_utc": "2026-11-01T17:34:51.726933+00:00",
+  "replay_ended_at_utc": "2026-11-01T18:47:51.367869+00:00",
+  "uninterrupted_run": "PASS; no part resumed",
+  "native_tool_bursts_exempt": [],
+  "hand_action_minimum_spacing_seconds": 46.98106368700019,
+  "write_candidates_within_5_seconds_of_ctime": {
+    "data/tracking01112026": 2,
+    "images/category-1-.php..": 14
+  },
   "scenario": "s04",
   "schema": "PASS",
   "ground_truth_regeneration": "PASS",
@@ -8,16 +153,17 @@
   "largest_background_client_share": 0.00973,
   "background_user_agents": 903,
   "largest_user_agent_share": 0.04407,
+  "largest_overall_user_agent_share": 0.04405,
   "top_user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/217.155.106.155 Safari/537.36 Edg/217.155.106.155",
   "nested_path_share": 0.00027,
   "request_paths_with_lab_terms": 0,
-  "visitor_success_share": 0.99959,
+  "visitor_success_share": 1.0,
   "scanner_rows": 2923,
   "attack_position_range": [
-    0.42989,
-    0.43023
+    0.38005,
+    0.47308
   ],
-  "defanged_files": 2,
-  "scenario_bytes": 3425570,
-  "ground_truth_sha256": "d9b8971f1a739bc1c345888dd2009e1ea72aec8bcf30439b91bfa7f937bebfff"
+  "defanged_files": 14,
+  "scenario_bytes": 3602563,
+  "ground_truth_sha256": "4461b705fdf37281ea2b268bea257776b3e68f65ac6b44be2a1422e6102e2c2f"
 }
