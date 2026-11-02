@@ -2,12 +2,12 @@
 
 ## Session continuation (2026-11-02, WIB)
 
-- All seven replacement dev recordings are complete and uninterrupted; preserve their uncommitted evidence. The earlier active/failed run entries below are historical.
-- s05 retry 3 analyst review is complete: all 1,880 final window rows, 21 raw actor rows, and 50 seed-7005 background rows were read; matching hash-bound proof and notes written. The old cached review was replaced.
-- Docker is running, and no recording project/container remains active. Both batch flags are cleared for clean-image validation; local lab app images have been removed by the restore helper. Seven fresh external empty-destination restores are running sequentially.
-- Full pytest: 564 passed, 8 skipped; Ruff passed.
-- s03 committed as `368bd39`: clean-image restore verified all 2,880 exact manifest paths and hashes; self-check has no PENDING.
-- Exact next step: finish remaining six restore proofs, rerun each self-check with no PENDING, commit each dev scenario separately, then record s02/s06/s09/s11 with unchanged stories. README/SOURCES edits inherited from the prior session remain uncommitted for final docs.
+- Seven replacement dev recordings are complete and committed separately: s03 `368bd39`, s04 `e60a707`, s05 `6ed94b6`, s07 `be1c149`, s08 `1d11e98`, s10 `0fd5bf5`, s12 `4dfb7ed`. All have completed analyst reviews and clean-empty portable restore proofs after app-image removal, with no PENDING in self-checks. Full pytest (564 passed, 8 skipped) and Ruff passed before each commit.
+- s05 retry 3 review read all 1,880 final activity-window rows, 21 raw actor rows, and 50 seed-7005 background lines; the stale earlier progress file was replaced. All seven good recordings were preserved.
+- Held-out s02/s06/s09/s11 are now recording from clean isolated volumes. Images were built once before replay; four projects have independent internal networks and volumes. Exact replay starts and expected ends are at the bottom of this file (approximately 18:21-18:22 WIB). No recording interruption or error has been observed.
+- Exact next step: read the four complete activity windows, then after capture read each seeded final sample and normalized User-Agents, remove local app images, prove restore and run self-checks without PENDING. Commit each held-out scenario separately and update HELDOUT.md. Then prove all-twelve restore, finish README/SOURCES/report/STATUS, and restore AC lid-close Sleep (1).
+- Leftovers: inherited README/SOURCES edits remain uncommitted for final docs; live held-out evidence/replay files must not be staged mid-run. Ignored runners/metadata are `.cache/round7-heldout-batch.json`, `round7-heldout-sXX-host.*.txt`, `round7-heldout-build.txt`, and helper scripts under `lab/v2/.cache/`. Prior batch caches and external encrypted captures remain in their documented locations. No raw attacker file was exported.
+- The older failed/active run sections below are historical. Current held-out recordings must finish uninterrupted; never stitch or resume them.
 
 ## Failed seven-scenario batch diagnosis (2026-11-02)
 
@@ -280,3 +280,37 @@ Encrypted full captures remain outside Git under the directory configured by `la
 - Session continuation: s10 final analyst proof and clean-image restore passed (2847 manifest files); self-check has no PENDING; full pytest and Ruff passed before its separate commit.
 
 - Session continuation: s12 final analyst proof and clean-image restore passed (2847 manifest files); self-check has no PENDING; full pytest and Ruff passed before its separate commit.
+
+## Held-out round-7 batch (session continuation)
+
+- Launch begins 2026-11-02T10:07:57.808073+00:00 (2026-11-02 17:07:57 WIB); replay should finish about 75-85 minutes after each app starts. Exact per-scenario start/expected-end follows below.
+- Seven dev replacements are committed separately. Held-out stories, ground-truth meanings, and round-6 seeds are unchanged. Four clean projects use independent networks/volumes; builds finished before attack time. AC lid-close stays Do nothing temporarily and every runner requests continuous execution; restore AC Sleep (1) at completion.
+- Image-removal proof is deferred only while this batch uses the images; all proofs and analyst reads must finish before commits.
+
+## Active round-7 run: s02
+
+- Started: 2026-11-02T10:08:29.895319+00:00 (2026-11-02 17:08:29 WIB).
+- Expected replay end: 2026-11-02T11:21:29.574124+00:00.
+- Background and attack are detached in their isolated containers.
+- Windows sleep prevention requested. Any interruption invalidates the run.
+
+## Active round-7 run: s06
+
+- Started: 2026-11-02T10:08:33.234107+00:00 (2026-11-02 17:08:33 WIB).
+- Expected replay end: 2026-11-02T11:21:32.912912+00:00.
+- Background and attack are detached in their isolated containers.
+- Windows sleep prevention requested. Any interruption invalidates the run.
+
+## Active round-7 run: s11
+
+- Started: 2026-11-02T10:08:58.203032+00:00 (2026-11-02 17:08:58 WIB).
+- Expected replay end: 2026-11-02T11:21:57.881837+00:00.
+- Background and attack are detached in their isolated containers.
+- Windows sleep prevention requested. Any interruption invalidates the run.
+
+## Active round-7 run: s09
+
+- Started: 2026-11-02T10:08:59.585121+00:00 (2026-11-02 17:08:59 WIB).
+- Expected replay end: 2026-11-02T11:21:59.263926+00:00.
+- Background and attack are detached in their isolated containers.
+- Windows sleep prevention requested. Any interruption invalidates the run.
