@@ -1,105 +1,78 @@
-# s01: unauthenticated WordPress File Manager upload - round 7
+# s01: current recording notes
 
-## Application and verified story
+## Story
 
-WordPress 5.5.3 and WordPress File Manager 6.0 reproduce CVE-2020-25213.
-The exposed connector accepts an unauthenticated upload; the uploaded agent then
-returns results for three identification commands inside the isolated lab. The
-[NVD advisory](https://nvd.nist.gov/vuln/detail/CVE-2020-25213) and pinned sources
-are recorded in `../SOURCES.md`. The scenario story and ground-truth meaning are
-unchanged. No payload or agent contents are included in these notes.
+WordPress File Manager accepts an unauthenticated upload. The uploaded agent returns identification results inside the isolated lab. The upload is the root cause. The plugin backup index is an ordinary side effect excluded from reports.
 
-## Live timing and labels
+## Steps
 
-The recording ran once, uninterrupted, from 2026-11-01 06:48:41.916 UTC to
-08:01:41.563 UTC (13:48-15:01 WIB). No part was resumed or stitched. Access-log
-seconds span 4,379 seconds: 15,000 background requests, 17 actor requests, and
-one ordinary WordPress scheduled self-request. The whole-log average is 3.42955
-requests/second; both the background and overall busiest second have 20 requests.
-Source inter-arrival times were scaled with a rolling burst cap, preserving quiet
-periods and bursts. Evidence timestamps and file timestamps were recorded live.
+Labels come from the recorded sidecar and tool windows through label.py. The table preserves ground-truth order. HTTP status is read from the current log.
 
-Seed 5031 selects the background trigger at 41% of the source stream. All actor
-requests occupy 40.97%-52.52% of the completed log. First reconnaissance to last
-agent exchange takes 365 seconds. Human action starts are seeded and at least
-46.79 seconds apart. Weevely's internal handshake and command exchanges retain
-their native speed; those exchanges explain the short bursts within each command.
+| Step | Access line | HTTP status | Root cause | Expected in timeline |
+|---|---:|---:|---|---|
+| site_check | 6153 | 200 | No | No |
+| plugin_version_check | 6682 | 200 | No | No |
+| admin_probe | 7098 | 302 | No | No |
+| xmlrpc_probe | 7276 | 405 | No | No |
+| unauthenticated_file_upload | 7372 | 200 | Yes | Yes |
+| agent_identity | 7394 | 200 | No | Yes |
+| agent_working_directory | 7535 | 200 | No | Yes |
+| agent_user | 7886 | 200 | No | Yes |
 
-| Step | Access line | Expected in incident timeline |
-|---|---:|---|
-| Site check | 6153 | No |
-| Plugin version check | 6682 | No |
-| Administration probe | 7098 | No |
-| XML-RPC probe | 7276 | No |
-| Unauthenticated upload, root cause | 7372 | Yes |
-| Agent identity | 7394 | Yes |
-| Agent working directory | 7535 | Yes |
-| Agent account | 7886 | Yes |
+## Timing and background
 
-`label.py` alone generates the ground truth. Ordered access/sidecar joins verify
-requests, status, client, and timestamp. Agent labels use the actual invocation
-start/end window and select the first matching exchange as command initiation;
-later exchanges remain unlabelled. The upload root cause is actor-sourced and 2xx.
-The app crawl and setup finished before incident logging was cleared and started.
+| Measurement | Current value |
+|---|---:|
+| Replay start, UTC | 2026-11-01T06:48:41.916394+00:00 |
+| Replay end, UTC | 2026-11-01T08:01:41.563419+00:00 |
+| Access rows | 15018 |
+| Background rows | 15000 |
+| Background clients | 10384 |
+| Background user agents | 903 |
+| Largest background client fraction | 0.00973 |
+| Largest overall user-agent fraction | 0.04401 |
+| Visitor success fraction | 0.99942 |
+| Scanner rows | 2923 |
+| Log span, seconds | 4379.0 |
+| Average requests per second | 3.42955 |
+| Maximum background requests per second | 20 |
+| Maximum overall requests per second | 20 |
+| Activity span, seconds | 365.0 |
+| Minimum hand-action spacing, seconds | 46.79236560899972 |
+| Private background client addresses | 0 |
+| Background writes to static assets | 0 |
+| Remapped background addresses | 9749 |
+| Remapped access rows | 13190 |
 
-## Background and method routing
+The recording was uninterrupted. Hand actions are spaced; native tool handshakes and probes keep their original speed. Client counts and top shares are unchanged by the address correction. All non-client log fields and actor lines are byte-identical.
 
-The accepted Organization X request stream and NASA identity mapping are retained:
-12,077 visitors, 2,923 scanner requests, 10,384 background clients, and 903 source
-user agents. The largest non-actor client contributes 0.98% of all requests; the
-largest overall user-agent share is 4.40%. Visitor answers are 99.942% 2xx/3xx.
-The repeated nested-path share is 0.027%. The background container address never
-appears in the evidence.
+## Files and write candidates
 
-Visitor POSTs use exact crawled form actions, including their routing queries:
-661 comment-form requests, 419 login requests, and 210 password-recovery requests.
-There are zero background writes to static assets. One retained source scanner
-probe disguises an API endpoint with a semicolon and JavaScript suffix; it is
-reported separately in the self-check, rather than treated as a browser asset.
-Scanner paths stay unchanged. GET/HEAD query remapping, empty source POST bodies,
-and source-anonymized browser versions remain as accepted in round 6. Source
-browser-version values that look like IP addresses were not corrected or invented.
-The final user agents contain no forbidden lab/crawler labels.
+Candidate counts include every POST or PUT within five seconds of the recorded ctime. They describe ambiguity, not attribution.
 
-## Files and portable restore
+| File | Role | Expected in report | Nearby writes |
+|---|---|---|---:|
+| `wp-content/plugins/wp-file-manager/lib/files/maintenance-agent.php` | webshell_agent | Yes | 1 |
+| `wp-content/uploads/wp-file-manager-pro/fm_backup/index.php` | side_effect | No | 2 |
 
-The agent and the plugin's empty backup index are defanged. The backup index is
-a plugin side effect with `expected_in_report: false`. Within five seconds either
-side of each file's recorded ctime, there is one POST/PUT candidate for the agent
-and two for the backup index. These counts are observations, not selection limits.
-The original full capture remains encrypted outside Git.
+Executable artifacts in the public snapshot are inert stubs. Original full captures remain encrypted outside Git and retain the original client mapping. The webroot, manifests and restore inputs did not change; the existing portable restore proof remains valid.
 
-Restore uses the public digest-pinned WordPress tree and SHA-256-pinned plugin
-archive in `lab/v2/portable-inputs.json`; the local recording image is provenance
-only. The install overlay has inert stubs for `.htaccess`, `wp-config-sample.php`,
-and secret `wp-config.php`, with reasons and original hashes/sizes in `defanged.tsv`.
-The two changed executable artifacts are also stubs. No live attacker file reached
-Windows. `restore_webroot.py s01 DEST` needs no local credentials or app image.
+## Analyst read
 
-The first clean proof removed three local app images and verified all 2,845 entries
-in a new empty external destination. A second proof with the historical-ID sweep
-found the app images absent and verified another new destination. Both proofs are
-recorded in `replay/restore-validation.txt`. The completed tree is checked again
-for every hash/stub and exact file name, including Windows path handling.
+The completed recording review covers every activity-window row from line 6153 through 7888 (1736 rows), including 17 actor requests, plus 50 background lines selected with seed 7001. The existing review was rebound to the current log only after a full field comparison. The final review after the fixes is recorded separately in ROUND8.md.
 
-## Analyst read and checks
+The review checks methods and routes, authentication, statuses and sizes, timing, client attribution, scanner probes, native bursts and file changes. Current schema, file-role, regeneration, parser and private-client checks pass. Existing clean restore and Defender records pass. No analysis or evaluation was run.
 
-I read all 1,736 entries in access lines 6153-7888 using a lossless row view with
-complete request and user-agent dictionaries, and read all 17 actor lines raw.
-After collection I verified that this window's timestamp, client, request, status,
-size, and referrer fields were unchanged. I then read all 50 final background
-lines selected with seed 7001. Their exact numbers and final access-log hash are
-bound by `replay/analyst-review.json`.
+Current access-log SHA-256: `651e953a5e95cd5ab556f98e1409279e439aebee6444a63f48bba0ead8362d26`.
 
-I checked form-versus-asset methods, plausible status/body-size combinations,
-client and user-agent variety, quiet periods and bursts, nested paths, the whole
-reconnaissance/upload/agent sequence, and native agent handshakes. The preserved
-source query strings and anonymized version numbers were treated as source-data
-characteristics. No additional recording defect was found in this review.
+Current ground-truth SHA-256: `1355a7e6ef9d4b41576a9b175625d664bef5f68a28d1369b139486febcbc4971`.
 
-Schema validation, byte-identical ground-truth regeneration, step joins, parser
-checks, defanging, size, clean-image restore, and Defender all pass. Access,
-manifest, and error parse failures are zero; Defender detections are zero. No v2
-analysis/evaluation was run, and no Defender exclusion was added. Attempt 1 was
-thrown away after a form-query routing defect; only this fresh attempt supplies
-these artifacts. Detailed values are in `replay/self-check.txt`.
+## Limits
+
+This tests the exposed connector, not an authenticated installer. The source pins and vulnerability advisory are in ../SOURCES.md.
+
+All scenarios share the same source background slice. Referrers are absent from every background row; application cron self-requests can have referrers. Scanner file names and browser version strings retain the source anonymization. Logs are short, similarly paced, and capped; lab names remain in evidence. See the known limits in ../README.md.
+
+## History
+
+Original recording: `10a8298`. Round six: `a519440` corrected labels, crawl handling or user-agent presentation as applicable; `30a9cef` records that review. Round seven: `e9eec25` replaced the recording with live pacing and portable restore proof. Round eight: `76034f5` fixed the backup-index expectation and added file-role checks; `249452b` corrected background addresses without recording again. This note replaces superseded measurements.

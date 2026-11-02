@@ -1,33 +1,74 @@
-# s03: phpMyFAQ authenticated Save News SQL injection
+# s03: current recording notes
 
-The numerical evidence summary below records round 6. The Round 7 analyst read and `replay/self-check.txt` give the current recording's measurements.
+## Story
 
-## Scenario and provenance
+An authenticated phpMyFAQ editor opens Save News. A generic sqlmap check does not identify the cross-field condition; a targeted database-delay check confirms the documented SQL injection. The confirmation request is the root cause. No attack file or operating-system command is involved.
 
-This replay uses phpMyFAQ 3.2.5 (MPL-2.0) and CVE-2024-27299. The maintainer advisory says the affected news editor requires an authenticated user with add/edit rights. The upstream fix changes `authorEmail` escaping in `phpmyfaq/src/phpMyFAQ/News.php` at lines 289 and 335. The pinned 3.2.5 source tag is `ee05654763ef0f16137d3bd21ec50e2f21ffb8f8`; the downloaded source archive SHA-256 is `282b638d7ecda25d6a803d16d9865c6b8aa0516ec9ed6d24bfadabdc6800d05f`.
+## Steps
 
-The replay authenticates the seeded benchmark administrator, opens Save News, runs pinned sqlmap with a generic single-field check, then uses one maintainer-documented short database-delay check to confirm the flaw. The generic sqlmap check did not identify the cross-field condition. The targeted confirmation returned HTTP 200 after a 1.022-second database delay. It wrote no server-side attack file and ran no operating-system command. The advisory and fix are linked below.
+Labels come from the recorded sidecar and tool windows through label.py. The table preserves ground-truth order. HTTP status is read from the current log.
 
-## Recorded evidence
+| Step | Access line | HTTP status | Root cause | Expected in timeline |
+|---|---:|---:|---|---|
+| site_check | 5402 | 200 | No | No |
+| news_admin_probe | 5722 | 200 | No | No |
+| editor_login | 5823 | 200 | No | Yes |
+| news_editor_open | 5868 | 200 | No | Yes |
+| save_news_sql_injection | 6831 | 200 | Yes | Yes |
 
-- Access log: 15,023 rows, including 15,000 background rows; no access, manifest, or Apache error parse failures.
-- Background diversity: 10,384 clients and 903 User-Agents. Largest client share is 0.973%; largest User-Agent share is 4.407%.
-- Visitor 2xx/3xx share is 99.959%; all 2,923 source-classified scanner rows were retained.
-- Five attacker steps are labelled between 33.955% and 34.101% of the access log. The root-cause request is an attacker HTTP 2xx response.
-- Ground truth records `News.php`, line 289, with vulnerable-source SHA-256 `b5bc9846390989799935252d07ba16ce480b0ca4a5ef7a1d9fc8de758421cd2a`.
-- One phpMyFAQ runtime tracking file changed during the run. Its path, original SHA-256, and size are in `evidence/manifest.tsv` and `evidence/defanged.tsv`; its public snapshot is an inert stub because the original is larger than the 1 MB public snapshot limit. The full webroot remains in the encrypted capture outside the repository.
-- The s03 folder is 3,496,035 bytes. The schema, byte-identical ground-truth regeneration, background-diversity checks, evidence adapters, restore of 2,880 manifest entries, and Defender scan all pass. Defender realtime protection was enabled and detections were zero.
-- Restore uses the pinned phpMyFAQ image plus five small setup-generated `index.html` files from `replay/restore-overlay/` and the locally configured database settings. The setup overlay contains no credentials.
+## Timing and background
 
-The tracking file changes with ordinary traffic and is recorded as a side effect with `expected_in_report: false`.
+| Measurement | Current value |
+|---|---:|
+| Replay start, UTC | 2026-11-01T17:34:51.812051+00:00 |
+| Replay end, UTC | 2026-11-01T18:47:51.441941+00:00 |
+| Access rows | 15023 |
+| Background rows | 15000 |
+| Background clients | 10384 |
+| Background user agents | 903 |
+| Largest background client fraction | 0.00973 |
+| Largest overall user-agent fraction | 0.044 |
+| Visitor success fraction | 1.0 |
+| Scanner rows | 2923 |
+| Log span, seconds | 4379.0 |
+| Average requests per second | 3.43069 |
+| Maximum background requests per second | 20 |
+| Maximum overall requests per second | 20 |
+| Activity span, seconds | 260.0 |
+| Minimum hand-action spacing, seconds | 47.39234391299999 |
+| Private background client addresses | 0 |
+| Background writes to static assets | 0 |
+| Remapped background addresses | 9749 |
+| Remapped access rows | 13190 |
 
-## Round 7 analyst read
+The recording was uninterrupted. Hand actions are spaced; native tool handshakes and probes keep their original speed. Client counts and top shares are unchanged by the address correction. All non-client log fields and actor lines are byte-identical.
 
-I read the 50 background lines selected with seed 7003 from the final compressed access log and inspected every row in the 1,430-line activity window (lines 5,402–6,831), including all 23 actor requests. I checked method and target plausibility, response codes, timestamps, client and User-Agent attribution, static-file writes, and whether the generic sqlmap burst stayed distinct from hand-paced steps. The background sample contains ordinary phpMyFAQ pages, forms, assets, uptime probes, and retained scanner requests. The actor's reconnaissance, login, editor access, native sqlmap burst, and targeted confirmation span 260 seconds. All window responses are 200; there are no 5xx responses or static-file writes. Source scanner queries can receive the app's normal 200 fallback. The 15,000-line background is from one uninterrupted run; its final rate is 3.43 requests/second, with a maximum of 20 background requests in one second.
+## Files and write candidates
 
-## Sources
+Candidate counts include every POST or PUT within five seconds of the recorded ctime. They describe ambiguity, not attribution.
 
-- [Maintainer security advisory GHSA-qgxx-4xv5-6hcw](https://github.com/thorsten/phpMyFAQ/security/advisories/GHSA-qgxx-4xv5-6hcw)
-- [Upstream fix commit 1b68a5f](https://github.com/thorsten/phpMyFAQ/commit/1b68a5f89fb65996c56285fa636b818de8608011)
-- [phpMyFAQ 3.2.5 source tag](https://github.com/thorsten/phpMyFAQ/tree/3.2.5)
-- [phpMyFAQ v3.2 installation guide](https://phpmyfaq.readthedocs.io/en/3.2/installation/)
+| File | Role | Expected in report | Nearby writes |
+|---|---|---|---:|
+| `data/tracking01112026` | side_effect | No | 2 |
+
+Executable artifacts in the public snapshot are inert stubs. Original full captures remain encrypted outside Git and retain the original client mapping. The webroot, manifests and restore inputs did not change; the existing portable restore proof remains valid.
+
+## Analyst read
+
+The completed recording review covers every activity-window row from line 5402 through 6831 (1430 rows), including 23 actor requests, plus 50 background lines selected with seed 7003. The existing review was rebound to the current log only after a full field comparison. The final review after the fixes is recorded separately in ROUND8.md.
+
+The review checks methods and routes, authentication, statuses and sizes, timing, client attribution, scanner probes, native bursts and file changes. Current schema, file-role, regeneration, parser and private-client checks pass. Existing clean restore and Defender records pass. No analysis or evaluation was run.
+
+Current access-log SHA-256: `aef7541b0ec11c684e5f924e344ee3c05c412452713e67ba8b18f74ab666151e`.
+
+Current ground-truth SHA-256: `dd903488e8fc413836a42c621e12b708749da85fb686ce503ff29eef8e945005`.
+
+## Limits
+
+This adapts the planned small app to licensed phpMyFAQ. The runtime tracking file changes with ordinary traffic and is excluded from reports. A successful HTTP response alone is not the proof of database injection; the recorded targeted check supplies that proof. Source pins and the maintainer advisory are in ../SOURCES.md.
+
+All scenarios share the same source background slice. Referrers are absent from every background row; application cron self-requests can have referrers. Scanner file names and browser version strings retain the source anonymization. Logs are short, similarly paced, and capped; lab names remain in evidence. See the known limits in ../README.md.
+
+## History
+
+Original recording: `4c57176`. Round six: `23b518b` corrected labels, crawl handling or user-agent presentation as applicable; `30a9cef` records that review. Round seven: `368bd39` replaced the recording with live pacing and portable restore proof. Round eight: `76034f5` fixed the backup-index expectation and added file-role checks; `249452b` corrected background addresses without recording again. This note replaces superseded measurements.

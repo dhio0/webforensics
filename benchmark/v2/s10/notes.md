@@ -1,47 +1,81 @@
-# s10 recording notes
+# s10: current recording notes
 
-The earlier numerical summary below records round 6. The Round 7 analyst read and `replay/self-check.txt` give the current recording's measurements.
+## Story
 
-s10 exercises persistence through Apache configuration in the isolated WordPress
-5.5.3 lab. A WordPress administrator installs a ZIP plugin package containing an
-`.htaccess` rule and a Weevely agent named with a `.jpg` extension. The agent then
-returns the result of a short identity check, proving the server handled the image
-extension as PHP. The WordPress and Weevely pins are recorded in `SOURCES.md`.
-This uses WordPress's normal authenticated plugin ZIP installer, so no CVE is
-claimed for the installer.
+A WordPress administrator installs a package with handler configuration and an agent using an image extension. An agent identity check confirms that the server handles that extension as executable content. The package upload is the root cause.
 
-The package and generated agent exist only in the attacker container during the
-replay. The collector defanged every changed executable or script-bearing file:
-the `.htaccess` configuration, plugin PHP file, image-extension agent, and the
-empty File Manager backup side effect. No live code is stored in the committed
-webroot. The captured agent output is not stored.
+## Steps
 
-Reconnaissance and form/login/upload requests are labeled with unique
-`X-Lab-Step` headers. The agent check is selected by attacker IP, time window,
-request path, status, and first candidate ordinal. Ground-truth access-log lines
-are:
+Labels come from the recorded sidecar and tool windows through label.py. The table preserves ground-truth order. HTTP status is read from the current log.
 
-| Step | Access-log line | Result |
-|---|---:|---|
-| `site_check` | 9,601 | HTTP 200; reconnaissance |
-| `login_page_probe` | 9,602 | HTTP 200; reconnaissance |
-| `admin_probe` | 9,603 | HTTP 302; reconnaissance |
-| `plugin_upload_probe` | 9,604 | HTTP 302; reconnaissance |
-| `login_form` | 9,605 | HTTP 200; session cookie established |
-| `editor_login` | 9,606 | HTTP 302; administrator session established |
-| `plugin_upload_form` | 9,607 | HTTP 200; ZIP upload form opened |
-| `persistence_upload` | 9,609 | HTTP 200; root cause |
-| `image_agent_command` | 9,610 | HTTP 200; command check through `.jpg` |
+| Step | Access line | HTTP status | Root cause | Expected in timeline |
+|---|---:|---:|---|---|
+| site_check | 6452 | 200 | No | No |
+| login_page_probe | 6991 | 200 | No | No |
+| admin_probe | 7158 | 302 | No | No |
+| plugin_upload_probe | 7335 | 302 | No | No |
+| login_form | 7388 | 200 | No | Yes |
+| editor_login | 7511 | 302 | No | Yes |
+| plugin_upload_form | 7824 | 200 | No | Yes |
+| persistence_upload | 8076 | 200 | Yes | Yes |
+| image_agent_command | 8182 | 200 | No | Yes |
 
-The named steps span 63.938%–63.998% of 15,016 access rows. The 15,000
-background rows have 10,384 client identities and 903 User-Agents. The largest
-client share is 0.973%; the largest User-Agent share is 4.407%. Visitor
-2xx/3xx success is 96.274%, and all 2,923 scanner rows are retained.
+## Timing and background
 
-Schema validation, byte-identical label regeneration, zero-parse-failure
-evidence validation, self-check, restoration of all 2,847 manifest entries,
-and Defender scan passed. The scenario folder is 3,249,869 bytes. Defender
-realtime protection was enabled and the scan found zero
-detections.
+| Measurement | Current value |
+|---|---:|
+| Replay start, UTC | 2026-11-01T17:41:44.076538+00:00 |
+| Replay end, UTC | 2026-11-01T18:54:43.764778+00:00 |
+| Access rows | 15017 |
+| Background rows | 15000 |
+| Background clients | 10384 |
+| Background user agents | 903 |
+| Largest background client fraction | 0.00973 |
+| Largest overall user-agent fraction | 0.04402 |
+| Visitor success fraction | 0.99942 |
+| Scanner rows | 2923 |
+| Log span, seconds | 4379.0 |
+| Average requests per second | 3.42932 |
+| Maximum background requests per second | 20 |
+| Maximum overall requests per second | 20 |
+| Activity span, seconds | 443.0 |
+| Minimum hand-action spacing, seconds | 45.12848706700015 |
+| Private background client addresses | 0 |
+| Background writes to static assets | 0 |
+| Remapped background addresses | 9749 |
+| Remapped access rows | 13190 |
 
-Round 7 analyst read: I read the 50 seeded final background lines (seed 7010) and inspected all 1,736 lines of the activity window, lines 6,452–8,187, including 14 actor requests. I checked methods and paths, statuses, timestamps, attribution, and static-file writes. The background sample has WordPress pages, feeds, assets, login and comment forms, uptime checks, and retained scanner probes. The actor sequence shows reconnaissance, login, plugin installation, and six native agent POSTs to an image-suffix path over 443 seconds. Those six POSTs belong to the actor and are the intended handler behavior; no background visitor posts to a static asset. No window response is 5xx.
+The recording was uninterrupted. Hand actions are spaced; native tool handshakes and probes keep their original speed. Client counts and top shares are unchanged by the address correction. All non-client log fields and actor lines are byte-identical.
+
+## Files and write candidates
+
+Candidate counts include every POST or PUT within five seconds of the recorded ctime. They describe ambiguity, not attribution.
+
+| File | Role | Expected in report | Nearby writes |
+|---|---|---|---:|
+| `wp-content/plugins/m8v2-persistence/.htaccess` | persistence_config | Yes | 4 |
+| `wp-content/plugins/m8v2-persistence/m8v2-persistence.php` | malicious_plugin | Yes | 4 |
+| `wp-content/plugins/m8v2-persistence/m8v2-photo.jpg` | webshell_agent | Yes | 4 |
+| `wp-content/uploads/wp-file-manager-pro/fm_backup/index.php` | side_effect | No | 2 |
+
+Executable artifacts in the public snapshot are inert stubs. Original full captures remain encrypted outside Git and retain the original client mapping. The webroot, manifests and restore inputs did not change; the existing portable restore proof remains valid.
+
+## Analyst read
+
+The completed recording review covers every activity-window row from line 6452 through 8187 (1736 rows), including 14 actor requests, plus 50 background lines selected with seed 7010. The existing review was rebound to the current log only after a full field comparison. The final review after the fixes is recorded separately in ROUND8.md.
+
+The review checks methods and routes, authentication, statuses and sizes, timing, client attribution, scanner probes, native bursts and file changes. Current schema, file-role, regeneration, parser and private-client checks pass. Existing clean restore and Defender records pass. No analysis or evaluation was run.
+
+Current access-log SHA-256: `bbcc00be2d3947acc03e8f53bd4bd85f093569aba9075ad2577680fd0645c9d4`.
+
+Current ground-truth SHA-256: `7d8775826f346bd2a18a20d2bf8afbcabbe51bf3fdc6c40ea40e8c68a35e1fbc`.
+
+## Limits
+
+The installer is the normal authenticated WordPress interface and has no vulnerability claim here. The actor's image-extension command requests are intended agent exchanges. Background visitors do not write to static assets. The backup index is an excluded side effect.
+
+All scenarios share the same source background slice. Referrers are absent from every background row; application cron self-requests can have referrers. Scanner file names and browser version strings retain the source anonymization. Logs are short, similarly paced, and capped; lab names remain in evidence. See the known limits in ../README.md.
+
+## History
+
+Original recording: `a540ea6`. Round six: `5ff2319` corrected labels, crawl handling or user-agent presentation as applicable; `30a9cef` records that review. Round seven: `0fd5bf5` replaced the recording with live pacing and portable restore proof. Round eight: `76034f5` fixed the backup-index expectation and added file-role checks; `249452b` corrected background addresses without recording again. This note replaces superseded measurements.

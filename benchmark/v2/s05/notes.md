@@ -1,60 +1,78 @@
-# s05 recording notes
+# s05: current recording notes
 
-The earlier numerical summary below records round 6. The Round 7 analyst read and `replay/self-check.txt` will give the current recording's measurements.
+## Story
 
-s05 uses the deliberately vulnerable DVWA command-injection module from pinned
-upstream commit `a1978a2fed195acd093010af6395f86a281537ca`. The relevant source
-is `vulnerabilities/exec/source/low.php`, line 14, SHA-256
-`399a0d5dd28436a952a5bb0d14390eb421e57ab2e7add68813b6ce283cc70f28`. DVWA is
-the task's allowed training application for command injection; this module has
-no separate CVE, so no CVE is claimed. Its GPL-3.0-or-later license and pinned
-source archive are recorded in `SOURCES.md`.
+After reconnaissance, the attacker signs in to DVWA and selects its low security setting. Commix confirms command execution as the web service account. A separately labelled command-injection request writes a plain-text marker, and a later request reads it back. The marker write is the root cause.
 
-The script checks the public site and login and module pages, authenticates to
-the isolated application, and sets its security level to the local training
-setting. Pinned Commix commit `625c0c46e4257c457774e39bd896307397eaab03`
-confirmed that the module executes an operating-system command as the web
-service account. A separately marked request then wrote a fixed plain-text
-marker under the webroot, and the script read that file back. The captured file
-is inert text; the scenario ran no shell or webshell file.
+## Steps
 
-The nine named steps are labeled from `X-Lab-Step` headers, except
-`commix_detection`, which is the first POST to the command module inside the
-tool's recorded start/end time window. The access-log lines are:
+Labels come from the recorded sidecar and tool windows through label.py. The table preserves ground-truth order. HTTP status is read from the current log.
 
-| Step | Access-log line | Result |
-|---|---:|---|
-| `site_check` | 6,001 | HTTP 200; reconnaissance |
-| `login_page_probe` | 6,002 | HTTP 200; reconnaissance |
-| `command_module_probe` | 6,003 | HTTP 200; reconnaissance |
-| `editor_login` | 6,004 | HTTP 200; valid account access |
-| `security_page_open` | 6,005 | HTTP 200; valid account access |
-| `security_level_set` | 6,006 | HTTP 200; valid account access |
-| `commix_detection` | 6,007 | HTTP 200; initial Commix request |
-| `command_injection_file_write` | 6,019 | HTTP 200; root cause |
-| `marker_file_check` | 6,020 | HTTP 200; marker read back |
+| Step | Access line | HTTP status | Root cause | Expected in timeline |
+|---|---:|---:|---|---|
+| site_check | 5553 | 302 | No | No |
+| login_page_probe | 5759 | 200 | No | No |
+| command_module_probe | 5829 | 302 | No | No |
+| editor_login | 5911 | 302 | No | Yes |
+| security_page_open | 6873 | 200 | No | Yes |
+| security_level_set | 7120 | 302 | No | Yes |
+| commix_detection | 7310 | 200 | No | No |
+| command_injection_file_write | 7390 | 200 | Yes | Yes |
+| marker_file_check | 7432 | 200 | No | Yes |
 
-The nine named steps fall at 39.953%–40.080% of the 15,020-row access log. The
-Commix run made 10 requests according to its summary; its number of probe
-requests may vary by tool version. The 15,000 background rows comprise 12,077
-visitors and 2,923 scanner rows. There are 10,384 client identities and 903
-User-Agents; the largest client share is 0.973% and the largest User-Agent
-share is 4.407%. Visitor 2xx/3xx success is 93.475%, and all scanner rows are
-retained.
+## Timing and background
 
-The replay sends source rows sequentially and drains each response before
-starting the next. Nginx's completion log placed a few background rows in a
-different order, so the self-check verifies the complete mapped-client count
-multiset. The access-log and label-sidecar join uses request, status, client,
-and timestamp, which handles occasional write-order differences between the
-two logs.
+| Measurement | Current value |
+|---|---:|
+| Replay start, UTC | 2026-11-01T18:51:31.791056+00:00 |
+| Replay end, UTC | 2026-11-01T20:04:31.517231+00:00 |
+| Access rows | 15021 |
+| Background rows | 15000 |
+| Background clients | 10384 |
+| Background user agents | 903 |
+| Largest background client fraction | 0.00973 |
+| Largest overall user-agent fraction | 0.04401 |
+| Visitor success fraction | 1.0 |
+| Scanner rows | 2923 |
+| Log span, seconds | 4379.0 |
+| Average requests per second | 3.43024 |
+| Maximum background requests per second | 20 |
+| Maximum overall requests per second | 21 |
+| Activity span, seconds | 447.0 |
+| Minimum hand-action spacing, seconds | 45.82664738399944 |
+| Private background client addresses | 0 |
+| Background writes to static assets | 0 |
+| Remapped background addresses | 9749 |
+| Remapped access rows | 13190 |
 
-The collector captured one new webroot file, the plain-text marker, and did
-not need to defang anything. The scenario folder is 2,079,106 bytes. The ground
-truth validates, regenerates byte-identically, and all evidence logs parse.
-Restoring the pinned image reproduces all 252 manifest entries. Defender
-realtime protection was enabled and the scan found zero detections.
+The recording was uninterrupted. Hand actions are spaced; native tool handshakes and probes keep their original speed. Client counts and top shares are unchanged by the address correction. All non-client log fields and actor lines are byte-identical.
 
-## Round 7 analyst read
+## Files and write candidates
 
-Read all 1,880 rows of the final retry-3 activity window (lines 5553-7432), all 21 actor requests raw, complete request/User-Agent/status-size dictionaries, and all 50 seeded background sample lines (seed 7005). Checked methods and accepting routes, redirects before authentication, successful authenticated pages, response sizes, scanner failures, static reads, timing, client diversity, and normalized User-Agents. Visitor writes use the login form; CSS and images are read requests. The protected module redirects anonymous access. The login POST and later unlabelled landing-page GET are separate actions. Native Commix requests cluster within two seconds; later marker creation and read-back remain human-spaced. No server-error or recording defect was found. IP-like browser version numbers come from source anonymization and are retained. The window has 1,265 HTTP 200, 465 redirects, and 150 HTTP 404 responses. Current measurements and ground-truth hash are in replay/self-check.txt; the earlier numerical section is historical round 6.
+Candidate counts include every POST or PUT within five seconds of the recorded ctime. They describe ambiguity, not attribution.
+
+| File | Role | Expected in report | Nearby writes |
+|---|---|---|---:|
+| `hackable/uploads/m8v2-s05-marker.txt` | attacker_file | Yes | 1 |
+
+Executable artifacts in the public snapshot are inert stubs. Original full captures remain encrypted outside Git and retain the original client mapping. The webroot, manifests and restore inputs did not change; the existing portable restore proof remains valid.
+
+## Analyst read
+
+The completed recording review covers every activity-window row from line 5553 through 7432 (1880 rows), including 21 actor requests, plus 50 background lines selected with seed 7005. The existing review was rebound to the current log only after a full field comparison. The final review after the fixes is recorded separately in ROUND8.md.
+
+The review checks methods and routes, authentication, statuses and sizes, timing, client attribution, scanner probes, native bursts and file changes. Current schema, file-role, regeneration, parser and private-client checks pass. Existing clean restore and Defender records pass. No analysis or evaluation was run.
+
+Current access-log SHA-256: `a99a7536f13d11078b730650e60c3947b682d7c21e9a32f66662f4934b8e3530`.
+
+Current ground-truth SHA-256: `d7498fa9f09b06d9616eef0e240ac0c6bb9445b19fa8b3f2cea3cecba9776002`.
+
+## Limits
+
+The marker is inert text; no shell file is claimed. DVWA is a deliberately vulnerable training app with no separate vulnerability identifier claim. Login and the unlabelled landing-page navigation are separate requests.
+
+All scenarios share the same source background slice. Referrers are absent from every background row; application cron self-requests can have referrers. Scanner file names and browser version strings retain the source anonymization. Logs are short, similarly paced, and capped; lab names remain in evidence. See the known limits in ../README.md.
+
+## History
+
+Original recording: `a5fda70`. Round six: `5ff2319` corrected labels, crawl handling or user-agent presentation as applicable; `30a9cef` records that review. Round seven: `6ed94b6` replaced the recording with live pacing and portable restore proof. Round eight: `76034f5` fixed the backup-index expectation and added file-role checks; `249452b` corrected background addresses without recording again. This note replaces superseded measurements.

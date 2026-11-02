@@ -1,43 +1,75 @@
-# s09 held-out recording notes
+# s09: current recording notes
 
-The earlier numerical summary below records round 6. The Round 7 analyst read and `replay/self-check.txt` give the current recording measurements and access-log line numbers.
+## Story
 
-s09 tests timestamp manipulation with WordPress 5.5.3 and the pinned Weevely3
-agent. An authenticated administrator installed a local fixture archive with
-the agent. The agent's pinned `file_touch` module changed its modification time
-to 2001-01-01 and verified that time through the same agent. The module
-implementation and supported timestamp inputs are in the [pinned Weevely
-source](https://github.com/epinna/weevely3/blob/3d62e889871a62a344365b6a2d02b35c5ac1e946/src/weevely/modules/file/touch.py).
+A WordPress administrator installs a fixture archive containing an agent. The agent changes its own modification time to an old date. The timestomp request is the selected root cause because the collected agent ctime links to that request, rather than to the earlier archive upload.
 
-The marked archive upload is line 9,905. The timestamp operation is line 9,912
-and is the root-cause step. The administrator login and installer form are at
-lines 9,902–9,903. Weevely does not send `X-Lab-Step`, so the timestamp request
-was selected by the attacker's IP, the command's recorded UTC time window, its
-request path, status, and ordinal. No payload or agent code is reproduced here.
+## Steps
 
-This uses the normal authenticated WordPress plugin installer and therefore
-makes no CVE claim. It adapts the planned timestomp technique without a separate
-WordPress vulnerability. The collector defanged the plugin PHP, agent PHP, and
-empty File Manager backup side effect; the side effect is `expected_in_report:
-false`. The scenario has 15,000 background rows and 15,016 access rows total,
-10,384 clients and 903 User-Agents, 96.274% visitor success, and all 2,923
-scanner rows. Named steps span 65.943%–66.010% of the log.
+Labels come from the recorded sidecar and tool windows through label.py. The table preserves ground-truth order. HTTP status is read from the current log.
 
-Schema validation, byte-identical regeneration, zero-parse-failure evidence
-validation, self-check, isolation checks, manifest restoration, and Defender
-scan passed. Defender realtime protection was enabled and found zero detections.
+| Step | Access line | HTTP status | Root cause | Expected in timeline |
+|---|---:|---:|---|---|
+| administrator_login | 7095 | 302 | No | No |
+| plugin_upload_form | 7234 | 200 | No | No |
+| agent_upload | 7365 | 200 | No | No |
+| agent_timestomp | 7524 | 200 | Yes | Yes |
 
-## Round 7 analyst read
+## Timing and background
 
-Read every row in the 924-row activity window (lines 6604-7527) using lossless per-second rows and complete request, User-Agent, referrer, status and response-size dictionaries. Verified the cached core-window hash against the final compressed log after approved User-Agent normalization, then read the final normalized User-Agents and all 50 raw background sample lines selected with seed 7009. Checked method/target plausibility, static reads versus accepting write routes, redirects and authentication, timestamps, client attribution, server-error responses, and native tool bursts versus hand pacing.
-
-Read all 924 rows (6604-7527), all 14 raw actor requests, and complete request/UA/referrer/status-size dictionaries over 262 seconds. Authenticated login, normal plugin upload, and two native agent command bursts are coherent. Two WordPress loopback cron POSTs from the app address return HTTP 200 with empty bodies and matching cron referrers. Visitors write only to crawled form endpoints; assets are read. Scanner failures and ordinary WordPress redirects are plausible. No server-error or recording defect found.
-
-The final sample contains ordinary pages, forms, assets, uptime requests, and unchanged scanner probes; no additional recording defect was found. Source browser-version strings rewritten into IP-like numbers by the dataset anonymization are retained. The current measurements, exact write-candidate counts, full-log hash-bound analyst proof, restore proof, and ground-truth SHA-256 are in replay/self-check.txt and replay/analyst-review.json. Earlier numeric summaries above are historical round 6.
-
-| Current labelled step | Access-log line |
+| Measurement | Current value |
 |---|---:|
-| `administrator_login` | 7095 |
-| `plugin_upload_form` | 7234 |
-| `agent_upload` | 7365 |
-| `agent_timestomp` | 7524 |
+| Replay start, UTC | 2026-11-02T10:08:59.834504+00:00 |
+| Replay end, UTC | 2026-11-02T11:21:59.491880+00:00 |
+| Access rows | 15017 |
+| Background rows | 15000 |
+| Background clients | 10384 |
+| Background user agents | 903 |
+| Largest background client fraction | 0.00973 |
+| Largest overall user-agent fraction | 0.04402 |
+| Visitor success fraction | 0.99942 |
+| Scanner rows | 2923 |
+| Log span, seconds | 4379.0 |
+| Average requests per second | 3.42932 |
+| Maximum background requests per second | 20 |
+| Maximum overall requests per second | 20 |
+| Activity span, seconds | 262.0 |
+| Minimum hand-action spacing, seconds | 48.6133514600001 |
+| Private background client addresses | 0 |
+| Background writes to static assets | 0 |
+| Remapped background addresses | 9749 |
+| Remapped access rows | 13190 |
+
+The recording was uninterrupted. Hand actions are spaced; native tool handshakes and probes keep their original speed. Client counts and top shares are unchanged by the address correction. All non-client log fields and actor lines are byte-identical.
+
+## Files and write candidates
+
+Candidate counts include every POST or PUT within five seconds of the recorded ctime. They describe ambiguity, not attribution.
+
+| File | Role | Expected in report | Nearby writes |
+|---|---|---|---:|
+| `wp-content/plugins/m8v2-timestomp/m8v2-s09-agent.php` | webshell_agent | Yes | 6 |
+| `wp-content/plugins/m8v2-timestomp/m8v2-timestomp.php` | attacker_plugin | Yes | 1 |
+| `wp-content/uploads/wp-file-manager-pro/fm_backup/index.php` | side_effect | No | 2 |
+
+Executable artifacts in the public snapshot are inert stubs. Original full captures remain encrypted outside Git and retain the original client mapping. The webroot, manifests and restore inputs did not change; the existing portable restore proof remains valid.
+
+## Analyst read
+
+The completed recording review covers every activity-window row from line 6604 through 7527 (924 rows), including 14 actor requests, plus 50 background lines selected with seed 7009. The existing review was rebound to the current log only after a full field comparison. The final review after the fixes is recorded separately in ROUND8.md.
+
+The review checks methods and routes, authentication, statuses and sizes, timing, client attribution, scanner probes, native bursts and file changes. Current schema, file-role, regeneration, parser and private-client checks pass. Existing clean restore and Defender records pass. No analysis or evaluation was run.
+
+Current access-log SHA-256: `8731fcd3d044c47f00e6f3a1e8d6aaef54c0022a89a445a3d31f76b2ef02c956`.
+
+Current ground-truth SHA-256: `671cd2a275938df75344de4f54482c78ee51ada24814c417096dc23645cc9484`.
+
+## Limits
+
+This is an explicit ground-truth design choice, not a claim that timestamp manipulation first gained access. It uses the normal authenticated installer and makes no installer vulnerability claim. The backup index is a side effect excluded from reports. Ordinary WordPress cron self-requests remain in the log.
+
+All scenarios share the same source background slice. Referrers are absent from every background row; application cron self-requests can have referrers. Scanner file names and browser version strings retain the source anonymization. Logs are short, similarly paced, and capped; lab names remain in evidence. See the known limits in ../README.md.
+
+## History
+
+Original recording: `cd8786e`. Round six: `5ff2319` corrected labels, crawl handling or user-agent presentation as applicable; `30a9cef` records that review. Round seven: `4f190e1` replaced the recording with live pacing and portable restore proof. Round eight: `76034f5` fixed the backup-index expectation and added file-role checks; `249452b` corrected background addresses without recording again. This note replaces superseded measurements.

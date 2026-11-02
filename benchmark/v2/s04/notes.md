@@ -1,57 +1,76 @@
-# s04 recording notes
+# s04: current recording notes
 
-The earlier numerical summary below records round 6. The Round 7 analyst read and `replay/self-check.txt` give the current recording's measurements.
+## Story
 
-s04 uses phpMyFAQ 3.2.5 and the authenticated category-image upload flaw,
-CVE-2024-28105. The maintainer advisory identifies `CategoryImage.php` lines
-66, 85, and 124 and describes how the uploaded content type and language value
-combine to save a PHP file. The vulnerable source is recorded from the pinned
-3.2.5 application image: `phpmyfaq/src/phpMyFAQ/Category/CategoryImage.php`,
-line 124, SHA-256 `6574d0456a975bb018aca1f09f6e7f3ca9daee2af6560ec060bd741e98754dc0`.
-The advisory is [GHSA-pwh2-fpfr-x5gf](https://github.com/thorsten/phpMyFAQ/security/advisories/GHSA-pwh2-fpfr-x5gf).
+An authenticated phpMyFAQ editor uploads a category image through the documented upload flaw. The later file request confirms the fixed text execution check. The image upload is the root cause. The ordinary tracking file is excluded from reports.
 
-The script waits until the seeded background replay reaches 43%, checks the
-public site and category administration route, signs in with the isolated lab
-administrator, opens the category form, and submits a valid GIF containing a
-fixed text-only execution check. It then requests the uploaded file and records
-the successful response. The vulnerable file was captured only inside the lab;
-the committed webroot contains its inert defanged stub. No operating-system
-command was run.
+## Steps
 
-The six attacker requests are labeled from their `X-Lab-Step` identifiers in
-the replay sidecar and the corresponding request lines in
-`evidence/access.log.gz`:
+Labels come from the recorded sidecar and tool windows through label.py. The table preserves ground-truth order. HTTP status is read from the current log.
 
-| Step | Access-log line | Result |
-|---|---:|---|
-| `site_check` | 6,451 | HTTP 200; reconnaissance |
-| `category_admin_probe` | 6,452 | HTTP 200; reconnaissance |
-| `editor_login` | 6,453 | HTTP 200; valid account access |
-| `category_editor_open` | 6,454 | HTTP 200; valid account access |
-| `category_image_upload` | 6,455 | HTTP 200; root cause |
-| `uploaded_file_execution` | 6,456 | HTTP 200; execution confirmed |
+| Step | Access line | HTTP status | Root cause | Expected in timeline |
+|---|---:|---:|---|---|
+| site_check | 5703 | 200 | No | No |
+| category_admin_probe | 5791 | 200 | No | No |
+| editor_login | 5855 | 200 | No | Yes |
+| category_editor_open | 6250 | 200 | No | Yes |
+| category_image_upload | 6685 | 200 | Yes | Yes |
+| uploaded_file_execution | 7099 | 200 | No | Yes |
 
-The attack steps fall at 42.989%â€“43.023% of the 15,006-row access log. The
-15,000 background rows comprise 12,077 visitors and 2,923 scanner rows. There
-are 10,384 client identities and 903 User-Agents; the largest client share is
-0.973% and the largest User-Agent share is 4.407%. Visitor 2xx/3xx success is
-99.959%; scanner requests are retained.
+## Timing and background
 
-The collector defanged two changed files: the category image and a phpMyFAQ
-runtime tracking file larger than the public snapshot limit. Their original
-hashes and sizes remain in `evidence/manifest.tsv` and
-`evidence/defanged.tsv`; full contents remain in the encrypted local capture.
-The vulnerable upload's POSIX filename ends in two dots, which Windows cannot
-check out as a normal working-tree path. Its inert snapshot stub is stored as
-`images/category-1-.php.__posix_trailing_dots_2`; `replay/restore.json` maps
-that portable snapshot name to the original manifest path, and
-`restore_webroot.py` restores the original name with an extended Windows path.
-The scenario folder is 3,469,775 bytes. Schema validation, byte-identical
-ground-truth regeneration, evidence parsing, and replay self-check pass. The
-restore overlay contains the five static access-denial index files generated
-by phpMyFAQ setup. The restored tree includes all 2,881 manifest entries.
-Defender realtime protection was enabled and the scan found zero detections.
+| Measurement | Current value |
+|---|---:|
+| Replay start, UTC | 2026-11-01T17:34:51.726933+00:00 |
+| Replay end, UTC | 2026-11-01T18:47:51.367869+00:00 |
+| Access rows | 15006 |
+| Background rows | 15000 |
+| Background clients | 10384 |
+| Background user agents | 903 |
+| Largest background client fraction | 0.00973 |
+| Largest overall user-agent fraction | 0.04405 |
+| Visitor success fraction | 1.0 |
+| Scanner rows | 2923 |
+| Log span, seconds | 4380.0 |
+| Average requests per second | 3.42603 |
+| Maximum background requests per second | 20 |
+| Maximum overall requests per second | 20 |
+| Activity span, seconds | 249.0 |
+| Minimum hand-action spacing, seconds | 46.98106368700019 |
+| Private background client addresses | 0 |
+| Background writes to static assets | 0 |
+| Remapped background addresses | 9749 |
+| Remapped access rows | 13190 |
 
-## Round 7 analyst read
+The recording was uninterrupted. Hand actions are spaced; native tool handshakes and probes keep their original speed. Client counts and top shares are unchanged by the address correction. All non-client log fields and actor lines are byte-identical.
 
-I read the 50 background lines selected with seed 7004 from the final compressed access log and inspected every row in the 1,397-line activity window (lines 5,703–7,099), including all six actor requests. I checked method and target plausibility, response codes, timestamps, client and User-Agent attribution, static-file writes, and the trailing-dot upload path. The sample contains ordinary phpMyFAQ pages, forms, assets, uptime probes, and retained scanner requests. The actor's reconnaissance, login, category editor, upload, and executable-file request span 249 seconds. The uploaded trailing-dot path returns 200 with an 89-byte response; all window responses are 200, with no 5xx responses or background static-file writes. The 15,000-line background is from one uninterrupted run; its final rate is 3.43 requests/second, with a maximum of 20 background requests in one second.
+## Files and write candidates
+
+Candidate counts include every POST or PUT within five seconds of the recorded ctime. They describe ambiguity, not attribution.
+
+| File | Role | Expected in report | Nearby writes |
+|---|---|---|---:|
+| `data/tracking01112026` | side_effect | No | 2 |
+| `images/category-1-.php..` | attacker_file | Yes | 14 |
+
+Executable artifacts in the public snapshot are inert stubs. Original full captures remain encrypted outside Git and retain the original client mapping. The webroot, manifests and restore inputs did not change; the existing portable restore proof remains valid.
+
+## Analyst read
+
+The completed recording review covers every activity-window row from line 5703 through 7099 (1397 rows), including 6 actor requests, plus 50 background lines selected with seed 7004. The existing review was rebound to the current log only after a full field comparison. The final review after the fixes is recorded separately in ROUND8.md.
+
+The review checks methods and routes, authentication, statuses and sizes, timing, client attribution, scanner probes, native bursts and file changes. Current schema, file-role, regeneration, parser and private-client checks pass. Existing clean restore and Defender records pass. No analysis or evaluation was run.
+
+Current access-log SHA-256: `6237ecf2861109dd45ed3cfc813576b01160dd4b928b9fe7d137cdfafea3278d`.
+
+Current ground-truth SHA-256: `4461b705fdf37281ea2b268bea257776b3e68f65ac6b44be2a1422e6102e2c2f`.
+
+## Limits
+
+No operating-system command is claimed. The original uploaded file name ends in dots; restore.json maps its portable inert snapshot name to the exact manifest name. Source pins and the maintainer advisory are in ../SOURCES.md.
+
+All scenarios share the same source background slice. Referrers are absent from every background row; application cron self-requests can have referrers. Scanner file names and browser version strings retain the source anonymization. Logs are short, similarly paced, and capped; lab names remain in evidence. See the known limits in ../README.md.
+
+## History
+
+Original recording: `c211f41`. Round six: `23b518b` corrected labels, crawl handling or user-agent presentation as applicable; `30a9cef` records that review. Round seven: `e60a707` replaced the recording with live pacing and portable restore proof. Round eight: `76034f5` fixed the backup-index expectation and added file-role checks; `249452b` corrected background addresses without recording again. This note replaces superseded measurements.
