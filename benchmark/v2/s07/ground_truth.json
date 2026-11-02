@@ -12,7 +12,7 @@
         "T1595"
       ],
       "log_file": "access.log.gz",
-      "line_no": 7351,
+      "line_no": 5852,
       "is_root_cause": false,
       "expected_in_timeline": false
     },
@@ -23,7 +23,7 @@
         "T1595"
       ],
       "log_file": "access.log.gz",
-      "line_no": 7352,
+      "line_no": 6069,
       "is_root_cause": false,
       "expected_in_timeline": false
     },
@@ -34,7 +34,7 @@
         "T1595"
       ],
       "log_file": "access.log.gz",
-      "line_no": 7353,
+      "line_no": 6659,
       "is_root_cause": false,
       "expected_in_timeline": false
     },
@@ -45,7 +45,7 @@
         "T1595"
       ],
       "log_file": "access.log.gz",
-      "line_no": 7354,
+      "line_no": 7098,
       "is_root_cause": false,
       "expected_in_timeline": false
     },
@@ -56,7 +56,7 @@
         "T1110.001"
       ],
       "log_file": "access.log.gz",
-      "line_no": 7362,
+      "line_no": 7264,
       "is_root_cause": false
     },
     {
@@ -66,7 +66,7 @@
         "T1078.003"
       ],
       "log_file": "access.log.gz",
-      "line_no": 7365,
+      "line_no": 7380,
       "is_root_cause": false
     },
     {
@@ -76,7 +76,7 @@
         "T1078.003"
       ],
       "log_file": "access.log.gz",
-      "line_no": 7366,
+      "line_no": 7404,
       "is_root_cause": false
     },
     {
@@ -86,7 +86,7 @@
         "T1078.003"
       ],
       "log_file": "access.log.gz",
-      "line_no": 7367,
+      "line_no": 7574,
       "is_root_cause": false
     },
     {
@@ -96,7 +96,7 @@
         "T1505.003"
       ],
       "log_file": "access.log.gz",
-      "line_no": 7368,
+      "line_no": 7880,
       "is_root_cause": true
     },
     {
@@ -106,7 +106,7 @@
         "T1505.003"
       ],
       "log_file": "access.log.gz",
-      "line_no": 7370,
+      "line_no": 8180,
       "is_root_cause": false
     },
     {
@@ -116,7 +116,7 @@
         "T1105"
       ],
       "log_file": "access.log.gz",
-      "line_no": 7371,
+      "line_no": 8253,
       "is_root_cause": false
     }
   ],
@@ -137,8 +137,7 @@
       "path": "wp-content/uploads/wp-file-manager-pro/fm_backup/index.php",
       "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "change": "modified",
-      "role": "side_effect",
-      "expected_in_report": false
+      "role": "unclassified_change"
     }
   ],
   "root_cause_step": "plugin_upload",

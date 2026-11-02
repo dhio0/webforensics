@@ -1,5 +1,7 @@
 # s07 recording notes
 
+The earlier numerical summary below records round 6. The Round 7 analyst read and `replay/self-check.txt` give the current recording's measurements.
+
 s07 uses WordPress 5.5.3 and the pinned Hydra build to exercise a password-guessing
 login followed by administrator plugin installation. The WordPress image and Hydra
 source pins are in `SOURCES.md`. WordPress has no CVE claim in this scenario: the
@@ -44,3 +46,5 @@ label regeneration, zero-parse-failure evidence validation, self-check, restorat
 of all 2,846 manifest entries, and Defender scan passed. The scenario folder is
 3,250,339 bytes; Defender realtime protection was enabled and the
 scan found zero detections.
+
+Round 7 analyst read: I read the 50 seeded final background lines (seed 7007) and inspected all 2,402 lines of the activity window, lines 5,852–8,253, including 20 actor requests. I checked methods and paths, statuses, timestamps, attribution, and static-file writes. The background sample has WordPress pages, feeds, assets, login and comment forms, uptime checks, and retained scanner probes. The actor sequence shows reconnaissance, a native-speed Hydra login burst, a separately paced login, plugin upload and activation, then a successful marker check over 571 seconds. No window response is 5xx. Background writes to static assets are zero.
