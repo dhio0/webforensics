@@ -30,3 +30,7 @@ lab/wazuh/.env
 
 # Third-party CVE fixtures that may not be redistributed (scripts/fetch_cve_fixtures.py).
 tests/fixtures/php_sqli/cve/.cache/
+
+# Local assistant configuration (kept on the developer machine, not part of the project).
+CLAUDE.md
+.claude/

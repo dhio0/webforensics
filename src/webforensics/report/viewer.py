@@ -40,13 +40,11 @@ from webforensics.report.document import (
 )
 from webforensics.report.text import Texts, clean, zone_short
 
-# Which tab shows which section of the static document. The timeline tab is built from
-# the events themselves, so the document's timeline table is not reused.
+# Which tab shows which section of the static document. The overview adds the backtrace
+# and the timeline tab is built from the events themselves (D97).
 TABS: tuple[tuple[str, tuple[str, ...]], ...] = (
     ("overview", ("ringkasan",)),
     ("timeline", ()),
-    ("flow", ()),
-    ("space", ()),
     ("root", ("akar-masalah",)),
     ("files", ("file-terdampak", "tinjau")),
     ("iocs", ("ioc", "latar")),

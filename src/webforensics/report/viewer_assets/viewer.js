@@ -43,6 +43,12 @@
     return node;
   }
 
+  function titleNode(text) {
+    var t = document.createElementNS(SVGNS, "title");
+    t.textContent = text;
+    return t;
+  }
+
   function no(n) {
     var s = String(n);
     while (s.length < DIGITS) s = "0" + s;
@@ -51,11 +57,9 @@
 
   function glyph(cat) { return el("i", { cls: "g g-" + cat, "aria-hidden": "true" }); }
 
-  function meter(conf, label) {
-    return el("span", { cls: "meter c-" + conf }, el("i", { "aria-hidden": "true" }), label);
-  }
+  function conf(level, label) { return el("span", { cls: "conf c-" + level, text: label }); }
 
-  function field(dl, label, value) {
+  function pairs(dl, label, value) {
     dl.appendChild(el("dt", { text: label }));
     dl.appendChild(typeof value === "string" ? el("dd", { text: value }) : el("dd", null, value));
   }
@@ -75,127 +79,68 @@
   D.attackers.forEach(function (a) { attacker[a] = true; });
   var hasOthers = events.some(function (e) { return !(e.actor in laneOf); });
 
-  var state = {
-    tab: "overview", sel: null, q: "", actor: "*", story: false, limit: PAGE,
-    cats: {}, open: {}, zoom: null
-  };
+  var state = { tab: "overview", sel: null, q: "", actor: "*", story: false, limit: PAGE,
+    cats: {}, open: {}, zoom: null };
   D.categories.forEach(function (c) { state.cats[c.id] = true; });
 
-  // Motion is decoration: it is skipped entirely when the viewer asks for less of it.
-  var REDUCED = !!(window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches);
-  var POP_LIMIT = 400;  // more marks than this appear at once instead of one by one
-  var chartPlayed = false, flowShown = false, spaceView = null;
-
-  // A motion class is always taken off again after its run. If a renderer never plays CSS
-  // animations (some screenshot tools, previews), the page still ends up fully visible.
-  function playOnce(node, cls, ms) {
-    if (REDUCED) return;
-    node.classList.remove(cls);
-    void node.getBoundingClientRect();
-    node.classList.add(cls);
-    setTimeout(function () { node.classList.remove(cls); }, ms);
-  }
-
-  function css(name) {
-    return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
-  }
-
-  // --- icons: small line drawings, 24x24, stroked with the current colour ---------------
-
-  var ICONS = {
-    overview: "M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z",
-    timeline: "M3 12h4l3-8 4 16 3-8h4",
-    flow: "M6 3v6M6 15v6M6 9a3 3 0 1 0 0 6 3 3 0 0 0 0-6M6 12h6a6 6 0 0 0 6-6V3M18 3l-2 2M18 3l2 2",
-    space: "M12 2l9 5v10l-9 5-9-5V7zM12 22V12M21 7l-9 5-9-5",
-    root: "M12 3v4M12 17v4M3 12h4M17 12h4M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8",
-    files: "M14 3H6v18h12V7zM14 3v4h4M9 13h6M9 17h6",
-    iocs: "M12 3l9 16H3zM12 10v4M12 17h.01",
-    gaps: "M4 6h4M12 6h4M20 6h0M4 18h4M12 18h4M4 12h16",
-    actions: "M9 6h11M9 12h11M9 18h11M4 6l1 1 2-2M4 12l1 1 2-2M4 18l1 1 2-2",
-    "case": "M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18M12 11v5M12 8h.01",
-    events: "M3 12h4l3-8 4 16 3-8h4",
-    actors: "M12 4a4 4 0 1 0 0 8 4 4 0 0 0 0-8M4 21a8 8 0 0 1 16 0",
-    shield: "M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"
-  };
-
-  function icon(name, cls) {
-    var svg = sv("svg", { viewBox: "0 0 24 24", "class": "ic" + (cls ? " " + cls : ""), "aria-hidden": "true" });
-    svg.appendChild(sv("path", { d: ICONS[name] || ICONS.overview }));
-    return svg;
-  }
-
-  // Cards lean a few degrees toward the pointer. Pure decoration: off for reduced motion
-  // and for touch, where there is no hover.
-  var CAN_TILT = !REDUCED && !!(window.matchMedia && window.matchMedia("(hover: hover)").matches);
-  function tilt(node) {
-    if (!CAN_TILT) return node;
-    node.classList.add("tilt");
-    node.addEventListener("pointermove", function (ev) {
-      var b = node.getBoundingClientRect();
-      var px = (ev.clientX - b.left) / b.width - 0.5, py = (ev.clientY - b.top) / b.height - 0.5;
-      node.style.setProperty("--ry", (px * 6).toFixed(2) + "deg");
-      node.style.setProperty("--rx", (-py * 6).toFixed(2) + "deg");
-      node.style.setProperty("--gx", Math.round((px + 0.5) * 100) + "%");
-      node.style.setProperty("--gy", Math.round((py + 0.5) * 100) + "%");
-    });
-    node.addEventListener("pointerleave", function () {
-      node.style.setProperty("--rx", "0deg"); node.style.setProperty("--ry", "0deg");
-    });
-    return node;
-  }
-
-  // --- shell: sidebar with the case and the sections, content on the right -----------------
-
-  playOnce(document.documentElement, "motion", 1600);
-  var app = document.getElementById("app");
-  var shellEl = el("div", { cls: "shell" });
-  var side = el("aside", { cls: "side" });
-  var mainEl = el("main", { cls: "main" });
-  shellEl.appendChild(side); shellEl.appendChild(mainEl);
-  app.appendChild(shellEl);
+  // --- frame: one header line, the sections as text tabs, then the page -------------------
 
   var bad = D.verdict.compromised;
-  side.appendChild(el("div", { cls: "brand" }, icon("shield", "brand-ic"),
-    el("span", { text: "webforensics" })));
-  side.appendChild(el("div", { cls: "side-case" },
-    el("div", { cls: "label", text: U["meta.case"] }), el("div", { cls: "side-id", text: D.caseId }),
-    el("div", { cls: "status" + (bad ? "" : " clean"), text: bad ? U["stamp.compromised"] : U["stamp.clean"] })));
+  var app = document.getElementById("app");
+  var stats = D.verdict.stats;
+  var counts = [[stats.events, U["stat.events"]], [stats.files, U["stat.files"]],
+    [stats.actors, U["stat.actors"]], [stats.gaps, U["stat.gaps"]]].map(function (c) {
+    return c[0] + " " + c[1];
+  }).join(" · ");
 
-  var nav = el("nav", { cls: "tabs", role: "tablist", "aria-orientation": "vertical" });
+  app.appendChild(el("header", { cls: "top" },
+    el("div", { cls: "top-l" },
+      el("span", { cls: "brand", text: "webforensics" }),
+      el("span", { cls: "case" }, el("span", { cls: "muted", text: U["meta.case"] + " " }),
+        el("span", { cls: "mono", text: D.caseId })),
+      el("span", { cls: "verdict" + (bad ? " bad" : ""), role: "status" },
+        el("i", { "aria-hidden": "true" }), bad ? U["stamp.compromised"] : U["stamp.clean"])),
+    el("div", { cls: "top-r" },
+      el("span", { cls: "muted", text: counts }),
+      el("span", { cls: "muted" }, U["meta.generated"] + " ", el("span", { cls: "mono", text: D.generated })))));
+
+  var nav = el("nav", { cls: "nav", role: "tablist" });
+  app.appendChild(nav);
+  var main = el("main", { cls: "page" });
+  app.appendChild(main);
   var panels = {};
-  side.appendChild(nav);
-  side.appendChild(el("div", { cls: "side-foot", text: "webforensics " + D.tool }));
-
-  mainEl.appendChild(cover());
-  mainEl.appendChild(finding());
-  var stage = el("div", { cls: "stage" });
-  mainEl.appendChild(stage);
-  D.tabs.forEach(function (tab) {
-    var btn = el("button", {
+  D.tabs.forEach(function (tab, i) {
+    nav.appendChild(el("button", {
       role: "tab", id: "tab-" + tab.id, "aria-controls": "panel-" + tab.id,
       onclick: function () { showTab(tab.id, true); }
-    }, icon(tab.id), el("span", { text: tab.label }));
-    nav.appendChild(btn);
-    var panel = el("div", { role: "tabpanel", id: "panel-" + tab.id, "aria-labelledby": "tab-" + tab.id });
+    }, el("span", { cls: "key", text: String(i + 1) }), tab.label));
+    var panel = el("section", { role: "tabpanel", id: "panel-" + tab.id, "aria-labelledby": "tab-" + tab.id });
     panel.hidden = true;
     panels[tab.id] = panel;
-    stage.appendChild(panel);
-    if (tab.id === "timeline") buildTimeline(panel);
-    else if (tab.id === "flow") buildFlow(panel);
-    else if (tab.id === "space") spaceView = buildSpace(panel);
+    main.appendChild(panel);
+    if (tab.id === "overview") buildOverview(panel, tab);
+    else if (tab.id === "timeline") buildTimeline(panel);
     else tab.sections.forEach(function (s) { panel.appendChild(docSection(s)); });
   });
-  mainEl.appendChild(el("footer", { text: U.generated_by }));
+  app.appendChild(el("footer", { cls: "foot" },
+    el("span", { text: U.generated_by }), el("span", { cls: "mono", text: U.keys })));
 
   nav.addEventListener("keydown", function (ev) {
-    var back = ev.key === "ArrowUp" || ev.key === "ArrowLeft";
-    if (!back && ev.key !== "ArrowDown" && ev.key !== "ArrowRight") return;
+    var back = ev.key === "ArrowLeft", fwd = ev.key === "ArrowRight";
+    if (!back && !fwd) return;
     ev.preventDefault();
     var ids = D.tabs.map(function (t) { return t.id; });
     var i = ids.indexOf(state.tab) + (back ? -1 : 1);
     showTab(ids[(i + ids.length) % ids.length], true);
     document.getElementById("tab-" + state.tab).focus();
   });
+
+  // "#timeline:12" opens event 12, so one finding can be shared as a link.
+  function route(hash) {
+    var m = /^timeline:(\d+)$/.exec(hash);
+    if (m && byN[Number(m[1])]) { showTab("timeline", false); select(Number(m[1]), true); return; }
+    showTab(hash || "overview", false);
+  }
 
   function showTab(id, push) {
     if (!panels[id]) id = "overview";
@@ -208,80 +153,101 @@
       b.tabIndex = on ? 0 : -1;
     });
     if (push && location.hash !== "#" + id) history.replaceState(null, "", "#" + id);
-    var panel = panels[id];
-    playOnce(panel, "enter", 400);
     if (id === "timeline") drawChart();
-    if (id === "flow" && !flowShown) {
-      flowShown = true;
-      playOnce(panel, "play", 700 + panel.querySelectorAll(".flow-node,.flow-link").length * 90);
+  }
+
+  window.addEventListener("hashchange", function () { route(location.hash.slice(1)); });
+
+  // Keyboard, as in the tools analysts already use. Not while typing in a field.
+  document.addEventListener("keydown", function (ev) {
+    var t = ev.target, typing = t && (t.tagName === "INPUT" || t.tagName === "SELECT" || t.tagName === "TEXTAREA");
+    if (ev.key === "Escape") {
+      if (typing) t.blur();
+      document.body.classList.remove("inspecting");
+      return;
     }
-    if (spaceView) { if (id === "space") spaceView.start(); else spaceView.stop(); }
+    if (typing || ev.ctrlKey || ev.metaKey || ev.altKey) return;
+    if (/^[1-9]$/.test(ev.key) && D.tabs[Number(ev.key) - 1]) {
+      showTab(D.tabs[Number(ev.key) - 1].id, true);
+    } else if (ev.key === "/") {
+      ev.preventDefault();
+      showTab("timeline", true);
+      searchBox.focus();
+    } else if (ev.key === "j" || ev.key === "k") {
+      if (state.tab !== "timeline") showTab("timeline", true);
+      step(ev.key === "j" ? 1 : -1);
+    }
+  });
+
+  // --- overview: the backtrace and the case facts -----------------------------------------
+
+  function story() {
+    return events.filter(function (e) { return e.story || e.root; });
   }
 
-  window.addEventListener("hashchange", function () { showTab(location.hash.slice(1), false); });
-
-  // --- cover and main finding ------------------------------------------------------------
-
-  function cover() {
-    var meta = el("div", { cls: "meta" });
-    [[U["meta.generated"], D.generated], [U["meta.zone"], D.zone]].forEach(function (p) {
-      meta.appendChild(el("div", null, el("span", { cls: "label", text: p[0] }), el("span", { text: p[1] })));
+  function buildOverview(panel, tab) {
+    var frames = story().slice().reverse();
+    var trace = el("ol", { cls: "trace" });
+    frames.forEach(function (e) {
+      // A file is cited as "path @hash"; the path is already in the text, so show the hash.
+      var cite = e.cites.length ? D.cites[e.cites[0]].ref : "", at = cite.lastIndexOf(" @");
+      trace.appendChild(el("li", {
+        cls: e.root ? "root" : null, tabindex: "0",
+        onclick: function () { openEvent(e.n); },
+        onkeydown: function (ev) { if (ev.key === "Enter" || ev.key === " ") { ev.preventDefault(); openEvent(e.n); } }
+      },
+        el("span", { cls: "frame mono", text: no(e.n) }),
+        el("span", { cls: "role" }, glyph(e.cat), U["role." + e.cat] || U["role.other"]),
+        el("span", { cls: "what" }, e.text,
+          e.root ? el("span", { cls: "flag", text: U["trace.root"] }) : null),
+        el("span", { cls: "ref mono", title: cite, text: at > 0 ? cite.slice(at + 1) : cite }),
+        el("span", { cls: "at mono", text: e.clock })));
     });
-    return el("header", { cls: "cover" },
-      el("div", null, el("div", { cls: "label", text: U.kicker }), el("h1", { text: D.title }), meta),
-      el("div", { cls: "stamp" + (bad ? "" : " clean"), role: "img",
-        "aria-label": bad ? U["stamp.compromised"] : U["stamp.clean"],
-        text: bad ? U["stamp.compromised"] : U["stamp.clean"] }));
+    var traceBox = el("div", { cls: "trace-box" },
+      el("h2", { text: U["trace.title"] }),
+      el("p", { cls: "hint", text: U["trace.hint"] }),
+      frames.length ? trace : el("p", { cls: "none", text: U["trace.none"] }));
+
+    var summary = el("div", { cls: "summary" }, el("h2", { text: U["summary.title"] }));
+    tab.sections.forEach(function (s) {
+      for (var i = 0; i < s.blocks.length && s.blocks[i].t !== "h"; i++) summary.appendChild(docBlock(s.blocks[i]));
+    });
+
+    panel.appendChild(el("div", { cls: "overview" },
+      el("div", { cls: "ov-main" }, traceBox, summary), facts()));
   }
 
-  function finding() {
-    var v = D.verdict, hero = el("div", { cls: "hero card" + (v.root ? " is-root" : "") });
+  function facts() {
+    var v = D.verdict, dl = el("dl", { cls: "facts" });
+    pairs(dl, U["facts.verdict"], bad ? U["stamp.compromised"] : U["stamp.clean"]);
     if (v.root) {
-      var r = v.root;
-      hero.appendChild(el("div", { cls: "label" }, icon("root", "lab-ic"), U["verdict.root"]));
-      hero.appendChild(el("p", { cls: "entry" },
-        el("a", { cls: "n", href: "#timeline", text: no(r.n),
-          onclick: function (ev) { ev.preventDefault(); showTab("timeline", true); select(r.n, true); } }),
-        el("span", { cls: "when", text: r.day + " " + r.clock + " " + D.zoneShort }), r.text));
-      hero.appendChild(el("p", { cls: "entry-sub" }, el("span", { text: r.vuln }),
-        meter(r.conf, r.confLabel),
-        r.actor ? el("span", { text: U["verdict.from"] + " " + r.actor }) : null));
-    } else {
-      hero.appendChild(el("div", { cls: "label" }, icon(v.compromised ? "root" : "shield", "lab-ic"),
-        v.compromised ? U["verdict.root"] : U["verdict.result"]));
-      hero.appendChild(el("p", { cls: "entry-sub", text: v.compromised ? U["verdict.no_root"] : U["verdict.clean"] }));
+      var entry = el("a", { href: "#timeline", cls: "mono",
+        onclick: function (ev) { ev.preventDefault(); openEvent(v.root.n); } }, no(v.root.n));
+      pairs(dl, U["facts.entry"], el("span", null, entry, " " + v.root.day + " " + v.root.clock + " " + D.zoneShort));
+      pairs(dl, U["facts.vuln"], v.root.vuln);
+      pairs(dl, U["facts.confidence"], conf(v.root.conf, v.root.confLabel));
+    } else if (bad) {
+      pairs(dl, U["facts.entry"], U["facts.no_root"]);
     }
-    var kpis = el("div", { cls: "kpis" });
-    [["events", "events", v.stats.events], ["files", "files", v.stats.files],
-      ["actors", "actors", v.stats.actors], ["gaps", "gaps", v.stats.gaps]].forEach(function (s, i) {
-      kpis.appendChild(tilt(el("div", { cls: "kpi card", style: "--i:" + i },
-        el("div", { cls: "kpi-top" }, el("span", { cls: "label", text: U["stat." + s[0]] }), icon(s[1], "kpi-ic")),
-        countUp(el("div", { cls: "kpi-val", text: REDUCED ? String(s[2]) : "0" }), s[2]))));
-    });
-    return el("section", { cls: "finding" }, tilt(hero), kpis);
+    pairs(dl, U["facts.attackers"], D.attackers.length ? el("span", { cls: "mono", text: D.attackers.join("\n") }) : U["facts.none"]);
+    var own = events.filter(function (e) { return attacker[e.actor]; });
+    if (own.length) {
+      var a = own[0], b = own[own.length - 1];
+      pairs(dl, U["facts.window"], el("span", { cls: "mono", text: a.day + " " + a.clock + "\n" + b.day + " " + b.clock }));
+    }
+    pairs(dl, U["meta.zone"], D.zone);
+    return el("aside", { cls: "ov-side" }, el("h2", { text: U["facts.title"] }), dl);
   }
 
-  // Counts rise to their value once, over about 0.7 s.
-  function countUp(node, target) {
-    if (REDUCED || !target) { node.textContent = String(target); return node; }
-    var start = null, dur = 700, finished = false;
-    function step(t) {
-      if (finished) return;
-      if (start === null) start = t;
-      var k = Math.min(1, (t - start) / dur), eased = 1 - Math.pow(1 - k, 3);
-      node.textContent = String(Math.round(target * eased));
-      if (k < 1) requestAnimationFrame(step); else finished = true;
-    }
-    requestAnimationFrame(step);
-    // The final value is guaranteed even where animation frames are throttled.
-    setTimeout(function () { finished = true; node.textContent = String(target); }, dur + 150);
-    return node;
+  function openEvent(n) {
+    showTab("timeline", true);
+    select(n, true);
   }
 
   // --- static sections (same content as the HTML report) ---------------------------------
 
   function docSection(section) {
-    var node = el("section", { cls: "sheet doc" }, el("h2", { text: section.title }));
+    var node = el("div", { cls: "doc" }, el("h2", { text: section.title }));
     section.blocks.forEach(function (b) { node.appendChild(docBlock(b)); });
     return node;
   }
@@ -296,8 +262,8 @@
     }
     if (b.t === "code") return el("pre", { text: b.lines.join("\n") });
     if (b.t === "dl") {
-      var dl = el("dl", { cls: "fields" });
-      b.pairs.forEach(function (p) { field(dl, p[0], p[1]); });
+      var dl = el("dl", { cls: "kv" });
+      b.pairs.forEach(function (p) { pairs(dl, p[0], p[1]); });
       return dl;
     }
     if (b.t === "table") {
@@ -307,7 +273,7 @@
       b.rows.forEach(function (row, i) {
         var tr = el("tr", { cls: b.hl.indexOf(i) >= 0 ? "hl" : null });
         row.forEach(function (c) {
-          if (c.mark && c.mark !== "root") tr.appendChild(el("td", null, meter(c.mark, c.text)));
+          if (c.mark && c.mark !== "root") tr.appendChild(el("td", null, conf(c.mark, c.text)));
           else tr.appendChild(el("td", { cls: c.mark === "root" ? "mark-root" : null, text: c.text }));
         });
         body.appendChild(tr);
@@ -317,65 +283,58 @@
     return el("p", { text: "" });
   }
 
-  // --- timeline --------------------------------------------------------------------------
+  // --- timeline: chart, register and inspector -------------------------------------------
 
-  var svgHost, resetBtn, listEl, countEl, moreBox, detailEl, marks = {}, rows = {};
+  var svgHost, resetBtn, listEl, countEl, moreBox, inspector, searchBox, marks = {}, rows = {};
 
   function buildTimeline(panel) {
-    resetBtn = el("button", {
-      cls: "btn", text: U["chart.reset"], hidden: true,
-      onclick: function () { state.zoom = null; refresh(); }
-    });
-    svgHost = el("div");
-    var legend = el("div", { cls: "legend" });
-    present().forEach(function (c) { legend.appendChild(el("span", null, glyph(c.id), c.label)); });
-    var chart = el("div", { cls: "chart" },
-      el("div", { cls: "chart-head" }, el("h2", { text: U["chart.title"] }), resetBtn),
-      el("p", { cls: "hint", text: U["chart.hint"] }), svgHost, legend);
+    resetBtn = el("button", { cls: "link", text: U["chart.reset"], hidden: true,
+      onclick: function () { state.zoom = null; refresh(); } });
+    svgHost = el("div", { cls: "chart" });
 
-    var search = el("input", {
+    searchBox = el("input", {
       type: "search", placeholder: U["filter.search"], "aria-label": U["filter.search"],
-      oninput: function () { state.q = search.value.trim().toLowerCase(); state.limit = PAGE; refresh(); }
+      oninput: function () { state.q = searchBox.value.trim().toLowerCase(); state.limit = PAGE; refresh(); }
     });
-    var actor = el("select", {
-      "aria-label": U["filter.actor"],
+    var actor = el("select", { "aria-label": U["filter.actor"],
       onchange: function () { state.actor = actor.value; state.limit = PAGE; refresh(); }
     }, el("option", { value: "*", text: U["filter.actor"] }));
-    actorList().forEach(function (a) {
-      actor.appendChild(el("option", { value: a, text: a || U["chart.files"] }));
-    });
-    var story = el("input", {
-      type: "checkbox", id: "story-only",
-      onchange: function () { state.story = story.checked; state.limit = PAGE; refresh(); }
-    });
-    countEl = el("span", { cls: "count", "aria-live": "polite" });
-    var filters = el("div", { cls: "filters" }, search, actor);
+    actorList().forEach(function (a) { actor.appendChild(el("option", { value: a, text: a || U["chart.files"] })); });
+    var storyBox = el("input", { type: "checkbox", id: "story-only",
+      onchange: function () { state.story = storyBox.checked; state.limit = PAGE; refresh(); } });
+    countEl = el("span", { cls: "count mono", "aria-live": "polite" });
+    var kinds = el("div", { cls: "kinds" });
     present().forEach(function (c) {
-      var chip = el("button", {
-        cls: "chip", "aria-pressed": "true",
+      var b = el("button", { cls: "kind", "aria-pressed": "true", title: c.label,
         onclick: function () {
           state.cats[c.id] = !state.cats[c.id];
-          chip.setAttribute("aria-pressed", state.cats[c.id] ? "true" : "false");
+          b.setAttribute("aria-pressed", state.cats[c.id] ? "true" : "false");
           state.limit = PAGE; refresh();
-        }
-      }, glyph(c.id), c.label);
-      filters.appendChild(chip);
+        } }, glyph(c.id), el("span", { text: c.label }));
+      kinds.appendChild(b);
     });
-    filters.appendChild(el("label", { cls: "toggle", for: "story-only" }, story, U["filter.story"]));
-    filters.appendChild(countEl);
 
-    var head = el("div", { cls: "reg-head", "aria-hidden": "true" },
-      el("span", { cls: "label", text: U["col.n"] }),
-      el("span", { cls: "label", text: U["col.time"] + " " + D.zoneShort }),
-      el("span", { cls: "label", text: U["col.actor"] }),
-      el("span", { cls: "label", text: U["col.event"] }),
-      el("span", { cls: "label", text: U["col.confidence"] }));
-    listEl = el("ol", { cls: "events" });
+    listEl = el("tbody");
     moreBox = el("div", { cls: "more" });
-    detailEl = el("aside", { cls: "detail", "aria-live": "polite" });
-    var main = el("div", null, chart, filters, head, listEl, moreBox);
-    panel.appendChild(el("div", { cls: "tl" }, main, detailEl));
-    renderDetail();
+    inspector = el("aside", { cls: "inspector", "aria-live": "polite" });
+    var table = el("table", { cls: "register" },
+      el("thead", null, el("tr", null,
+        el("th", { cls: "c-n", text: U["col.n"] }),
+        el("th", { cls: "c-t", text: U["col.time"] + " " + D.zoneShort }),
+        el("th", { cls: "c-a", text: U["col.actor"] }),
+        el("th", { text: U["col.event"] }),
+        el("th", { cls: "c-c", text: U["col.confidence"] }))),
+      listEl);
+
+    panel.appendChild(el("div", { cls: "chart-box" },
+      el("div", { cls: "chart-head" }, el("h2", { text: U["chart.title"] }),
+        el("span", { cls: "hint", text: U["chart.hint"] }), resetBtn),
+      svgHost));
+    panel.appendChild(el("div", { cls: "filters" }, searchBox, actor, kinds,
+      el("label", { cls: "toggle", "for": "story-only" }, storyBox, U["filter.story"]), countEl));
+    panel.appendChild(el("div", { cls: "work" },
+      el("div", { cls: "reg-box" }, table, moreBox), inspector));
+    renderInspector();
     renderList();
 
     if (window.ResizeObserver) {
@@ -385,9 +344,6 @@
         pending = requestAnimationFrame(function () { if (state.tab === "timeline") drawChart(); });
       }).observe(svgHost);
     }
-    document.addEventListener("keydown", function (ev) {
-      if (ev.key === "Escape") detailEl.classList.remove("open");
-    });
   }
 
   function present() {
@@ -421,14 +377,14 @@
 
   // One SVG mark per event: the shape says what kind of event it is.
   function mark(cat, x, y, root) {
-    var r = root ? 6.5 : 5, color = "var(--c-" + cat + ")", node;
-    if (cat === "recon") node = sv("circle", { cx: x, cy: y, r: r - 1, fill: "var(--surface)", stroke: color, "stroke-width": 2 });
-    else if (cat === "exploit") node = sv("polygon", { points: [x, y - r - 1, x + r + 1, y + r, x - r - 1, y + r].join(" "), fill: color });
-    else if (cat === "login") node = sv("polygon", { points: [x, y - r - 1, x + r + 1, y, x, y + r + 1, x - r - 1, y].join(" "), fill: color });
-    else if (cat === "write") node = sv("rect", { x: x - r + 0.5, y: y - r + 0.5, width: 2 * r - 1, height: 2 * r - 1, fill: color });
-    else if (cat === "file") node = sv("rect", { x: x - r + 1, y: y - r + 1, width: 2 * r - 2, height: 2 * r - 2, fill: "var(--surface)", stroke: color, "stroke-width": 2 });
-    else if (cat === "use") node = sv("circle", { cx: x, cy: y, r: r - 0.5, fill: color });
-    else node = sv("circle", { cx: x, cy: y, r: 2.5, fill: color });
+    var r = root ? 5.5 : 4.5, node;
+    if (cat === "recon") node = sv("circle", { cx: x, cy: y, r: r - 0.5 });
+    else if (cat === "exploit") node = sv("polygon", { points: [x, y - r - 1, x + r + 1, y + r, x - r - 1, y + r].join(" ") });
+    else if (cat === "login") node = sv("polygon", { points: [x, y - r - 1, x + r + 1, y, x, y + r + 1, x - r - 1, y].join(" ") });
+    else if (cat === "write") node = sv("rect", { x: x - r + 0.5, y: y - r + 0.5, width: 2 * r - 1, height: 2 * r - 1 });
+    else if (cat === "file") node = sv("rect", { x: x - r + 1, y: y - r + 1, width: 2 * r - 2, height: 2 * r - 2 });
+    else if (cat === "use") node = sv("circle", { cx: x, cy: y, r: r - 0.5 });
+    else node = sv("circle", { cx: x, cy: y, r: 2 });
     return node;
   }
 
@@ -440,17 +396,16 @@
       return;
     }
     var width = Math.max(320, svgHost.clientWidth || 800);
-    var left = width < 520 ? 96 : 138, right = 16, top = 20, laneH = 28, axisH = 24;
+    var left = width < 560 ? 92 : 132, right = 12, top = 18, laneH = 24, axisH = 22;
     var lanes = D.lanes.slice();
     var othersLane = hasOthers ? lanes.length : -1;
     var laneCount = lanes.length + (hasOthers ? 1 : 0);
-    var plotH = laneCount * laneH;
-    var height = top + plotH + axisH;
+    var plotH = laneCount * laneH, height = top + plotH + axisH;
     var shown = events.filter(matches);
     var lo = state.zoom ? state.zoom[0] : events[0].ms;
     var hi = state.zoom ? state.zoom[1] : events[events.length - 1].ms;
     if (hi - lo < 10000) { var mid = (hi + lo) / 2; lo = mid - 5000; hi = mid + 5000; }
-    var pad = state.zoom ? 0 : (hi - lo) * 0.04;
+    var pad = state.zoom ? 0 : (hi - lo) * 0.03;
     lo -= pad; hi += pad;
     var plotW = width - left - right;
     function x(ms) { return left + (ms - lo) / (hi - lo) * plotW; }
@@ -458,9 +413,9 @@
     var svg = sv("svg", { viewBox: "0 0 " + width + " " + height, height: height, role: "img",
       "aria-label": U["chart.title"] });
     var defs = sv("defs", {});
-    var hatch = sv("pattern", { id: "hatch", patternUnits: "userSpaceOnUse", width: 6, height: 6,
+    var hatch = sv("pattern", { id: "hatch", patternUnits: "userSpaceOnUse", width: 5, height: 5,
       patternTransform: "rotate(45)" });
-    hatch.appendChild(sv("line", { "class": "hatchline", x1: 0, y1: 0, x2: 0, y2: 6 }));
+    hatch.appendChild(sv("line", { "class": "hatchline", x1: 0, y1: 0, x2: 0, y2: 5 }));
     defs.appendChild(hatch);
     svg.appendChild(defs);
 
@@ -472,15 +427,15 @@
       band.appendChild(titleNode(g.label + " · " + g.kind));
       svg.appendChild(band);
       if (x1 - x0 > 18) {
-        var gl = sv("text", { "class": "gaplabel", x: x0 + 3, y: top - 6 });
+        var gl = sv("text", { "class": "gaplabel", x: x0 + 2, y: top - 5 });
         gl.textContent = g.label;
         svg.appendChild(gl);
       }
     });
     ticks(lo, hi).forEach(function (t) {
       var tx = x(t.ms);
-      svg.appendChild(sv("line", { "class": "tick", x1: tx, x2: tx, y1: top, y2: top + plotH + 4 }));
-      var tl = sv("text", { "class": "axis", x: tx, y: top + plotH + 16, "text-anchor": "middle" });
+      svg.appendChild(sv("line", { "class": "tick", x1: tx, x2: tx, y1: top, y2: top + plotH + 3 }));
+      var tl = sv("text", { "class": "axis", x: tx, y: top + plotH + 15, "text-anchor": "middle" });
       tl.textContent = t.label;
       svg.appendChild(tl);
     });
@@ -488,26 +443,19 @@
       var y = top + i * laneH + laneH / 2;
       svg.appendChild(sv("line", { "class": "base", x1: left, x2: width - right, y1: y, y2: y }));
       var name = i === othersLane ? U["chart.others"] : (lanes[i] || U["chart.files"]);
-      var label = sv("text", { "class": "lane" + (attacker[lanes[i]] ? " att" : ""), x: left - 10,
+      var label = sv("text", { "class": "lane" + (attacker[lanes[i]] ? " att" : ""), x: left - 8,
         y: y + 4, "text-anchor": "end" });
       label.textContent = name.length > 17 ? name.slice(0, 16) + "…" : name;
       label.appendChild(titleNode(name));
       svg.appendChild(label);
     }
 
-    // The first drawing plays once: marks appear in time order, then the root line is drawn.
-    var play = !chartPlayed && !REDUCED && shown.length <= POP_LIMIT;
-    chartPlayed = true;
     var root = events.filter(function (e) { return e.root; })[0];
     if (root && root.ms >= lo && root.ms <= hi && matches(root)) {
       var rx = x(root.ms);
-      svg.appendChild(sv("line", { "class": "rootline", x1: rx, x2: rx,
-        y1: top - 4, y2: top + plotH }));
-      var tagText = U["chart.root"].toUpperCase() + " " + no(root.n);
-      var tagW = tagText.length * 6.2 + 8, tagX = Math.min(rx, width - right - tagW);
-      svg.appendChild(sv("rect", { "class": "roottagbg", x: tagX, y: top - 19, width: tagW, height: 14 }));
-      var tag = sv("text", { "class": "roottag", x: tagX + 4, y: top - 8 });
-      tag.textContent = tagText;
+      svg.appendChild(sv("line", { "class": "rootline", x1: rx, x2: rx, y1: top - 3, y2: top + plotH }));
+      var tag = sv("text", { "class": "roottag", x: Math.min(rx + 4, width - right - 60), y: top - 5 });
+      tag.textContent = U["chart.root"] + " " + no(root.n);
       svg.appendChild(tag);
     }
 
@@ -516,10 +464,8 @@
     marks = {};
     shown.forEach(function (e) {
       var lane = e.actor in laneOf ? laneOf[e.actor] : othersLane;
-      var mx = x(e.ms);
-      var node = mark(e.cat, mx, top + lane * laneH + laneH / 2, e.root);
-      node.setAttribute("class", "ev" + (state.sel === e.n ? " sel" : ""));
-      if (play) node.style.animationDelay = Math.round((mx - left) / plotW * 700) + "ms";
+      var node = mark(e.cat, x(e.ms), top + lane * laneH + laneH / 2, e.root);
+      node.setAttribute("class", "ev k-" + e.cat + (e.root ? " is-root" : "") + (state.sel === e.n ? " sel" : ""));
       node.appendChild(titleNode(no(e.n) + " " + e.clock + " · " + (e.actor || U["chart.files"]) + "\n" + e.text));
       node.addEventListener("click", function (ev) { ev.stopPropagation(); select(e.n, true); });
       marks[e.n] = node;
@@ -562,29 +508,22 @@
 
     svgHost.textContent = "";
     svgHost.appendChild(svg);
-    if (play) playOnce(svg, "pop", 1600);
-  }
-
-  function titleNode(text) {
-    var t = document.createElementNS(SVGNS, "title");
-    t.textContent = text;
-    return t;
   }
 
   var STEPS = [1, 5, 15, 30, 60, 300, 900, 1800, 3600, 10800, 21600, 43200, 86400, 604800]
     .map(function (s) { return s * 1000; });
 
   function ticks(lo, hi) {
-    var span = hi - lo, step = STEPS[STEPS.length - 1];
-    for (var i = 0; i < STEPS.length; i++) { if (span / STEPS[i] <= 6) { step = STEPS[i]; break; } }
+    var span = hi - lo, stepMs = STEPS[STEPS.length - 1];
+    for (var i = 0; i < STEPS.length; i++) { if (span / STEPS[i] <= 6) { stepMs = STEPS[i]; break; } }
     var off = D.offsetMin * 60000, out = [];
-    var first = Math.ceil((lo + off) / step) * step - off;
+    var first = Math.ceil((lo + off) / stepMs) * stepMs - off;
     var multiDay = span > 86400000;
-    for (var ms = first; ms <= hi; ms += step) {
+    for (var ms = first; ms <= hi; ms += stepMs) {
       var d = new Date(ms + off);
       var hm = pad2(d.getUTCHours()) + ":" + pad2(d.getUTCMinutes());
-      if (step < 60000) hm += ":" + pad2(d.getUTCSeconds());
-      var label = multiDay ? pad2(d.getUTCDate()) + "/" + pad2(d.getUTCMonth() + 1) + (step < 86400000 ? " " + hm : "") : hm;
+      if (stepMs < 60000) hm += ":" + pad2(d.getUTCSeconds());
+      var label = multiDay ? pad2(d.getUTCDate()) + "/" + pad2(d.getUTCMonth() + 1) + (stepMs < 86400000 ? " " + hm : "") : hm;
       out.push({ ms: ms, label: label });
     }
     return out;
@@ -611,12 +550,12 @@
     countEl.textContent = fmt(U["filter.count"], { shown: total, total: events.length });
     listEl.textContent = "";
     rows = {};
-    if (!all.length) listEl.appendChild(el("li", { cls: "empty", text: U["filter.none"] }));
+    if (!all.length) listEl.appendChild(el("tr", { cls: "empty" }, el("td", { colspan: "5", text: U["filter.none"] })));
     var openedRun = {}, day = null;
     all.slice(0, state.limit).forEach(function (r) {
       if (r.e.day !== day) {
         day = r.e.day;
-        listEl.appendChild(el("li", { cls: "day", text: day }));
+        listEl.appendChild(el("tr", { cls: "day" }, el("td", { colspan: "5", text: day })));
       }
       if (r.run !== undefined) { listEl.appendChild(runRow(r.run, false)); return; }
       if (r.sub && !openedRun[r.e.run]) { openedRun[r.e.run] = true; listEl.appendChild(runRow(r.e.run, true)); }
@@ -624,56 +563,57 @@
     });
     moreBox.textContent = "";
     if (all.length > state.limit) {
-      moreBox.appendChild(el("button", {
-        cls: "btn", text: fmt(U["filter.more"], { count: Math.min(PAGE, all.length - state.limit) }),
-        onclick: function () { state.limit += PAGE; renderList(); }
-      }));
+      moreBox.appendChild(el("button", { cls: "link",
+        text: fmt(U["filter.more"], { count: Math.min(PAGE, all.length - state.limit) }),
+        onclick: function () { state.limit += PAGE; renderList(); } }));
     }
   }
 
   function runRow(id, opened) {
     var run = D.runs[id], first = byN[run.first];
     var toggle = function () { state.open[id] = !state.open[id]; renderList(); };
-    return el("li", {
-      cls: "runrow", tabindex: "0", role: "button", "aria-expanded": opened ? "true" : "false",
+    return el("tr", {
+      cls: "run", tabindex: "0", role: "button", "aria-expanded": opened ? "true" : "false",
       onclick: toggle,
       onkeydown: function (ev) { if (ev.key === "Enter" || ev.key === " ") { ev.preventDefault(); toggle(); } }
     },
-      el("span", { cls: "n", text: no(run.first) }),
-      el("span", { cls: "time", text: run.clock }),
-      el("span", { cls: "actor", text: first.actor || D.labels.noActor }),
-      el("span", { cls: "text" }, glyph(first.cat), el("span", { text: run.text })),
-      el("span", null, el("span", { cls: "btn", text: opened ? U["run.collapse"] : fmt(U["run.expand"], { count: run.count }) })));
+      el("td", { cls: "c-n mono", text: no(run.first) }),
+      el("td", { cls: "c-t mono", text: run.clock }),
+      el("td", { cls: "c-a mono", text: first.actor || D.labels.noActor }),
+      el("td", null, glyph(first.cat), el("span", { text: run.text + " " }),
+        el("span", { cls: "link", text: opened ? U["run.collapse"] : fmt(U["run.expand"], { count: run.count }) })),
+      el("td"));
   }
 
   function eventRow(e, sub) {
     var cls = [sub ? "sub" : "", e.root ? "root" : "", state.sel === e.n ? "sel" : ""].join(" ").trim();
-    var text = el("span", null, e.root ? el("span", { cls: "tag", text: D.labels.rootMarker }) : null, e.text);
-    var li = el("li", {
+    var tr = el("tr", {
       cls: cls || null, tabindex: "0", "data-n": String(e.n),
       onclick: function () { select(e.n, false); },
-      onkeydown: function (ev) { onRowKey(ev, e.n); }
+      onkeydown: function (ev) {
+        if (ev.key === "Enter" || ev.key === " ") { ev.preventDefault(); select(e.n, false); }
+      }
     },
-      el("span", { cls: "n", text: no(e.n) }),
-      el("span", { cls: "time", text: e.clock }),
-      el("span", { cls: "actor", text: e.actor || D.labels.noActor }),
-      el("span", { cls: "text" }, glyph(e.cat), text),
-      el("span", null, meter(e.conf, e.confLabel)));
-    rows[e.n] = li;
-    return li;
+      el("td", { cls: "c-n mono", text: no(e.n) }),
+      el("td", { cls: "c-t mono", text: e.clock }),
+      el("td", { cls: "c-a mono", text: e.actor || D.labels.noActor }),
+      el("td", null, glyph(e.cat), e.root ? el("span", { cls: "flag", text: D.labels.rootMarker }) : null, e.text),
+      el("td", { cls: "c-c" }, conf(e.conf, e.confLabel)));
+    rows[e.n] = tr;
+    return tr;
   }
 
-  function onRowKey(ev, n) {
-    if (ev.key === "Enter" || ev.key === " ") { ev.preventDefault(); select(n, false); return; }
-    if (ev.key !== "ArrowDown" && ev.key !== "ArrowUp") return;
-    ev.preventDefault();
-    var items = Array.prototype.slice.call(listEl.querySelectorAll("li[tabindex]"));
-    var i = items.indexOf(ev.currentTarget) + (ev.key === "ArrowDown" ? 1 : -1);
-    if (items[i]) items[i].focus();
+  // j / k: the next or previous event that is listed.
+  function step(dir) {
+    var list = visibleRows().filter(function (r) { return r.run === undefined; }).map(function (r) { return r.e.n; });
+    if (!list.length) return;
+    var i = state.sel === null ? (dir > 0 ? -1 : list.length) : list.indexOf(state.sel);
+    var next = list[Math.min(list.length - 1, Math.max(0, i + dir))];
+    select(next, true);
   }
 
-  // Selecting from the chart or the finding may need to open a burst, clear filters that
-  // hide the event, or show more rows before the row exists.
+  // Selecting from the chart or the trace may need to open a burst, clear filters that hide
+  // the event, or show more rows before the row exists.
   function select(n, reveal) {
     var e = byN[n];
     if (!e) return;
@@ -690,303 +630,120 @@
       if (idx >= state.limit) state.limit = Math.ceil((idx + 1) / PAGE) * PAGE;
     }
     renderList();
-    for (var k in marks) marks[k].setAttribute("class", "ev" + (Number(k) === n ? " sel" : ""));
-    renderDetail();
-    detailEl.classList.add("open");
+    for (var k in marks) {
+      var m = marks[k], c = m.getAttribute("class").replace(/\s*\bsel\b/, "");
+      m.setAttribute("class", Number(k) === n ? c + " sel" : c);
+    }
+    renderInspector();
+    document.body.classList.add("inspecting");
+    if (location.hash !== "#timeline:" + n) history.replaceState(null, "", "#timeline:" + n);
     if (rows[n] && reveal) rows[n].scrollIntoView({ block: "nearest" });
   }
 
   function syncFilterControls() {
     var panel = panels.timeline;
-    panel.querySelector("input[type=search]").value = "";
+    searchBox.value = "";
     panel.querySelector("select").value = "*";
     panel.querySelector("#story-only").checked = false;
-    Array.prototype.forEach.call(panel.querySelectorAll(".chip"), function (c) {
+    Array.prototype.forEach.call(panel.querySelectorAll(".kind"), function (c) {
       c.setAttribute("aria-pressed", "true");
     });
     resetBtn.hidden = true;
   }
 
-  function renderDetail() {
-    detailEl.textContent = "";
+  // --- inspector: the event, and each cited log line taken apart -------------------------
+
+  // Combined log format, as the analysis parsed it. Used only to show the line's fields;
+  // a line that does not match is shown whole.
+  var COMBINED = /^(\S+) (\S+) (\S+) \[([^\]]+)\] "((?:[^"\\]|\\.)*)" (\d{3}) (\d+|-) "((?:[^"\\]|\\.)*)" "((?:[^"\\]|\\.)*)"(?: "((?:[^"\\]|\\.)*)")?$/;
+
+  function dissect(line) {
+    var m = COMBINED.exec(line);
+    if (!m) return null;
+    var parts = [], pos = 0;
+    function take(text, key) {
+      var at = line.indexOf(text, pos);
+      if (at < 0) return;
+      if (at > pos) parts.push({ text: line.slice(pos, at) });
+      parts.push({ text: text, key: key });
+      pos = at + text.length;
+    }
+    var req = m[5], sp = req.indexOf(" "), method = sp > 0 ? req.slice(0, sp) : req;
+    var rest = sp > 0 ? req.slice(sp + 1) : "", end = rest.lastIndexOf(" HTTP/");
+    var target = end >= 0 ? rest.slice(0, end) : rest;
+    var q = target.indexOf("?"), path = q >= 0 ? target.slice(0, q) : target;
+    var query = q >= 0 ? target.slice(q + 1) : "";
+    take(m[1], "client"); take(m[4], "time");
+    if (method) take(method, "method");
+    if (path) take(path, "path");
+    if (query) take(query, "query");
+    take(m[6], "status"); take(m[7], "bytes");
+    if (m[8] && m[8] !== "-") take(m[8], "referer");
+    if (m[9]) take(m[9], "agent");
+    if (m[10]) take(m[10], "forwarded");
+    if (pos < line.length) parts.push({ text: line.slice(pos) });
+    var fields = [["client", m[1]], ["time", m[4]], ["method", method], ["path", path],
+      ["query", query], ["status", m[6]], ["bytes", m[7]], ["referer", m[8] === "-" ? "" : m[8]],
+      ["agent", m[9]], ["forwarded", m[10] || ""]].filter(function (f) { return f[1]; });
+    return { parts: parts, fields: fields };
+  }
+
+  function evidence(c) {
+    var ex = c.ex || "", parsed = dissect(ex);
+    var copy = el("button", { cls: "link copy", text: U.copy, onclick: function () {
+      if (navigator.clipboard) navigator.clipboard.writeText(ex).then(function () {
+        copy.textContent = U.copied;
+        setTimeout(function () { copy.textContent = U.copy; }, 1200);
+      });
+    } });
+    var box = el("div", { cls: "ev-cite" }, el("div", { cls: "ev-ref" }, el("span", { cls: "mono", text: c.ref }), copy));
+    if (!parsed) { box.appendChild(el("pre", { cls: "raw", text: ex })); return box; }
+    var raw = el("pre", { cls: "raw" }), spans = {};
+    parsed.parts.forEach(function (p) {
+      var s = el("span", { cls: p.key ? "seg seg-" + p.key : null, text: p.text });
+      if (p.key) spans[p.key] = s;
+      raw.appendChild(s);
+    });
+    var table = el("table", { cls: "fields" });
+    parsed.fields.forEach(function (f) {
+      var tr = el("tr", {
+        onmouseenter: function () { if (spans[f[0]]) spans[f[0]].classList.add("on"); },
+        onmouseleave: function () { if (spans[f[0]]) spans[f[0]].classList.remove("on"); }
+      }, el("th", { text: U["field." + f[0]] }), el("td", { cls: "mono", text: f[1] }));
+      table.appendChild(tr);
+    });
+    box.appendChild(raw);
+    box.appendChild(el("div", { cls: "sub-h", text: U["raw.fields"] }));
+    box.appendChild(table);
+    return box;
+  }
+
+  function renderInspector() {
+    inspector.textContent = "";
     var e = state.sel !== null ? byN[state.sel] : null;
-    var close = el("button", { cls: "btn close", text: U["detail.close"],
-      onclick: function () { detailEl.classList.remove("open"); } });
-    detailEl.appendChild(el("div", { cls: "head" },
-      el("div", null, el("div", { cls: "label", text: U["detail.title"] }),
-        el("div", { cls: "no", text: e ? no(e.n) : "—" })), close));
-    if (!e) { detailEl.appendChild(el("p", { cls: "empty", text: U["detail.empty"] })); return; }
-    var body = el("div", { cls: "body" });
-    if (e.root) body.appendChild(el("div", { cls: "rootnote", text: U["detail.root"] }));
-    body.appendChild(el("p", { cls: "text" }, glyph(e.cat), " ", e.text));
-    var dl = el("dl", { cls: "fields" });
-    field(dl, U["detail.time"], e.day + " " + e.clock + " " + D.zoneShort);
-    field(dl, U["detail.basis"], e.basis);
-    field(dl, U["detail.phase"], e.phase);
-    field(dl, U["detail.actor"], e.actor || D.labels.noActor);
-    field(dl, U["detail.confidence"], meter(e.conf, e.confLabel));
-    body.appendChild(dl);
+    if (!e) { inspector.appendChild(el("p", { cls: "hint", text: U["detail.empty"] })); return; }
+    inspector.appendChild(el("div", { cls: "insp-head" },
+      el("span", { cls: "mono", text: no(e.n) }),
+      e.root ? el("span", { cls: "flag", text: U["detail.root"] }) : null,
+      el("button", { cls: "link close", text: "Esc", "aria-label": "Esc",
+        onclick: function () { document.body.classList.remove("inspecting"); } })));
+    inspector.appendChild(el("p", { cls: "insp-text" }, glyph(e.cat), e.text));
+    var dl = el("dl", { cls: "kv" });
+    pairs(dl, U["detail.time"], el("span", { cls: "mono", text: e.day + " " + e.clock + " " + D.zoneShort }));
+    pairs(dl, U["detail.basis"], e.basis);
+    pairs(dl, U["detail.phase"], e.phase);
+    pairs(dl, U["detail.actor"], el("span", { cls: "mono", text: e.actor || D.labels.noActor }));
+    pairs(dl, U["detail.confidence"], conf(e.conf, e.confLabel));
+    inspector.appendChild(dl);
     if (e.notes.length) {
-      body.appendChild(el("h3", { text: U["detail.notes"] }));
-      var ul = el("ul");
+      inspector.appendChild(el("div", { cls: "sub-h", text: U["detail.notes"] }));
+      var ul = el("ul", { cls: "notes" });
       e.notes.forEach(function (t) { ul.appendChild(el("li", { text: t })); });
-      body.appendChild(ul);
+      inspector.appendChild(ul);
     }
-    body.appendChild(el("h3", { text: U["detail.evidence"] }));
-    e.cites.forEach(function (i) {
-      var c = D.cites[i];
-      var btn = el("button", { cls: "btn", text: U.copy });
-      btn.addEventListener("click", function () { copy(c.ref + "\n" + c.ex, btn); });
-      body.appendChild(el("div", { cls: "cite" },
-        el("div", { cls: "ref" }, el("span", { text: c.ref }), btn),
-        c.ex ? el("pre", { text: c.ex }) : null));
-    });
-    detailEl.appendChild(body);
-    playOnce(body, "enter", 400);
+    inspector.appendChild(el("div", { cls: "sub-h", text: U["detail.evidence"] }));
+    e.cites.forEach(function (i) { inspector.appendChild(evidence(D.cites[i])); });
   }
 
-  function openEvent(n) {
-    showTab("timeline", true);
-    select(n, true);
-  }
-
-  // --- attack flow: the incident's main steps as a chain ---------------------------------
-
-  function buildFlow(panel) {
-    var steps = events.filter(function (e) { return e.story || e.root; });
-    panel.appendChild(el("div", { cls: "chart-head" }, el("h2", { text: U["flow.title"] })));
-    panel.appendChild(el("p", { cls: "hint", text: steps.length ? U["flow.hint"] : U["flow.none"] }));
-    if (!steps.length) return;
-    var list = el("ol", { cls: "flow" });
-    var actors = D.attackers.length ? D.attackers.join(", ") : D.labels.noActor;
-    list.appendChild(el("li", { cls: "flow-node actor", style: "--i:0" },
-      el("div", { cls: "label", text: U["flow.actor"] }), el("div", { cls: "flow-actor", text: actors })));
-    steps.forEach(function (e, i) {
-      list.appendChild(el("li", { cls: "flow-link", style: "--i:" + (2 * i + 1) },
-        el("span", { text: U["flow.rel." + e.cat] || U["flow.rel.other"] })));
-      var open = function () { openEvent(e.n); };
-      list.appendChild(el("li", {
-        cls: "flow-node" + (e.root ? " root" : ""), style: "--i:" + (2 * i + 2), tabindex: "0",
-        role: "button", onclick: open,
-        onkeydown: function (ev) { if (ev.key === "Enter" || ev.key === " ") { ev.preventDefault(); open(); } }
-      },
-        el("div", { cls: "flow-meta" }, glyph(e.cat), el("span", { cls: "n", text: no(e.n) }),
-          el("span", { text: e.day + " " + e.clock + " " + D.zoneShort }),
-          e.root ? el("span", { cls: "tag", text: D.labels.rootMarker }) : null),
-        el("div", { cls: "flow-text", text: e.text }),
-        el("div", { cls: "flow-foot" }, el("span", { text: e.actor || D.labels.noActor }),
-          meter(e.conf, e.confLabel))));
-    });
-    panel.appendChild(list);
-  }
-
-  // --- 3D space: time x actor x kind, drawn on a canvas without any library -----------------
-
-  function buildSpace(panel) {
-    var canvas = el("canvas", { cls: "space", role: "img", "aria-label": U["space.title"] });
-    var tip = el("div", { cls: "space-tip", hidden: true });
-    var reset = el("button", { cls: "btn", text: U["space.reset"], onclick: function () { home(); draw(); } });
-    var legend = el("div", { cls: "legend" });
-    present().forEach(function (c) { legend.appendChild(el("span", null, glyph(c.id), c.label)); });
-    panel.appendChild(el("div", { cls: "chart-head" }, el("h2", { text: U["space.title"] }), reset));
-    panel.appendChild(el("p", { cls: "hint", text: events.length ? U["space.hint"] : U["chart.empty"] }));
-    if (!events.length) return { start: function () {}, stop: function () {} };
-    panel.appendChild(el("div", { cls: "space-box" }, canvas, tip));
-    panel.appendChild(legend);
-
-    var kinds = present().map(function (c) { return c.id; });
-    var lanes = D.lanes.concat(hasOthers ? [null] : []);
-    var t0 = events[0].ms, t1 = events[events.length - 1].ms;
-    var span = Math.max(1, t1 - t0);
-    var FLOOR = -0.55;
-    function laneZ(i) { return lanes.length > 1 ? -0.7 + 1.4 * i / (lanes.length - 1) : 0; }
-    var pts = events.map(function (e) {
-      var lane = e.actor in laneOf ? laneOf[e.actor] : lanes.length - 1;
-      return {
-        e: e,
-        x: -1 + 2 * (e.ms - t0) / span,
-        y: FLOOR + 1.1 * (kinds.indexOf(e.cat) + 1) / (kinds.length + 1),
-        z: laneZ(lane)
-      };
-    });
-    var cam, drag = null, moved = false, running = false, auto = !REDUCED, raf = 0, hover = null;
-    var proj = [];
-
-    function home() { cam = { yaw: -0.65, pitch: 0.42, dist: 3.6 }; }
-    home();
-
-    function project(x, y, z, W, H) {
-      var cy = Math.cos(cam.yaw), sy = Math.sin(cam.yaw), cp = Math.cos(cam.pitch), sp = Math.sin(cam.pitch);
-      var x1 = x * cy - z * sy, z1 = x * sy + z * cy;
-      var y1 = y * cp - z1 * sp, z2 = y * sp + z1 * cp;
-      var f = Math.min(W, H * 1.7) * 1.05 / (cam.dist - z2);
-      return { x: W / 2 + x1 * f, y: H * 0.5 - y1 * f, d: z2, s: f };
-    }
-
-    function size() {
-      var ratio = window.devicePixelRatio || 1, w = canvas.clientWidth || 800;
-      var h = Math.max(300, Math.min(560, Math.round(w * 0.56)));
-      if (canvas.width !== Math.round(w * ratio) || canvas.height !== Math.round(h * ratio)) {
-        canvas.width = Math.round(w * ratio); canvas.height = Math.round(h * ratio);
-        canvas.style.height = h + "px";
-      }
-      return { w: w, h: h, r: ratio };
-    }
-
-    function line(g, a, b) { g.beginPath(); g.moveTo(a.x, a.y); g.lineTo(b.x, b.y); g.stroke(); }
-
-    function shape(g, cat, p, r, color, bg) {
-      g.fillStyle = color; g.strokeStyle = color; g.lineWidth = 1.6;
-      g.beginPath();
-      if (cat === "exploit") { g.moveTo(p.x, p.y - r * 1.15); g.lineTo(p.x + r, p.y + r * 0.8); g.lineTo(p.x - r, p.y + r * 0.8); g.closePath(); g.fill(); }
-      else if (cat === "login") { g.moveTo(p.x, p.y - r); g.lineTo(p.x + r, p.y); g.lineTo(p.x, p.y + r); g.lineTo(p.x - r, p.y); g.closePath(); g.fill(); }
-      else if (cat === "write") { g.rect(p.x - r * 0.85, p.y - r * 0.85, r * 1.7, r * 1.7); g.fill(); }
-      else if (cat === "file") { g.fillStyle = bg; g.rect(p.x - r * 0.8, p.y - r * 0.8, r * 1.6, r * 1.6); g.fill(); g.stroke(); }
-      else if (cat === "recon") { g.fillStyle = bg; g.arc(p.x, p.y, r * 0.85, 0, 6.2832); g.fill(); g.stroke(); }
-      else if (cat === "use") { g.arc(p.x, p.y, r * 0.9, 0, 6.2832); g.fill(); }
-      else { g.arc(p.x, p.y, r * 0.45, 0, 6.2832); g.fill(); }
-    }
-
-    function draw() {
-      var S = size(), g = canvas.getContext("2d"), W = S.w, H = S.h;
-      g.setTransform(S.r, 0, 0, S.r, 0, 0);
-      g.clearRect(0, 0, W, H);
-      var rule = css("--rule"), rule2 = css("--rule-2"), muted = css("--muted"), ink = css("--ink"),
-        bg = css("--surface"), red = css("--red"), mono = "11px " + css("--mono");
-      var colors = {};
-      kinds.concat(["other"]).forEach(function (k) { colors[k] = css("--c-" + k); });
-      // Floor grid: one line per lane and one per time tick.
-      g.strokeStyle = rule; g.lineWidth = 1;
-      lanes.forEach(function (a, i) {
-        line(g, project(-1, FLOOR, laneZ(i), W, H), project(1, FLOOR, laneZ(i), W, H));
-      });
-      var tk = ticks(t0, t0 + span);
-      tk.forEach(function (t) {
-        var x = -1 + 2 * (t.ms - t0) / span;
-        line(g, project(x, FLOOR, -0.8, W, H), project(x, FLOOR, 0.8, W, H));
-      });
-      // Axes from the near-left corner.
-      g.strokeStyle = rule2; g.lineWidth = 1.2;
-      var o = project(-1.05, FLOOR, -0.8, W, H);
-      line(g, o, project(1.1, FLOOR, -0.8, W, H));
-      line(g, o, project(-1.05, 0.65, -0.8, W, H));
-      line(g, o, project(-1.05, FLOOR, 0.85, W, H));
-      g.font = mono; g.fillStyle = muted;
-      var at = project(1.12, FLOOR - 0.08, -0.95, W, H); g.fillText(U["space.time"], at.x, at.y);
-      var ak = project(-1.05, 0.72, -0.8, W, H); g.fillText(U["space.kind"], ak.x - 10, ak.y);
-      var aa = project(-1.05, FLOOR, 0.95, W, H); g.fillText(U["space.actor"], aa.x - 10, aa.y);
-      tk.forEach(function (t) {
-        var p = project(-1 + 2 * (t.ms - t0) / span, FLOOR, -0.92, W, H);
-        g.fillText(t.label, p.x - 14, p.y + 12);
-      });
-      lanes.forEach(function (a, i) {
-        var p = project(1.05, FLOOR, laneZ(i), W, H);
-        var name = a === null ? U["chart.others"] : (a || U["chart.files"]);
-        g.fillStyle = attacker[a] ? ink : muted;
-        g.fillText(name.length > 16 ? name.slice(0, 15) + "…" : name, p.x + 4, p.y + 4);
-      });
-      // Points, far to near, each with a faint drop line to the floor.
-      proj = pts.map(function (q) {
-        return { q: q, p: project(q.x, q.y, q.z, W, H), f: project(q.x, FLOOR, q.z, W, H) };
-      });
-      proj.sort(function (a, b) { return a.p.d - b.p.d; });
-      var drops = proj.length <= 600;
-      proj.forEach(function (it) {
-        var e = it.q.e, r = Math.max(2.5, Math.min(8, it.p.s * 0.022)) * (e.root ? 1.35 : 1);
-        if (drops) { g.strokeStyle = rule; g.lineWidth = 1; line(g, it.p, it.f); }
-        shape(g, e.cat, it.p, r, colors[e.cat] || colors.other, bg);
-        if (e.root) {
-          g.strokeStyle = red; g.lineWidth = 1.5; g.beginPath(); g.arc(it.p.x, it.p.y, r + 5, 0, 6.2832); g.stroke();
-          g.fillStyle = red; g.font = mono;
-          g.fillText(U["chart.root"].toUpperCase() + " " + no(e.n), it.p.x + r + 8, it.p.y - r - 4);
-        }
-        if (state.sel === e.n || hover === e.n) {
-          g.strokeStyle = ink; g.lineWidth = 2; g.beginPath(); g.arc(it.p.x, it.p.y, r + 3, 0, 6.2832); g.stroke();
-        }
-      });
-    }
-
-    function loop() {
-      if (!running) return;
-      if (auto && !drag) cam.yaw += 0.0025;
-      draw();
-      raf = requestAnimationFrame(loop);
-    }
-
-    function pick(ev) {
-      var b = canvas.getBoundingClientRect(), mx = ev.clientX - b.left, my = ev.clientY - b.top;
-      var best = null, bd = 144;
-      proj.forEach(function (it) {
-        var dx = it.p.x - mx, dy = it.p.y - my, d = dx * dx + dy * dy;
-        if (d < bd) { bd = d; best = it; }
-      });
-      return best;
-    }
-
-    canvas.addEventListener("pointerdown", function (ev) {
-      drag = { x: ev.clientX, y: ev.clientY }; moved = false; auto = false;
-      canvas.setPointerCapture(ev.pointerId);
-    });
-    canvas.addEventListener("pointermove", function (ev) {
-      if (drag) {
-        var dx = ev.clientX - drag.x, dy = ev.clientY - drag.y;
-        if (Math.abs(dx) + Math.abs(dy) > 3) moved = true;
-        cam.yaw += dx * 0.008;
-        cam.pitch = Math.max(-0.1, Math.min(1.35, cam.pitch + dy * 0.006));
-        drag = { x: ev.clientX, y: ev.clientY };
-        if (!running) draw();
-        return;
-      }
-      var it = pick(ev);
-      hover = it ? it.q.e.n : null;
-      canvas.style.cursor = it ? "pointer" : "grab";
-      if (it) {
-        var b = canvas.getBoundingClientRect();
-        tip.hidden = false;
-        tip.textContent = no(it.q.e.n) + "  " + it.q.e.clock + "  " + (it.q.e.actor || U["chart.files"]) +
-          "\n" + it.q.e.text;
-        tip.style.left = Math.max(0, Math.min(it.p.x + 14, b.width - 300)) + "px";
-        tip.style.top = (it.p.y + 12) + "px";
-      } else { tip.hidden = true; }
-      if (!running) draw();
-    });
-    canvas.addEventListener("pointerup", function (ev) {
-      var wasDrag = moved;
-      drag = null;
-      if (!wasDrag) { var it = pick(ev); if (it) openEvent(it.q.e.n); }
-    });
-    canvas.addEventListener("pointerleave", function () { hover = null; tip.hidden = true; if (!running) draw(); });
-    canvas.addEventListener("wheel", function (ev) {
-      ev.preventDefault(); auto = false;
-      cam.dist = Math.max(2.2, Math.min(7, cam.dist * (ev.deltaY > 0 ? 1.08 : 0.93)));
-      if (!running) draw();
-    }, { passive: false });
-
-    return {
-      start: function () {
-        if (running) return;
-        if (REDUCED) { draw(); return; }
-        running = true; loop();
-      },
-      stop: function () { running = false; cancelAnimationFrame(raf); }
-    };
-  }
-
-  function copy(text, btn) {
-    function done() { btn.textContent = U.copied; setTimeout(function () { btn.textContent = U.copy; }, 1200); }
-    if (navigator.clipboard && navigator.clipboard.writeText) {
-      navigator.clipboard.writeText(text).then(done, function () { fallback(text); done(); });
-    } else { fallback(text); done(); }
-  }
-
-  function fallback(text) {
-    var area = el("textarea", { readonly: true, style: "position:fixed;opacity:0" });
-    area.value = text;
-    document.body.appendChild(area);
-    area.select();
-    try { document.execCommand("copy"); } catch (err) { /* nothing else to try offline */ }
-    document.body.removeChild(area);
-  }
-
-  showTab(location.hash.slice(1) || "overview", false);
+  route(location.hash.slice(1));
 })();

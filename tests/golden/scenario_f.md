@@ -35,8 +35,8 @@ _WF-E887DEB66B · 2026-10-28 09:00:00 WIB_
 | # | Waktu | Dasar waktu | Fase (ATT\&CK) | Aktor | Kejadian | Keyakinan | Bukti |
 |---|---|---|---|---|---|---|---|
 | #1 | 2026-10-29 12:19:47 WIB | log | - | 172.30.0.1 | Request pertama aktor ini di log: GET / → 200. | tinggi | access.log:1 |
-| #2 | 2026-10-29 12:19:49 WIB | log | - | 172.30.0.1 | Request lain dari aktor yang sama sebelum uploads/scenario-f-marker.php ditulis: GET /product.php → 200. | tinggi | access.log:2 |
-| #3 | 2026-10-29 12:19:51 WIB | log | - | 172.30.0.1 | Request lain dari aktor yang sama sebelum uploads/scenario-f-marker.php ditulis: GET /admin/login.php → 200. | tinggi | access.log:3 |
+| #2 | 2026-10-29 12:19:49 WIB | log | - | 172.30.0.1 | Aktivitas aktor sebelum file ditulis: GET /product.php → 200. | tinggi | access.log:2 |
+| #3 | 2026-10-29 12:19:51 WIB | log | - | 172.30.0.1 | Aktivitas aktor sebelum file ditulis: GET /admin/login.php → 200. | tinggi | access.log:3 |
 | #4 | 2026-10-29 12:19:53 WIB | log | - | 172.30.0.1 | Login gagal: GET /admin/login.php → 401. | tinggi | access.log:4 |
 | #5 | 2026-10-29 12:19:55 WIB | log | Initial Access (akses awal) · T1190 | 172.30.0.1 | **AKAR MASALAH: Bypass login dengan SQL injection: GET /admin/login.php → 200.** | sedang | access.log:5 |
 | #6 | 2026-10-29 12:19:57 WIB | log | Persistence (bertahan) · T1505.003 | 172.30.0.1 | Request yang menulis uploads/scenario-f-marker.php: POST /admin/auth\_upload.php → 200. | tinggi | access.log:6, uploads/scenario-f-marker.php @c2f45202f02a |

@@ -34,8 +34,8 @@ _WF-16040EE35A · 2026-10-28 09:00:00 WIB_
 | # | Waktu | Dasar waktu | Fase (ATT\&CK) | Aktor | Kejadian | Keyakinan | Bukti |
 |---|---|---|---|---|---|---|---|
 | #1 | 2026-10-29 12:16:08 WIB | log | - | 172.30.0.1 | Request pertama aktor ini di log: GET / → 200. | tinggi | access.log:1 |
-| #2 | 2026-10-29 12:16:10 WIB | log | - | 172.30.0.1 | Request lain dari aktor yang sama sebelum uploads/lab-marker.php ditulis: GET /product.php → 200. | tinggi | access.log:2 |
-| #3 | 2026-10-29 12:16:12 WIB | log | - | 172.30.0.1 | Request lain dari aktor yang sama sebelum uploads/lab-marker.php ditulis: GET /admin/upload.php → 200. | tinggi | access.log:3 |
+| #2 | 2026-10-29 12:16:10 WIB | log | - | 172.30.0.1 | Aktivitas aktor sebelum file ditulis: GET /product.php → 200. | tinggi | access.log:2 |
+| #3 | 2026-10-29 12:16:12 WIB | log | - | 172.30.0.1 | Aktivitas aktor sebelum file ditulis: GET /admin/upload.php → 200. | tinggi | access.log:3 |
 | #4 | 2026-10-29 12:16:14 WIB | log | Initial Access (akses awal) · T1190 | 172.30.0.1 | Percobaan eksploitasi: GET /product.php → 200 (SQL injection (tautologi)). | sedang | access.log:4 |
 | #5 | 2026-10-29 12:16:16 WIB | log | Initial Access (akses awal) · T1190 | 172.30.0.1 | **AKAR MASALAH: Upload yang menulis uploads/lab-marker.php tanpa login sebelumnya: POST /admin/upload.php → 200.** | tinggi (sebagai titik masuk: sedang) | access.log:5, uploads/lab-marker.php @52d31ac74301 |
 | #6 | 2026-10-29 12:16:16 WIB | btime | Persistence (bertahan) · T1505.003 | - | File uploads/lab-marker.php dibuat (SHA-256 52d31ac74301…). | tinggi | uploads/lab-marker.php @52d31ac74301 |
