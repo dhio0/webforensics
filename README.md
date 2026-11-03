@@ -12,7 +12,7 @@ A defensive tool that reconstructs **how a website was compromised**. It correla
 - **The problem.** When a small organization's site is hacked, the admin needs to know how the attacker got in, when, and what changed. Today that is a manual hunt: find the webshell, check its timestamps, then read the access log backwards from that moment.
 - **What it does.** It automates that hunt, starting from the file the way an analyst does: file → write time → the request that wrote it → the exploit that made that request possible. Every claim cites a log line or a file hash, evidence gaps lower the confidence explicitly, and for SQL injection it points at the vulnerable PHP line with a prepared-statement fix. Output: an Indonesian report in a CSIRT incident-handling flow, an interactive offline viewer, and alerts written back to Wazuh.
 - **How well it works.** All five lab scenarios are fully correct through both evidence paths (plain files and Wazuh). On five outside cases, each with an answer key written before the first run, the first runs were imperfect and are reported as they were; every miss became a general fix with a test. On benchmark v2, built from real applications and attack tools, the frozen tool made no false accusations but missed most attacks (held-out 1/4 fully correct). After fixes made from the dev scenarios only, held-out is 2/4, still with no false accusations; the held-out failures are left unexamined. One run over 7.4 million real log lines takes 3.7 minutes.
-- **Built with.** Python 3.11, Typer, pydantic, tree-sitter (code analysis), pytest (600+ tests, golden reports compared byte for byte), a Docker lab, and Wazuh 4.14 (indexer, FIM, custom integration and rules).
+- **Built with.** Python 3.11, Typer, pydantic, tree-sitter (code analysis), pytest (700 tests, golden reports compared byte for byte, seeded damage to real evidence), a Docker lab, and Wazuh 4.14 (indexer, FIM, custom integration and rules).
 
 ## How it works
 
@@ -239,6 +239,25 @@ uploaded from one address and driven from another through POST bodies. After a g
 (D95), the shell, its disappearance and the upload request (the root cause) are found, with
 two of the three attacker addresses and no false accusation. That result is post-hoc.
 
+## Every evaluation at a glance
+
+First runs are the honest numbers: each case was untouched, with its answer key written before the run. "After fixes" is post-hoc, and every fix is a general rule with its own test.
+
+| Evaluation | First run | After fixes (post-hoc) |
+|---|---|---|
+| Lab, 5 scenarios, two evidence paths | D failed (an admin's upload blamed) | 5/5 through both paths |
+| Benchmark v2, held-out (4) | 1/4 fully correct, frozen tool | 2/4 after M9 (dev-only fixes, run 3) |
+| Benchmark v2, dev (8) | 2/8 | 6/8 |
+| Ali Hadi web server | 10 false files, root cause only lenient | 0 false files, 4/4 deleted shells, the SQLi line found; root cause still only lenient |
+| Ali Hadi Linux server | exploit missed, wrong root cause, 1 false IP, 2 false files | exploit found, root cause correct, nothing false |
+| BND 2016 (log cut by the attacker) | compromise missed | defacement and the log gap found; no root cause claimed (its line was deleted) |
+| Two Indonesian public-sector servers, 7.6M lines | no false accusation; incident missed; did not fit in memory | one run over 7.4M lines in 3.7 min; incident still missed (done through the panel's API) |
+| BTLO Compromised WordPress | **crash** | shell, its removal and the upload request found; 2 of 3 attacker addresses; nothing false |
+
+## Robustness on damaged evidence
+
+Real evidence is messy: logs out of time order, error lines mixed into access logs, cut lines, broken UTF-8, rotated `.gz` files copied halfway, manifests with broken rows. A seeded fuzzer damaged the lab and case evidence in those ways and ran the whole analysis: after two fixes, 10,000 damaged copies ran without an error (D96). The test suite keeps 40 such copies and checks that each gives the same bytes twice, that every cited line is the line it names, and that every line is either read or counted as unreadable. Shuffling a log or adding plain visits from new addresses changes no accusation. When most of a log cannot be read, the summary says so first, instead of "nothing found".
+
 ## Development
 ```bash
 pytest
@@ -249,6 +268,7 @@ ruff check .
 - [docs/how-it-works.md](docs/how-it-works.md): the pipeline and one case traced step by step
 - [docs/plan.md](docs/plan.md): plan, data models, correlation algorithm, milestones, risks
 - [docs/decisions.md](docs/decisions.md): design decisions and their reasons
+- [docs/rules.md](docs/rules.md): every detection rule, what it does not prove, and the false positives seen
 - [docs/evidence-format.md](docs/evidence-format.md): manifest v1 and supported log formats
 - [docs/performance.md](docs/performance.md): benchmark numbers and how to reproduce them
 - [docs/evaluation.md](docs/evaluation.md): accuracy metrics, splits, and the limits of a self-made benchmark

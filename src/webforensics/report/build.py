@@ -123,9 +123,26 @@ def background_requests(result: CorrelationResult, logs: LogCollection) -> int:
                 if f.finding_id in unattributed and f.subject in events})
 
 
+# Above this share of unreadable access-log lines, the summary says so first: a wrong
+# --log-format or a damaged file must never read as "nothing found" (D96).
+UNREADABLE_SHARE = 0.10
+UNREADABLE_MIN = 5  # one cut line in a tiny log is not a format problem
+
+
+def unreadable_warning(logs: LogCollection) -> Reason | None:
+    unread, total = len(logs.failures), len(logs.failures) + len(logs.events)
+    if not unread:
+        return None
+    if logs.events and (unread < UNREADABLE_MIN or unread / total <= UNREADABLE_SHARE):
+        return None
+    key = "summary.log_unreadable" if not logs.events else "summary.log_mostly_unreadable"
+    return _r(key, unread=unread, total=total, percent=round(100 * unread / total))
+
+
 def build_summary(result: CorrelationResult, background_count: int, review: int,
-                  background: tuple[BackgroundGroup, ...] = ()) -> list[Reason]:
-    lines: list[Reason] = []
+                  background: tuple[BackgroundGroup, ...] = (),
+                  unreadable: Reason | None = None) -> list[Reason]:
+    lines: list[Reason] = [unreadable] if unreadable is not None else []
     span = _actor_span(result)
     compromised = bool(result.affected_files or result.log_only_files)
     if compromised and span and result.iocs.ips:
@@ -309,7 +326,7 @@ def _build_report(result: CorrelationResult, logs: LogCollection, case: CaseInfo
         case=case, run=run, result=without_noise(result, logs),
         scope=scope or EvidenceScope(),
         summary=tuple(build_summary(result, background_requests(result, logs), review,
-                                    tuple(background))),
+                                    tuple(background), unreadable_warning(logs))),
         background=tuple(background),
         recommendations=tuple(build_recommendations(
             result, review, fim_in_use=scope is not None and scope.file_adapter == "wazuh",

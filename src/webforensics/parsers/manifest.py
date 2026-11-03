@@ -49,7 +49,19 @@ class ManifestEntry:
 def _epoch(value: str) -> datetime | None:
     if value in _UNKNOWN:
         return None
-    return datetime.fromtimestamp(float(value), tz=UTC)
+    try:
+        return datetime.fromtimestamp(float(value), tz=UTC)
+    except (OverflowError, OSError) as exc:
+        # Out of the platform's range (e.g. year 5138 on Windows): a bad row, not a crash.
+        raise ValueError("timestamp_out_of_range") from exc
+
+
+def _header_epoch(value: str | None) -> datetime | None:
+    """A header time that cannot be read is unknown; the rows can still be used."""
+    try:
+        return _epoch(value) if value else None
+    except ValueError:
+        return None
 
 
 def _birth_epoch(value: str) -> datetime | None:
@@ -83,7 +95,7 @@ def _parse_header(lines: list[tuple[int, str]]) -> tuple[ManifestHeader, int]:
         collector=fields.pop("collector", None),
         hostname=fields.pop("hostname", None),
         webroot=fields.pop("webroot", None),
-        collected_at=_epoch(collected_at) if collected_at else None,
+        collected_at=_header_epoch(collected_at),
         utc_offset=fields.pop("utc_offset", None),
         birth_time_supported=fields.pop("birth_time_supported", "0") == "1",
         filesystem=fields.pop("filesystem", None) or None,
@@ -121,7 +133,8 @@ def _parse_row(line_no: int, line: str) -> ManifestEntry:
             sha256=sha,
         )
     except ValueError as exc:
-        raise ValueError("bad_number") from exc
+        reason = "timestamp_out_of_range" if str(exc) == "timestamp_out_of_range" else "bad_number"
+        raise ValueError(reason) from exc
 
 
 def parse_manifest(

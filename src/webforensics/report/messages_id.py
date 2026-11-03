@@ -264,6 +264,12 @@ MESSAGES: dict[str, str] = {
                           "pada {at} (keyakinan {confidence}).",
     "summary.root_cause_unknown": "Titik masuk belum bisa ditentukan dari bukti yang ada.",
     "summary.alternatives": "Ada {count} kandidat titik masuk lain. Lihat bagian Akar Masalah.",
+    "summary.log_unreadable": "Tidak ada satu pun baris access log yang terbaca ({unread} "
+                              "baris). Periksa --log-format dan berkasnya. Kesimpulan di "
+                              "bawah TIDAK didukung log sama sekali.",
+    "summary.log_mostly_unreadable": "{unread} dari {total} baris access log ({percent}%) tidak "
+                                     "terbaca. Periksa --log-format dan berkasnya; kesimpulan di "
+                                     "bawah bisa sangat tidak lengkap.",
     "summary.no_compromise": "Tidak ditemukan file mencurigakan yang terkait dengan request "
                              "HTTP. Ini tidak menjamin server bersih.",
     "summary.gaps_affect": "{count} celah bukti melemahkan kesimpulan. Lihat bagian Celah Bukti.",

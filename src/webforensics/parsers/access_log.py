@@ -11,6 +11,7 @@ never hides the rest of the log.
 
 import gzip
 import re
+import zlib
 from collections.abc import Iterator
 from datetime import UTC, datetime, timedelta, timezone
 from enum import StrEnum
@@ -36,7 +37,9 @@ _TS_SEMANTICS = {
 
 _QUOTED = r'(?:[^"\\]|\\.)*'
 _COMBINED_RE = re.compile(
-    rf"^(?P<client_ip>\S+) \S+ (?P<remote_user>\S+) \[(?P<time>[^\]]+)\] "
+    # An IPv4/IPv6 address or a host name (HostnameLookups): a line with garbage in front
+    # (`{"json":1.2.3.4 ...`) is unreadable, not an event from a garbage client (D96).
+    rf"^(?P<client_ip>[A-Za-z0-9:.%_-]+) \S+ (?P<remote_user>\S+) \[(?P<time>[^\]]+)\] "
     rf'"(?P<request>{_QUOTED})" (?P<status>\d{{3}}) (?P<bytes>\d+|-) '
     rf'"(?P<referer>{_QUOTED})" "(?P<user_agent>{_QUOTED})"'
     rf'(?: "(?P<xff>{_QUOTED})")?$'
@@ -162,6 +165,20 @@ def open_log(path: Path) -> BinaryIO:
     return path.open("rb")
 
 
+def readable_lines(handle: BinaryIO) -> Iterator[bytes | None]:
+    """Lines of a log file; None once the rest cannot be read (a truncated or corrupt .gz)."""
+    iterator = iter(handle)
+    while True:
+        try:
+            line = next(iterator)
+        except StopIteration:
+            return
+        except (EOFError, OSError, zlib.error):
+            yield None
+            return
+        yield line
+
+
 def iter_access_log(
     path: Path,
     source: str,
@@ -179,7 +196,14 @@ def iter_access_log(
     location = intern(str(path.resolve())) if seekable else None
     offset = 0
     with open_log(path) as handle:
-        for line_no, raw_bytes in enumerate(handle, start=1):
+        lines = readable_lines(handle)
+        for line_no, raw_bytes in enumerate(lines, start=1):
+            if raw_bytes is None:
+                # A rotated .gz cut short while copied: keep everything before the damage,
+                # and count the rest as one unreadable line, which becomes a gap (D96).
+                yield ParseFailure(source=source, line_no=line_no,
+                                   reason="truncated_or_corrupt_compressed_file")
+                return
             start, offset = offset, offset + len(raw_bytes)
             line = raw_bytes.rstrip(b"\r\n")
             if not line.strip():

@@ -186,6 +186,11 @@ def _crafted(tmp_path):
                    (3 * 86_400 + 5, "/s.php?q=%22%3E%3Cx")), files(defaced), None
     # no webroot at all: a shell seen in the log after a brute-force run (D88)
     yield numbered(*brute_force(20), *SHELL), files(), None
+    # an access log that is mostly or wholly unreadable (D96)
+    bad = tuple(ParseFailure(source="access.log", line_no=n, reason="format_mismatch")
+                for n in range(2, 8))
+    yield LogCollection(events=numbered((0, "/")).events, failures=bad), files(), None
+    yield LogCollection(failures=bad), files(), None
     # lessons from the benchmark v2 dev scenarios (D94)
     yield from dev_lesson_cases(tmp_path / "v2")
     # directory scan without a manifest

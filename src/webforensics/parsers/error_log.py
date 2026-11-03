@@ -12,7 +12,7 @@ from enum import StrEnum
 from pathlib import Path
 
 from webforensics.models import ErrorLogEvent, ParseFailure, stable_id
-from webforensics.parsers.access_log import MAX_LINE_BYTES, MONTHS, open_log
+from webforensics.parsers.access_log import MAX_LINE_BYTES, MONTHS, open_log, readable_lines
 
 
 class ErrorLogFormat(StrEnum):
@@ -95,7 +95,11 @@ def iter_error_log(path: Path, source: str, fmt: ErrorLogFormat, offset: str = "
                    adapter: str = "file") -> Iterator[ErrorLogEvent | ParseFailure]:
     parse_offset(offset)  # fail fast on a bad offset
     with open_log(path) as handle:
-        for line_no, raw_bytes in enumerate(handle, start=1):
+        for line_no, raw_bytes in enumerate(readable_lines(handle), start=1):
+            if raw_bytes is None:
+                yield ParseFailure(source=source, line_no=line_no,
+                                   reason="truncated_or_corrupt_compressed_file")
+                return
             line = raw_bytes.rstrip(b"\r\n")
             if not line.strip():
                 continue
