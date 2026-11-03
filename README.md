@@ -16,9 +16,16 @@ Reconstructs how a website was compromised. Given the web server's access logs a
 
 ## Quick start
 
-```bash
-python -m venv .venv && .venv/bin/pip install -e .        # Windows: .venv\Scripts\pip
+Install (Python 3.11 or newer):
 
+```bash
+pipx install git+https://github.com/dhio0/webforensics.git
+# or, without pipx:  pip install git+https://github.com/dhio0/webforensics.git
+```
+
+Then:
+
+```bash
 # On the compromised server (read-only; bash and GNU coreutils):
 scripts/collect.sh -w /var/www/html -o /tmp/case01 -l /var/log/nginx
 
@@ -28,7 +35,11 @@ webforensics analyze --manifest case01/manifest.tsv --log case01/logs --out case
 webforensics view case01/report/report.json                            # viewer.html
 ```
 
-`analyze` writes `report.md`, `report.html` and `report.json`. Useful options: `--baseline` (a known-good manifest), `--webroot` (file content for the code checks), `--error-log`, `--trusted-proxy`, `--log-format apache_combined`. Evidence formats: [docs/evidence-format.md](docs/evidence-format.md).
+- `analyze` writes `report.md`, `report.html` and `report.json`; `view` writes `viewer.html`, which opens offline in any browser.
+- Useful options: `--baseline` (a known-good manifest), `--webroot` (file content for the code checks), `--error-log`, `--trusted-proxy`, `--log-format apache_combined`.
+- The collector is [scripts/collect.sh](scripts/collect.sh); the evidence formats are in [docs/evidence-format.md](docs/evidence-format.md).
+- To try it without a server, analyze a lab case from a clone of this repository:
+  `webforensics analyze --log benchmark/scenarios/f/evidence/access.log --manifest benchmark/scenarios/f/evidence/manifest.tsv --out try`
 
 ## The viewer
 
@@ -84,7 +95,8 @@ Damaged evidence was tested too: 10,000 seeded copies of real logs and manifests
 ## Development
 
 ```bash
-pip install -e ".[dev]"
+git clone https://github.com/dhio0/webforensics.git && cd webforensics
+python -m venv .venv && .venv/bin/pip install -e ".[dev]"   # Windows: .venv\Scripts\pip
 pytest -m "not lab"     # the lab tests need the Docker lab
 ruff check .
 ```
