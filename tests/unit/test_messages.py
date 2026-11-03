@@ -22,6 +22,7 @@ from tests.correlate_helpers import (
     numbered,
 )
 from tests.unit.test_correlate_properties import _random_case
+from tests.unit.test_dev_lessons_v2 import all_cases as dev_lesson_cases
 from tests.unit.test_file_rules import _request_exec, _with_content
 from tests.unit.test_held_out_lessons import rce_case
 from tests.unit.test_logonly import sqlmap_case
@@ -185,6 +186,8 @@ def _crafted(tmp_path):
                    (3 * 86_400 + 5, "/s.php?q=%22%3E%3Cx")), files(defaced), None
     # no webroot at all: a shell seen in the log after a brute-force run (D88)
     yield numbered(*brute_force(20), *SHELL), files(), None
+    # lessons from the benchmark v2 dev scenarios (D94)
+    yield from dev_lesson_cases(tmp_path / "v2")
     # directory scan without a manifest
     (tmp_path / "web" / "uploads").mkdir(parents=True)
     (tmp_path / "web" / "uploads" / "h.php").write_text("inert")

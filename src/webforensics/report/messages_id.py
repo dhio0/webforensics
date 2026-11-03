@@ -22,6 +22,24 @@ MESSAGES: dict[str, str] = {
     "timeline.write_exploit": (
         "Request yang kemungkinan menulis {file} tanpa login sebelumnya: "
         "{method} {path} → {status}."),
+    "timeline.exploited_endpoint_write": (
+        "Request ke endpoint yang sebelumnya diserang ({attempts} request serangan dijawab "
+        "sukses, pertama di baris {first_line}) dan menulis {file}: {method} {path} → "
+        "{status}."),
+    "timeline.file_side_write": (
+        "{file} muncul pada detik yang sama dengan request aktor ini: {method} {path} → "
+        "{status}. Request itu kemungkinan memicu penulisannya."),
+    "timeline.upload_after_login": (
+        "Upload yang menulis {file} setelah login dengan kredensial valid: "
+        "{method} {path} → {status}."),
+    "timeline.write_after_login": (
+        "Request yang kemungkinan menulis {file} setelah login dengan kredensial valid: "
+        "{method} {path} → {status}."),
+    "timeline.login_valid_credentials": (
+        "Login berhasil tanpa percobaan gagal sebelumnya: {method} {path} → {status}. "
+        "Penyerang kemungkinan sudah memegang kredensial yang valid."),
+    "timeline.actor_request": (
+        "Request lain dari aktor yang sama sebelum {file} ditulis: {method} {path} → {status}."),
     "timeline.file_write_request": "Request yang menulis {file}: {method} {path} → {status}.",
     "timeline.rce_exploit": (
         "Request injeksi kode (RCE) yang dijawab sukses: {method} {path} → {status}. "
@@ -36,6 +54,9 @@ MESSAGES: dict[str, str] = {
         "Skrip {file} dipakai seperti webshell lewat HTTP ({uses} request berhasil). Webroot "
         "tidak diberikan sebagai bukti, jadi tidak bisa dicek apakah file ini masih ada. "
         "Pertama: {method} {path} → {status}."),
+    "timeline.log_only_file_gone": (
+        "Aktor yang sama kemudian mendapat {status} untuk {file}: skrip sudah tidak ada. "
+        "Request: {method} {path}."),
     "timeline.file_deleted_by_command": (
         "Perintah penghapusan {file} dijalankan lewat parameter perintah: {method} {path} → "
         "{status}."),
@@ -82,6 +103,8 @@ MESSAGES: dict[str, str] = {
                                       "dibuat. File mungkin ditulis lewat jalur lain "
                                       "(SSH, FTP, deploy) atau log-nya hilang.",
     "creation.error_log_only": "Hanya ditemukan di error log, tanpa baris access log.",
+    "creation.same_second_as_attacker": "Request ini datang dari penyerang dalam selisih "
+                                        "jam yang diizinkan dari waktu tulis file.",
     "creation.alternative_candidate": "Kandidat alternatif. Bukti tidak cukup untuk "
                                       "memilih satu request saja.",
     "error_log.assumed_utc_offset": "Waktu error log diasumsikan UTC{offset}.",
@@ -98,6 +121,9 @@ MESSAGES: dict[str, str] = {
     "seed.deploy_batch": "File ini ditulis bersama banyak file lain dalam beberapa detik, "
                          "seperti deploy. Statusnya baru atau berubah, tapi tanpa request "
                          "HTTP yang menulisnya, file ini tidak dianggap serangan.",
+    "seed.attacker_side_file": "File ini bukan kode, tetapi baru atau berubah dibanding "
+                               "baseline dan ditulis pada detik yang sama dengan request "
+                               "dari penyerang.",
     "seed.lonely_write": "File kode ditulis sendirian, di luar batch deploy. Tanpa baseline, "
                          "ini hanya sinyal lemah.",
     # --- Entry point ----------------------------------------------------------------------
@@ -117,6 +143,10 @@ MESSAGES: dict[str, str] = {
                                    "baris log.",
     "logonly.outfile_then_served": "Nama file dari INTO OUTFILE kemudian diminta oleh klien yang "
                                    "sama dan dijawab 2xx, jadi file itu benar tertulis.",
+    "logonly.uploaded_then_posted": "Aktor yang sama mengupload sesuatu tepat sebelumnya, lalu "
+                                    "mengirim {posts} POST yang berhasil ke skrip baru ini. "
+                                    "Hampir tidak ada klien lain yang mengaksesnya. Isi upload "
+                                    "tidak tercatat, jadi kaitannya disimpulkan.",
     "logonly.write_inferred": "Request tulis terdekat dari klien yang sama sebelum skrip ini "
                               "pertama kali dipakai. Isi POST tidak tercatat, jadi ini dugaan.",
     "login.burst": "{count} login gagal berturut-turut dari aktor yang sama dihitung sebagai "
@@ -125,6 +155,15 @@ MESSAGES: dict[str, str] = {
                                       "jadi request itu sendiri dianggap titik masuk.",
     "root.sqli_login_then_write_same_area": "Login dengan payload SQL injection berhasil, lalu "
                                             "aktor yang sama menulis file di area yang sama.",
+    "root.endpoint_attacked_then_write": "Aktor yang sama sebelumnya menyerang endpoint ini "
+                                         "({attempts} request dijawab sukses, pertama di "
+                                         "baris {first_line}), lalu request ke endpoint itu "
+                                         "menulis file. Endpoint ini terbukti bisa "
+                                         "dieksploitasi.",
+    "root.write_after_clean_login": "Login aktor ini sebelumnya berhasil tanpa percobaan "
+                                    "gagal atau payload serangan, jadi cara ia mendapat "
+                                    "kredensial tidak terlihat di log. Request yang menulis "
+                                    "file inilah bukti serangan pertama yang terlihat.",
     "root.login_then_write_same_area": "Login berhasil, lalu aktor yang sama menulis file di "
                                        "area yang sama.",
     "login.failed_status": "Server membalas {status}.",
@@ -132,6 +171,7 @@ MESSAGES: dict[str, str] = {
                      "area tersebut.",
     "login.same_response_as_failure": "Respons sama persis (status dan ukuran) dengan login "
                                       "yang gagal.",
+    "login.no_failed_attempts": "Tidak ada login gagal dari aktor ini sebelumnya.",
     "login.success_unlike_failures": "Respons berbeda dari login yang gagal dan tidak diikuti "
                                      "percobaan ulang.",
     "actor.user_agent_changed": "User agent berubah antara login dan penulisan file (bisa "
@@ -187,11 +227,20 @@ MESSAGES: dict[str, str] = {
     "finding.LOG-TRAVERSAL-SENSITIVE": "Upaya membaca file sensitif: {matched}",
     "finding.LOG-XSS-PROBE": "Markup yang mencoba keluar dari atribut atau tag: {matched}",
     "finding.FILE-DEFACEMENT-PAGE": "Halaman berisi teks khas deface: \"{matched}\"",
+    "finding.LOG-CMDI-SHELL": "Pemisah shell diikuti perintah OS ada di request: {matched}",
     "finding.LOG-RCE-CODE-INJECTION": "Kode atau callback yang menjalankan kode ada di "
                                       "request: {matched}",
     "finding.LOG-SCANNER-UA": "User agent tool pemindai: {matched}",
     "finding.LOG-WEBSHELL-UPLOAD-DIR": "Akses ke skrip di folder upload: {matched}",
     "finding.LOG-WEBSHELL-CMD-PARAM": "Parameter yang mirip perintah webshell: {matched}",
+    "finding.FILE-HTACCESS-PHP-HANDLER": ".htaccess ini membuat file berekstensi {extensions} "
+                                         "dijalankan sebagai PHP.",
+    "finding.FILE-HANDLER-EXEC": "{path} bukan berekstensi skrip, tetapi dijalankan sebagai "
+                                 "PHP karena {htaccess}.",
+    "finding.CORR-STATIC-FILE-EXECUTED": "{path} bukan skrip, tetapi POST ke file ini dijawab "
+                                         "{status} dengan {bytes} byte, padahal ukuran file "
+                                         "{size} byte: server menjalankannya, bukan mengirim "
+                                         "isinya.",
     "finding.FILE-WEBSHELL-WRITABLE-EXEC": "File skrip di folder yang bisa ditulis: {path}",
     "finding.FILE-WAZUH-FIM-OUTSIDE-DOCROOT": "Wazuh FIM mencatat {events} perubahan pada "
                                               "{path}, di luar webroot. Periksa apakah ini "
@@ -267,6 +316,19 @@ MESSAGES: dict[str, str] = {
                                  "terpasang dengan CVE yang diketahui.",
     "rec.eradication.fix_login": "Periksa cara login di {path} berhasil: kredensial bocor, "
                                  "password lemah, atau SQL injection lewat POST.",
+    "rec.eradication.fix_cmdi": "Perbaiki {path}: jangan teruskan input pengguna ke shell. "
+                                "Pakai fungsi tanpa shell dengan argumen terpisah dan "
+                                "validasi ketat (allowlist).",
+    "rec.eradication.fix_traversal": "Perbaiki {path}: jangan pakai input pengguna sebagai "
+                                     "path file; pakai allowlist nama file.",
+    "rec.eradication.reset_credentials": "Ganti password semua akun yang bisa login di {path} "
+                                         "dan aktifkan MFA: penyerang login dengan "
+                                         "kredensial valid, dan cara ia mendapatkannya tidak "
+                                         "terlihat di log.",
+    "rec.eradication.restrict_admin_upload": "Batasi siapa yang boleh memakai {path} (misalnya "
+                                             "matikan instalasi plugin/tema dari panel admin) "
+                                             "dan periksa semua yang pernah diupload lewat "
+                                             "sana.",
     "rec.eradication.unknown_entry": "Titik masuk belum pasti. Periksa endpoint di kronologi, "
                                      "akun admin, dan akses non-HTTP (SSH, FTP, panel hosting).",
     "rec.recovery.rotate_credentials": "Ganti password admin aplikasi, database, dan semua "
@@ -336,8 +398,12 @@ RULE_NAMES: dict[str, str] = {
     "FILE-WEBSHELL-OBFUSCATION": "Konten terobfuskasi",
     "FILE-PERSISTENCE-ENTRYPOINT-CHANGE": "Entry point berubah",
     "FILE-ANTIFORENSICS-TIMESTOMP": "Timestomping",
+    "FILE-HTACCESS-PHP-HANDLER": ".htaccess menjalankan ekstensi lain sebagai PHP",
+    "FILE-HANDLER-EXEC": "File non-skrip yang dijalankan sebagai PHP",
+    "LOG-CMDI-SHELL": "Injeksi perintah OS",
     "CORR-LONELY-EXEC-WRITE": "Penulisan kode di luar deploy",
     "CORR-RARE-POST-TARGET": "POST ke file yang jarang diakses",
+    "CORR-STATIC-FILE-EXECUTED": "File non-skrip yang dijalankan server",
     "CORR-SQLI-LOGIN-BYPASS": "Login bypass SQL injection yang tampaknya berhasil",
 }
 
@@ -346,6 +412,10 @@ VULN_CLASSES: dict[str, str] = {
     "remote_code_execution": "eksekusi kode jarak jauh (RCE) di aplikasi",
     "sql_injection_auth_bypass": "SQL injection pada login (bypass autentikasi)",
     "sql_injection_file_write": "SQL injection yang menulis file",
+    "sql_injection": "SQL injection",
+    "os_command_injection": "injeksi perintah OS (command injection)",
+    "path_traversal": "path traversal / local file inclusion",
+    "valid_account_abuse": "akun valid disalahgunakan (kredensial diketahui penyerang)",
 }
 VULN_UNKNOWN = "kelemahan yang belum bisa dipastikan"
 

@@ -1,0 +1,22 @@
+| Scenario | Adapter | Split | Step recall | Root cause | False IPs | False files | IP precision | File precision | Expected rules | Code line | Runtime |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| S01 | file | dev | 4/4 | correct | 0 | 0 | 1.00 | 1.00 | - | - | 9.28 s |
+| S02 | file | held_out | 4/4 | correct | 0 | 0 | 1.00 | 1.00 | - | - | 3.97 s |
+| S03 | file | dev | 0/3 | missed | 0 | 0 | - | - | - | missed | 68.83 s |
+| S04 | file | dev | 4/4 | correct | 0 | 0 | 1.00 | 1.00 | - | n/a | 54.29 s |
+| S05 | file | dev | 5/5 | correct | 0 | 0 | 1.00 | 1.00 | - | - | 3.50 s |
+| S06 | file | held_out | 0/1 | missed | 0 | 0 | - | - | - | - | 1.82 s |
+| S07 | file | dev | 7/7 | alternative | 0 | 0 | 1.00 | 1.00 | - | - | 46.44 s |
+| S08 | file | dev | 6/6 | correct | 0 | 0 | 1.00 | - | - | - | 8.28 s |
+| S09 | file | held_out | 1/1 | alternative | 0 | 0 | 1.00 | 1.00 | - | - | 94.38 s |
+| S10 | file | dev | 5/5 | correct | 0 | 0 | 1.00 | 1.00 | - | - | 8.21 s |
+| S11 | file | held_out | - | correct | 0 | 0 | - | - | - | - | 85.41 s |
+| S12 | file | dev | - | correct | 0 | 0 | - | - | - | - | 8.48 s |
+
+**file, dev**: 6/8 scenarios fully correct, step recall 0.91, root cause 6/8, false accusations 0.
+**file, held_out**: 2/4 scenarios fully correct, step recall 0.83, root cause 2/4, false accusations 0.
+
+S03: missed steps: editor_login, news_editor_open, save_news_sql_injection; root cause: missed; code line: missed
+S06: missed steps: lfi_file_read; root cause: missed
+S07: root cause: alternative
+S09: root cause: alternative

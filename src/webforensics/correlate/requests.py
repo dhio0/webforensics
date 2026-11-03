@@ -64,17 +64,23 @@ def has_sqli(findings: list[Finding]) -> bool:
 
 
 def write_level_for(method: str | None, path: str | None,
-                    findings: list[Finding]) -> WriteLevel:
+                    findings: list[Finding], query: str | None = None) -> WriteLevel:
+    """The query string counts too: `POST /wp-admin/update.php?action=upload-plugin` is an
+    upload although its path says nothing (D94). A POST to a static asset is never
+    upload-like, whatever folder it sits in (a theme's `index.js`)."""
     matched = " ".join(r.params.get("matched", "") for f in findings for r in f.reasons)
     if method == "PUT" or re.search(r"\binto\s+(?:out|dump)file\b", matched, re.I):
         return WriteLevel.LIKELY
-    if method in _WRITE_METHODS:
-        return WriteLevel.LIKELY if _UPLOAD_HINT.search(path or "") else WriteLevel.POSSIBLE
-    return WriteLevel.NONE
+    if method not in _WRITE_METHODS:
+        return WriteLevel.NONE
+    if is_static_asset(path):
+        return WriteLevel.POSSIBLE
+    hinted = _UPLOAD_HINT.search(path or "") or _UPLOAD_HINT.search(query or "")
+    return WriteLevel.LIKELY if hinted else WriteLevel.POSSIBLE
 
 
 def write_level(event: LogEvent, findings: list[Finding]) -> WriteLevel:
-    return write_level_for(event.method, event.path, findings)
+    return write_level_for(event.method, event.path, findings, event.query)
 
 
 _STATIC = re.compile(r"\.(?:css|js|map|png|jpe?g|gif|svg|ico|webp|woff2?|ttf|eot)$", re.I)

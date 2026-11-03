@@ -69,6 +69,66 @@
         "is_root_cause": false
       },
       {
+        "event_id": "dc12242ad42afed5",
+        "ts": "2026-10-29T05:19:49Z",
+        "ts_basis": "log",
+        "mitre_tactic": null,
+        "mitre_technique": null,
+        "actor": "172.30.0.1",
+        "description": {
+          "key": "timeline.actor_request",
+          "params": {
+            "method": "GET",
+            "path": "/product.php",
+            "status": "200",
+            "file": "uploads/scenario-f-marker.php"
+          }
+        },
+        "citations": [
+          {
+            "kind": "log_line",
+            "source": "access.log",
+            "line_no": 2,
+            "sha256": null,
+            "excerpt": "172.30.0.1 - - [29/Oct/2026:05:19:49 +0000] \"GET /product.php?id=1 HTTP/1.1\" 200 197 \"-\" \"webforensics-lab/1.0 scenario-f\" \"-\""
+          }
+        ],
+        "confidence": "high",
+        "confidence_reasons": [],
+        "finding_ids": [],
+        "is_root_cause": false
+      },
+      {
+        "event_id": "f39c8d5b6e53aad2",
+        "ts": "2026-10-29T05:19:51Z",
+        "ts_basis": "log",
+        "mitre_tactic": null,
+        "mitre_technique": null,
+        "actor": "172.30.0.1",
+        "description": {
+          "key": "timeline.actor_request",
+          "params": {
+            "method": "GET",
+            "path": "/admin/login.php",
+            "status": "200",
+            "file": "uploads/scenario-f-marker.php"
+          }
+        },
+        "citations": [
+          {
+            "kind": "log_line",
+            "source": "access.log",
+            "line_no": 3,
+            "sha256": null,
+            "excerpt": "172.30.0.1 - - [29/Oct/2026:05:19:51 +0000] \"GET /admin/login.php HTTP/1.1\" 200 343 \"-\" \"webforensics-lab/1.0 scenario-f\" \"-\""
+          }
+        ],
+        "confidence": "high",
+        "confidence_reasons": [],
+        "finding_ids": [],
+        "is_root_cause": false
+      },
+      {
         "event_id": "e63fd6ada940aaf2",
         "ts": "2026-10-29T05:19:53Z",
         "ts_basis": "log",

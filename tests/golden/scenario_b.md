@@ -6,6 +6,7 @@ _WF-6A5510F7FF · 2026-10-28 09:00:00 WIB_
 
 - Ditemukan 1 file mencurigakan yang terkait dengan 1 alamat IP. Aktivitas pertama aktor pada 2026-10-29 12:17:05 WIB, terakhir pada 2026-10-29 12:17:15 WIB.
 - Titik masuk yang paling mungkin: kelemahan yang belum bisa dipastikan lewat POST /admin/login.php pada 2026-10-29 12:17:11 WIB (keyakinan rendah).
+- Ada 1 kandidat titik masuk lain. Lihat bagian Akar Masalah.
 
 ### Alur serangan
 
@@ -66,6 +67,10 @@ _WF-6A5510F7FF · 2026-10-28 09:00:00 WIB_
 - Login berhasil, lalu aktor yang sama menulis file di area yang sama.
 - Respons berbeda dari login yang gagal dan tidak diikuti percobaan ulang.
 - Cara login tidak terlihat (misalnya kredensial bocor, atau SQL injection lewat POST).
+
+### Kandidat lain
+
+- \#3 Request yang menulis uploads/scenario-b-marker.php: POST /admin/auth\_upload.php → 200. (access.log:5, uploads/scenario-b-marker.php @105ddd6ab59b, error.log:1)
 
 ### Baris kode yang rentan
 

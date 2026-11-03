@@ -41,10 +41,12 @@ def test_sqli_on_unrelated_area_is_context_only():
     )
     result = correlate(logs, files(file_ev(SHELL, btime=10, ctime=10, mtime=10)))
     root = root_event(result)
-    # A login whose method we cannot see becomes a low-confidence entry point.
-    assert root.description.key == "timeline.login_method_unknown"
-    assert result.root_cause.confidence is Confidence.LOW
-    assert result.root_cause.vuln_class is None
+    # A clean login (no failed try) is access with valid credentials, not the way in: the
+    # upload is the first attack step (D94). The SQLi elsewhere stays context.
+    assert root.description.key == "timeline.upload_after_login"
+    assert result.root_cause.confidence is Confidence.MEDIUM
+    assert result.root_cause.vuln_class == "valid_account_abuse"
+    assert "timeline.login_valid_credentials" in _keys(result)
     assert "timeline.exploit_attempt" in _keys(result)
 
 

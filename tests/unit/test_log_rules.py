@@ -49,6 +49,12 @@ POSITIVE = [
      "LOG-RCE-CODE-INJECTION"),
     ("/x.php?a=php%20-r%20%27phpinfo();%27", "LOG-RCE-CODE-INJECTION"),
     ("/x.php?c=<?php%20echo%201;?>", "LOG-RCE-CODE-INJECTION"),
+    # OS command injection as commix sends it (benchmark v2 s05, D94)
+    ("/vulnerabilities/exec/?QFBL=%3Bcat%20/etc/passwd%7C%7C%24%28cat%20/etc/passwd%29",
+     "LOG-CMDI-SHELL"),
+    ("/ping.php?ip=127.0.0.1|id", "LOG-CMDI-SHELL"),
+    ("/ping.php?ip=1.1.1.1%26%26whoami", "LOG-CMDI-SHELL"),
+    ("/ping.php?ip=$(uname%20-a)", "LOG-CMDI-SHELL"),
     # BND challenge probes (D87)
     ("/index.php?password=%22%3E%3Cxss&file=hack", "LOG-XSS-PROBE"),
     ("/s.php?q=%3Cscript%3Ealert(1)%3C/script%3E", "LOG-XSS-PROBE"),
@@ -77,6 +83,9 @@ NEGATIVE = [
     "/node?q=#markup",  # a fragment-like word, not a render-array key
     "/index.php?password=%22%3Exss&file=hack",  # a quote and > without a tag
     "/s.php?q=a+%3E+b+and+c+%3C+d",  # comparisons in a search
+    "/search.php?q=cat+pictures",  # command names as plain words
+    "/a.php?x=1&id=2&type=3",  # parameter names, no shell separator
+    "/a.php?tags=rock|pop",
 ]
 
 

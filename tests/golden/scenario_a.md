@@ -9,9 +9,9 @@ _WF-16040EE35A · 2026-10-28 09:00:00 WIB_
 
 ### Alur serangan
 
-- \#3 2026-10-29 12:16:16 WIB: Upload yang menulis uploads/lab-marker.php tanpa login sebelumnya: POST /admin/upload.php → 200.
-- \#4 2026-10-29 12:16:16 WIB: File uploads/lab-marker.php dibuat (SHA-256 52d31ac74301…).
-- \#5 2026-10-29 12:16:18 WIB: File uploads/lab-marker.php diakses: GET /uploads/lab-marker.php → 200.
+- \#5 2026-10-29 12:16:16 WIB: Upload yang menulis uploads/lab-marker.php tanpa login sebelumnya: POST /admin/upload.php → 200.
+- \#6 2026-10-29 12:16:16 WIB: File uploads/lab-marker.php dibuat (SHA-256 52d31ac74301…).
+- \#7 2026-10-29 12:16:18 WIB: File uploads/lab-marker.php diakses: GET /uploads/lab-marker.php → 200.
 
 ## 2. Informasi Kasus
 
@@ -34,19 +34,21 @@ _WF-16040EE35A · 2026-10-28 09:00:00 WIB_
 | # | Waktu | Dasar waktu | Fase (ATT\&CK) | Aktor | Kejadian | Keyakinan | Bukti |
 |---|---|---|---|---|---|---|---|
 | #1 | 2026-10-29 12:16:08 WIB | log | - | 172.30.0.1 | Request pertama aktor ini di log: GET / → 200. | tinggi | access.log:1 |
-| #2 | 2026-10-29 12:16:14 WIB | log | Initial Access (akses awal) · T1190 | 172.30.0.1 | Percobaan eksploitasi: GET /product.php → 200 (SQL injection (tautologi)). | sedang | access.log:4 |
-| #3 | 2026-10-29 12:16:16 WIB | log | Initial Access (akses awal) · T1190 | 172.30.0.1 | **AKAR MASALAH: Upload yang menulis uploads/lab-marker.php tanpa login sebelumnya: POST /admin/upload.php → 200.** | tinggi (sebagai titik masuk: sedang) | access.log:5, uploads/lab-marker.php @52d31ac74301 |
-| #4 | 2026-10-29 12:16:16 WIB | btime | Persistence (bertahan) · T1505.003 | - | File uploads/lab-marker.php dibuat (SHA-256 52d31ac74301…). | tinggi | uploads/lab-marker.php @52d31ac74301 |
-| #5 | 2026-10-29 12:16:18 WIB | log | Persistence (bertahan) · T1505.003 | 172.30.0.1 | File uploads/lab-marker.php diakses: GET /uploads/lab-marker.php → 200. | tinggi | access.log:6 |
+| #2 | 2026-10-29 12:16:10 WIB | log | - | 172.30.0.1 | Request lain dari aktor yang sama sebelum uploads/lab-marker.php ditulis: GET /product.php → 200. | tinggi | access.log:2 |
+| #3 | 2026-10-29 12:16:12 WIB | log | - | 172.30.0.1 | Request lain dari aktor yang sama sebelum uploads/lab-marker.php ditulis: GET /admin/upload.php → 200. | tinggi | access.log:3 |
+| #4 | 2026-10-29 12:16:14 WIB | log | Initial Access (akses awal) · T1190 | 172.30.0.1 | Percobaan eksploitasi: GET /product.php → 200 (SQL injection (tautologi)). | sedang | access.log:4 |
+| #5 | 2026-10-29 12:16:16 WIB | log | Initial Access (akses awal) · T1190 | 172.30.0.1 | **AKAR MASALAH: Upload yang menulis uploads/lab-marker.php tanpa login sebelumnya: POST /admin/upload.php → 200.** | tinggi (sebagai titik masuk: sedang) | access.log:5, uploads/lab-marker.php @52d31ac74301 |
+| #6 | 2026-10-29 12:16:16 WIB | btime | Persistence (bertahan) · T1505.003 | - | File uploads/lab-marker.php dibuat (SHA-256 52d31ac74301…). | tinggi | uploads/lab-marker.php @52d31ac74301 |
+| #7 | 2026-10-29 12:16:18 WIB | log | Persistence (bertahan) · T1505.003 | 172.30.0.1 | File uploads/lab-marker.php diakses: GET /uploads/lab-marker.php → 200. | tinggi | access.log:6 |
 
 ### Catatan keyakinan
 
-- \#3: Hanya satu request penulis yang cocok dengan waktu file dibuat. Aktor yang sama kemudian mengakses file ini. Isi POST tidak tercatat di access log, jadi nama file yang diupload tidak terbukti dari log.
-- \#4: Waktu dari btime (waktu file lahir), yang tidak bisa diubah dengan touch.
+- \#5: Hanya satu request penulis yang cocok dengan waktu file dibuat. Aktor yang sama kemudian mengakses file ini. Isi POST tidak tercatat di access log, jadi nama file yang diupload tidak terbukti dari log.
+- \#6: Waktu dari btime (waktu file lahir), yang tidak bisa diubah dengan touch.
 
 ## 4. Akar Masalah
 
-- **Kejadian:** #3 Upload yang menulis uploads/lab-marker.php tanpa login sebelumnya: POST /admin/upload.php → 200.
+- **Kejadian:** #5 Upload yang menulis uploads/lab-marker.php tanpa login sebelumnya: POST /admin/upload.php → 200.
 - **Jenis kelemahan:** unrestricted file upload (upload tanpa validasi)
 - **Keyakinan:** sedang
 - **Bukti:** access.log:5, uploads/lab-marker.php @52d31ac74301
@@ -188,6 +190,8 @@ Tidak ada.
 | Rujukan | Kutipan |
 |---|---|
 | access.log:1 | 172.30.0.1 - - \[29/Oct/2026:05:16:08 +0000\] "GET / HTTP/1.1" 200 298 "-" "webforensics-lab/1.0 scenario-a" "-" |
+| access.log:2 | 172.30.0.1 - - \[29/Oct/2026:05:16:10 +0000\] "GET /product.php?id=1 HTTP/1.1" 200 197 "-" "webforensics-lab/1.0 scenario-a" "-" |
+| access.log:3 | 172.30.0.1 - - \[29/Oct/2026:05:16:12 +0000\] "GET /admin/upload.php HTTP/1.1" 200 317 "-" "webforensics-lab/1.0 scenario-a" "-" |
 | access.log:4 | 172.30.0.1 - - \[29/Oct/2026:05:16:14 +0000\] "GET /product.php?id=1+OR+1%3D1 HTTP/1.1" 200 223 "-" "webforensics-lab/1.0 scenario-a" "-" |
 | access.log:5 | 172.30.0.1 - - \[29/Oct/2026:05:16:16 +0000\] "POST /admin/upload.php HTTP/1.1" 200 44 "-" "webforensics-lab/1.0 scenario-a" "-" |
 | uploads/lab-marker.php @52d31ac74301 | SHA-256 52d31ac74301cc8fd601913c9cc75e1bc0b2f2ffd26fe71b9864200eda78865d |

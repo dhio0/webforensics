@@ -9,10 +9,10 @@ _WF-E887DEB66B · 2026-10-28 09:00:00 WIB_
 
 ### Alur serangan
 
-- \#3 2026-10-29 12:19:55 WIB: Bypass login dengan SQL injection: GET /admin/login.php → 200.
-- \#4 2026-10-29 12:19:57 WIB: Request yang menulis uploads/scenario-f-marker.php: POST /admin/auth\_upload.php → 200.
-- \#5 2026-10-29 12:19:57 WIB: File uploads/scenario-f-marker.php dibuat (SHA-256 c2f45202f02a…).
-- \#6 2026-10-29 12:19:59 WIB: File uploads/scenario-f-marker.php diakses: GET /uploads/scenario-f-marker.php → 200.
+- \#5 2026-10-29 12:19:55 WIB: Bypass login dengan SQL injection: GET /admin/login.php → 200.
+- \#6 2026-10-29 12:19:57 WIB: Request yang menulis uploads/scenario-f-marker.php: POST /admin/auth\_upload.php → 200.
+- \#7 2026-10-29 12:19:57 WIB: File uploads/scenario-f-marker.php dibuat (SHA-256 c2f45202f02a…).
+- \#8 2026-10-29 12:19:59 WIB: File uploads/scenario-f-marker.php diakses: GET /uploads/scenario-f-marker.php → 200.
 
 ## 2. Informasi Kasus
 
@@ -35,22 +35,24 @@ _WF-E887DEB66B · 2026-10-28 09:00:00 WIB_
 | # | Waktu | Dasar waktu | Fase (ATT\&CK) | Aktor | Kejadian | Keyakinan | Bukti |
 |---|---|---|---|---|---|---|---|
 | #1 | 2026-10-29 12:19:47 WIB | log | - | 172.30.0.1 | Request pertama aktor ini di log: GET / → 200. | tinggi | access.log:1 |
-| #2 | 2026-10-29 12:19:53 WIB | log | - | 172.30.0.1 | Login gagal: GET /admin/login.php → 401. | tinggi | access.log:4 |
-| #3 | 2026-10-29 12:19:55 WIB | log | Initial Access (akses awal) · T1190 | 172.30.0.1 | **AKAR MASALAH: Bypass login dengan SQL injection: GET /admin/login.php → 200.** | sedang | access.log:5 |
-| #4 | 2026-10-29 12:19:57 WIB | log | Persistence (bertahan) · T1505.003 | 172.30.0.1 | Request yang menulis uploads/scenario-f-marker.php: POST /admin/auth\_upload.php → 200. | tinggi | access.log:6, uploads/scenario-f-marker.php @c2f45202f02a |
-| #5 | 2026-10-29 12:19:57 WIB | btime | Persistence (bertahan) · T1505.003 | - | File uploads/scenario-f-marker.php dibuat (SHA-256 c2f45202f02a…). | tinggi | uploads/scenario-f-marker.php @c2f45202f02a |
-| #6 | 2026-10-29 12:19:59 WIB | log | Persistence (bertahan) · T1505.003 | 172.30.0.1 | File uploads/scenario-f-marker.php diakses: GET /uploads/scenario-f-marker.php → 200. | tinggi | access.log:7 |
+| #2 | 2026-10-29 12:19:49 WIB | log | - | 172.30.0.1 | Request lain dari aktor yang sama sebelum uploads/scenario-f-marker.php ditulis: GET /product.php → 200. | tinggi | access.log:2 |
+| #3 | 2026-10-29 12:19:51 WIB | log | - | 172.30.0.1 | Request lain dari aktor yang sama sebelum uploads/scenario-f-marker.php ditulis: GET /admin/login.php → 200. | tinggi | access.log:3 |
+| #4 | 2026-10-29 12:19:53 WIB | log | - | 172.30.0.1 | Login gagal: GET /admin/login.php → 401. | tinggi | access.log:4 |
+| #5 | 2026-10-29 12:19:55 WIB | log | Initial Access (akses awal) · T1190 | 172.30.0.1 | **AKAR MASALAH: Bypass login dengan SQL injection: GET /admin/login.php → 200.** | sedang | access.log:5 |
+| #6 | 2026-10-29 12:19:57 WIB | log | Persistence (bertahan) · T1505.003 | 172.30.0.1 | Request yang menulis uploads/scenario-f-marker.php: POST /admin/auth\_upload.php → 200. | tinggi | access.log:6, uploads/scenario-f-marker.php @c2f45202f02a |
+| #7 | 2026-10-29 12:19:57 WIB | btime | Persistence (bertahan) · T1505.003 | - | File uploads/scenario-f-marker.php dibuat (SHA-256 c2f45202f02a…). | tinggi | uploads/scenario-f-marker.php @c2f45202f02a |
+| #8 | 2026-10-29 12:19:59 WIB | log | Persistence (bertahan) · T1505.003 | 172.30.0.1 | File uploads/scenario-f-marker.php diakses: GET /uploads/scenario-f-marker.php → 200. | tinggi | access.log:7 |
 
 ### Catatan keyakinan
 
-- \#2: Server membalas 401.
-- \#3: Login dengan payload SQL injection berhasil, lalu aktor yang sama menulis file di area yang sama. Respons berbeda dari login yang gagal dan tidak diikuti percobaan ulang. Kaitan login dan upload disimpulkan dari IP dan area yang sama, karena cookie sesi tidak tercatat.
-- \#4: Hanya satu request penulis yang cocok dengan waktu file dibuat. Aktor yang sama kemudian mengakses file ini. Isi POST tidak tercatat di access log, jadi nama file yang diupload tidak terbukti dari log.
-- \#5: Waktu dari btime (waktu file lahir), yang tidak bisa diubah dengan touch.
+- \#4: Server membalas 401.
+- \#5: Login dengan payload SQL injection berhasil, lalu aktor yang sama menulis file di area yang sama. Respons berbeda dari login yang gagal dan tidak diikuti percobaan ulang. Kaitan login dan upload disimpulkan dari IP dan area yang sama, karena cookie sesi tidak tercatat.
+- \#6: Hanya satu request penulis yang cocok dengan waktu file dibuat. Aktor yang sama kemudian mengakses file ini. Isi POST tidak tercatat di access log, jadi nama file yang diupload tidak terbukti dari log.
+- \#7: Waktu dari btime (waktu file lahir), yang tidak bisa diubah dengan touch.
 
 ## 4. Akar Masalah
 
-- **Kejadian:** #3 Bypass login dengan SQL injection: GET /admin/login.php → 200.
+- **Kejadian:** #5 Bypass login dengan SQL injection: GET /admin/login.php → 200.
 - **Jenis kelemahan:** SQL injection pada login (bypass autentikasi)
 - **Keyakinan:** sedang
 - **Bukti:** access.log:5
@@ -191,6 +193,8 @@ Tidak ada.
 | Rujukan | Kutipan |
 |---|---|
 | access.log:1 | 172.30.0.1 - - \[29/Oct/2026:05:19:47 +0000\] "GET / HTTP/1.1" 200 298 "-" "webforensics-lab/1.0 scenario-f" "-" |
+| access.log:2 | 172.30.0.1 - - \[29/Oct/2026:05:19:49 +0000\] "GET /product.php?id=1 HTTP/1.1" 200 197 "-" "webforensics-lab/1.0 scenario-f" "-" |
+| access.log:3 | 172.30.0.1 - - \[29/Oct/2026:05:19:51 +0000\] "GET /admin/login.php HTTP/1.1" 200 343 "-" "webforensics-lab/1.0 scenario-f" "-" |
 | access.log:4 | 172.30.0.1 - - \[29/Oct/2026:05:19:53 +0000\] "GET /admin/login.php?username=admin\&password=wrong-lab-password HTTP/1.1" 401 355 "-" "webforensics-lab/1.0 scenario-f" "-" |
 | access.log:5 | 172.30.0.1 - - \[29/Oct/2026:05:19:55 +0000\] "GET /admin/login.php?username=admin%27+OR+%271%27%3D%271+--+\&password= HTTP/1.1" 200 359 "-" "webforensics-lab/1.0 scenario-f" "-" |
 | access.log:6 | 172.30.0.1 - - \[29/Oct/2026:05:19:57 +0000\] "POST /admin/auth\_upload.php HTTP/1.1" 200 51 "-" "webforensics-lab/1.0 scenario-f" "-" |

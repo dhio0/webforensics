@@ -122,7 +122,9 @@ _STORY_KINDS = frozenset({
     "timeline.write_exploit", "timeline.file_write_request", "timeline.file_created",
     "timeline.file_changed", "timeline.file_modified_mtime", "timeline.file_timestomp",
     "timeline.sqli_file_write", "timeline.log_only_file", "timeline.file_deleted_by_command",
-    "timeline.log_only_file_unverified",
+    "timeline.log_only_file_unverified", "timeline.upload_after_login",
+    "timeline.write_after_login", "timeline.login_valid_credentials",
+    "timeline.exploited_endpoint_write", "timeline.file_side_write",
 })
 
 

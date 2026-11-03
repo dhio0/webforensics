@@ -31,11 +31,16 @@ TOP_CLIENTS = 5
 _TIME_GAPS = (GapKind.NO_LOG_LINES, GapKind.PARSE_ERRORS, GapKind.ROTATION_BOUNDARY)
 _WRITE_KINDS = ("timeline.upload_exploit", "timeline.write_exploit",
                 "timeline.file_write_request")
+# A write after a clean login (D94): the way in is a valid credential, not a flaw.
+_AFTER_LOGIN_KINDS = ("timeline.upload_after_login", "timeline.write_after_login")
 _FIX_FOR_VULN = {
     "unrestricted_file_upload": "rec.eradication.fix_upload",
     "sql_injection_auth_bypass": "rec.eradication.fix_sqli_login",
     "sql_injection_file_write": "rec.eradication.fix_sqli_write",
     "remote_code_execution": "rec.eradication.patch_rce",
+    "sql_injection": "rec.eradication.fix_sqli_write",
+    "os_command_injection": "rec.eradication.fix_cmdi",
+    "path_traversal": "rec.eradication.fix_traversal",
 }
 LIMITATIONS = ("limit.automated", "limit.post_body", "limit.timestamps",
                "limit.log_tampering", "limit.shared_ip")
@@ -185,6 +190,9 @@ def _eradication(result: CorrelationResult) -> list[Reason]:
         fix(_FIX_FOR_VULN[vuln], root.description.params.get("path", ""))
     elif root is not None and root.description.key == "timeline.login_method_unknown":
         fix("rec.eradication.fix_login", root.description.params.get("path", ""))
+    elif root is not None and root.description.key in _AFTER_LOGIN_KINDS:
+        fix("rec.eradication.reset_credentials", root.description.params.get("login_path", ""))
+        fix("rec.eradication.restrict_admin_upload", root.description.params.get("path", ""))
     elif result.affected_files:
         recs.append(_r("rec.eradication.unknown_entry"))
     for path in unlinked_bypass_paths(result):

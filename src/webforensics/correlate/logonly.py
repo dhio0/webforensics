@@ -50,6 +50,51 @@ class LogOnlyFile:
     outfile: bool = False  # written_by is a SQL `INTO OUTFILE` request
     deleted_by: LogEvent | None = None
     commands: list[LogEvent] = field(default_factory=list)
+    uploaded: bool = False  # written_by is an upload just before POST-driven use (D94)
+    gone_at: LogEvent | None = None  # the same actor later got 404/410 for the URL
+
+
+# A script driven through POST bodies (Weevely and most webshell clients) shows no command
+# in the URL. It is still clear when the same actor uploaded something just before (an
+# upload-like request answered 2xx: a redirect to a login page uploaded nothing), then
+# POSTed to the new URL several times with no query string (a scanner's probe carries its
+# payload in the query), and almost nobody else ever got it (D94).
+MIN_POSTS = 2
+
+
+def _uploaded_then_posted(index, found: dict, record) -> None:
+    posts: dict[tuple[str, str, str], list[LogEvent]] = {}
+    for event in index.events:
+        if (event.method == "POST" and _is_output(event) and not event.query
+                and has_executable_extension(event.path or "")):
+            key = (site_of(event), index.actor(event), index.url_key(event.path or ""))
+            posts.setdefault(key, []).append(event)
+    for (site, actor, key), own in posts.items():
+        known = found.get((site, actor, key))
+        if len(own) < MIN_POSTS or (known is not None and known.outfile):
+            continue
+        everyone = index.by_url.get(key, [])
+        clients = {index.actor(e) for e in everyone if rq.is_success(e)}
+        if len(clients) > index.config.rare_post_max_clients or len(everyone) > (
+                index.config.rare_hits_max):
+            continue
+        first = own[0]
+        start = first.ts - timedelta(seconds=index.config.creation_window_s)
+        uploads = []
+        for e in index.actor_since(actor, start):
+            if (e.ts, e.line_no) >= (first.ts, first.line_no):
+                break
+            if (site_of(e) == site and index.url_key(e.path or "") != key
+                    and _is_output(e)
+                    and rq.write_level(e, index.of(e)) is rq.WriteLevel.LIKELY):
+                uploads.append(e)
+        if not uploads:
+            continue
+        shell = record(first)
+        if shell is None:
+            continue
+        shell.uses = sorted({*shell.uses, *own}, key=lambda e: (e.ts, e.log_file, e.line_no))
+        shell.written_by, shell.uploaded = uploads[-1], True
 
 
 def _decoded_query(event: LogEvent) -> str:
@@ -111,8 +156,10 @@ def find_log_only_files(index, served: set[str]) -> list[LogOnlyFile]:
         if shell.written_by is None or not shell.outfile:
             shell.written_by, shell.outfile = event, True
 
+    _uploaded_then_posted(index, found, record)
+
     shells = sorted((s for s in found.values()
-                     if s.outfile
+                     if s.outfile or s.uploaded
                      or len({e.bytes_sent for e in s.commands if _is_output(e)}) >= 2),
                     key=lambda s: (s.uses[0].ts, s.uses[0].line_no))
     for shell in shells:
@@ -124,6 +171,10 @@ def find_log_only_files(index, served: set[str]) -> list[LogOnlyFile]:
         if shell.written_by is None:
             shell.written_by = _writer(index, shell)
         shell.deleted_by = _deleter(index, shell)
+        last = shell.uses[-1]
+        shell.gone_at = next((e for e in everything if index.actor(e) == shell.actor
+                              and site_of(e) == shell.site and e.status in (404, 410)
+                              and (e.ts, e.line_no) > (last.ts, last.line_no)), None)
     return shells
 
 

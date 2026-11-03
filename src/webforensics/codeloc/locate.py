@@ -32,6 +32,8 @@ from webforensics.models import (
 IMPLICATED_KINDS = frozenset({
     "timeline.upload_exploit", "timeline.write_exploit", "timeline.file_write_request",
     "timeline.auth_bypass_sqli", "timeline.login_method_unknown",
+    "timeline.upload_after_login", "timeline.write_after_login",
+    "timeline.exploited_endpoint_write",
 })
 SQLI_RULE_PREFIX = "LOG-SQLI-"
 PHP_SUFFIXES = (".php", ".phtml", ".php5", ".php7", ".inc")

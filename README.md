@@ -2,7 +2,7 @@
 
 A defensive tool that reconstructs **how a website was compromised**. It correlates evidence from the webroot (suspicious or modified files, their timestamps and hashes) with web server access logs. Like a human analyst, it starts from the file and traces back to the request that created it and the exploit that made that possible. The final output is an incident report in Indonesian.
 
-> **Status:** the core milestones (M0–M7) are done, plus an interactive viewer and a Wazuh trigger with write-back (M6+). M8 is done: benchmark v2 (twelve scenarios on real applications, real attack tools and real background traffic) was scored with the frozen tool, and the result is poor and reported as it is. M9 (tool fixes from the dev scenarios only) is next. See [docs/plan.md](docs/plan.md).
+> **Status:** the core milestones (M0–M7) are done, plus an interactive viewer and a Wazuh trigger with write-back (M6+). M8 is done: benchmark v2 (twelve scenarios on real applications, real attack tools and real background traffic) was scored with the frozen tool, and the poor result is reported as it is. M9 then fixed what the dev scenarios showed (D94); run 3 went from 1/4 to 2/4 fully correct on the held-out split. See [docs/plan.md](docs/plan.md).
 
 ![The interactive viewer on lab scenario F: verdict, per-actor timeline, the root-cause event with its evidence, search and the attack-story filter](docs/img/viewer-demo.gif)
 
@@ -11,7 +11,7 @@ A defensive tool that reconstructs **how a website was compromised**. It correla
 ## At a glance
 - **The problem.** When a small organization's site is hacked, the admin needs to know how the attacker got in, when, and what changed. Today that is a manual hunt: find the webshell, check its timestamps, then read the access log backwards from that moment.
 - **What it does.** It automates that hunt, starting from the file the way an analyst does: file → write time → the request that wrote it → the exploit that made that request possible. Every claim cites a log line or a file hash, evidence gaps lower the confidence explicitly, and for SQL injection it points at the vulnerable PHP line with a prepared-statement fix. Output: an Indonesian report in a CSIRT incident-handling flow, an interactive offline viewer, and alerts written back to Wazuh.
-- **How well it works.** All five lab scenarios are fully correct through both evidence paths (plain files and Wazuh). On four outside cases, each with an answer key written before the first run, the first runs were imperfect and are reported as they were; every miss became a general fix with a test. On benchmark v2, built from real applications and attack tools, the frozen tool makes no false accusations but misses most attacks (dev 2/8, held-out 1/4 fully correct); the reasons are written down and the held-out failures are left unexamined. One run over 7.4 million real log lines takes 3.7 minutes.
+- **How well it works.** All five lab scenarios are fully correct through both evidence paths (plain files and Wazuh). On four outside cases, each with an answer key written before the first run, the first runs were imperfect and are reported as they were; every miss became a general fix with a test. On benchmark v2, built from real applications and attack tools, the frozen tool made no false accusations but missed most attacks (held-out 1/4 fully correct). After fixes made from the dev scenarios only, held-out is 2/4, still with no false accusations; the held-out failures are left unexamined. One run over 7.4 million real log lines takes 3.7 minutes.
 - **Built with.** Python 3.11, Typer, pydantic, tree-sitter (code analysis), pytest (600+ tests, golden reports compared byte for byte), a Docker lab, and Wazuh 4.14 (indexer, FIM, custom integration and rules).
 
 ## How it works
@@ -151,7 +151,7 @@ Read these numbers with care. The benchmark is small, synthetic, and made by the
 ## Benchmark v2: real applications, real attack tools, frozen tool
 The five lab scenarios above are small and were written by the same person who wrote the rules. [Benchmark v2](benchmark/v2/README.md) is harder and was built separately: twelve scenarios on pinned real applications (WordPress 5.5.3 with File Manager 6.0, phpMyFAQ 3.2.5, DVWA), attacked with real tools (sqlmap, Weevely, commix, Hydra) and mixed into 15,000 requests of public background traffic, replayed live at a few requests per second. The ground truth comes from the recording scripts, not from the tool. Eight scenarios are dev and four are held out.
 
-The rules and the scorer's hash were written down before the first run ([PREREG.md](benchmark/v2/results/PREREG.md)), and the analysis code stayed frozen at 93d205b for both runs. Run 2 is the official result, on the final benchmark (rounds 7 and 8):
+The rules and the scorer's hash were written down before the first run ([PREREG.md](benchmark/v2/results/PREREG.md)), and the analysis code stayed frozen at 93d205b for both runs. Run 2 is the frozen tool's official result, on the final benchmark (rounds 7 and 8):
 
 | Split | Fully correct | Step recall | Root cause correct | False accusations |
 |---|---|---|---|---|
@@ -162,7 +162,18 @@ This is a poor result, and it stays in the README as recorded.
 - **Passed:** s01 (unauthenticated plugin upload with an agent), s11 (a failed scan, correctly not called a compromise) and s12 (legitimate admin work, correctly not called an attack).
 - **Why the rest fail, from the dev scenarios:** the tool does not read the query string, so `POST /wp-admin/update.php?action=upload-plugin` is not seen as an upload; it does not treat Apache multi-extension names (`.php..`) or a `.jpg` run by an `.htaccess` handler as scripts; new non-script files and an agent deleted before collection are missed; payloads sent in a POST body leave nothing in an access log. Details: [run2-analysis.md](benchmark/v2/results/run2-analysis.md).
 - **Run 1** (on an earlier recording replayed at about a hundred requests per second) gave dev 1/8 with four false accusations. The faster replay made background clients look like attackers; realistic pacing removed those accusations, and also an accidental "hit" in s07 and s10 ([run1-analysis.md](benchmark/v2/results/run1-analysis.md)).
-- **Held-out failures (s02, s06, s09) are listed but not examined**, so that the M9 fixes are not tuned on them.
+- **Held-out failures (s02, s06, s09) were listed but not examined**, so that the M9 fixes were not tuned on them.
+
+**Run 3, after M9.** The fixes (D94) came from reading the eight dev scenarios only; each is a general rule with its own test, and the lab benchmark, the earlier DFIR cases and the real-scale case were rechecked first. The rules were again written down before the run.
+
+| Split | Fully correct | Step recall | Root cause correct | False accusations |
+|---|---|---|---|---|
+| dev (8) | 6/8 | 0.91 | 6/8 | 0 |
+| held-out (4) | 2/4 | 0.83 | 2/4 | 0 |
+
+- **Held-out is the number to read:** 1/4 → 2/4. s02 is now correct and s09's root cause is an alternative instead of wrong; s06 is still missed. Those reports were not read.
+- **The dev gain is post-hoc.** s03 (SQL injection in a POST body that writes no file) stays out of reach of a file-first tool. In s07 the tool names the brute-forced login as the way in and the upload as the alternative, while the ground truth names the upload (D94).
+- **What the fixes added:** the query string of an upload; a clean login treated as valid-account abuse, not the way in; the attacker's session before the write; `.php..` and `.htaccess` handlers; an image answered like a script; command injection followed by a write on the same endpoint; non-code files written by the attacker; scripts driven through POST bodies and gone from the webroot; no review noise from files identical to the baseline. Details: [run3-analysis.md](benchmark/v2/results/run3-analysis.md).
 
 ## A real case, scored against an answer key written first
 

@@ -6,6 +6,8 @@ or executed. Content rules inspect at most ``MAX_CONTENT_BYTES`` per file (D15).
 
 import math
 import re
+from collections.abc import Iterable
+from dataclasses import dataclass
 from pathlib import Path
 
 from webforensics.detect import RULESET_VERSION, UPLOAD_WRITABLE_DIRS
@@ -46,7 +48,102 @@ _DEFACEMENT = re.compile(
 
 
 def has_executable_extension(path: str) -> bool:
-    return Path(path.rsplit("/", 1)[-1]).suffix.casefold() in _EXECUTABLE_EXTENSIONS
+    """Any extension part counts, not only the last (D94). Apache's `AddHandler` runs
+    `shell.php.jpg` as PHP, and trailing dots or spaces (`x.php..`) slip past naive
+    upload filters; Windows and some setups drop them when the file is served."""
+    name = path.rsplit("/", 1)[-1].casefold().rstrip(". ")
+    return any(f".{part}" in _EXECUTABLE_EXTENSIONS for part in name.split(".")[1:])
+
+
+# `AddType application/x-httpd-php .jpg`, `AddHandler php-script .gif`: other extensions
+# made executable. `SetHandler` inside a FilesMatch, or alone, makes every file executable.
+_HANDLER_LINE = re.compile(
+    r"^\s*Add(?:Type|Handler)\s+(?P<handler>\S*php\S*)\s+(?P<exts>[^\r\n#]+)",
+    re.IGNORECASE | re.MULTILINE)
+_SET_HANDLER = re.compile(r"^\s*(?:Set|Force)(?:Handler|Type)\s+\S*php\S*", re.IGNORECASE
+                          | re.MULTILINE)
+
+
+_FILES_BLOCK = re.compile(
+    r"<Files(?:Match)?\s+(?P<pattern>[^>]*)>(?P<body>.*?)</Files(?:Match)?\s*>",
+    re.IGNORECASE | re.DOTALL)
+_PATTERN_EXT = re.compile(r"\.\(?(?P<alts>[a-z0-9|]+)", re.IGNORECASE)
+
+
+def handler_extensions(content: str) -> tuple[frozenset[str], bool]:
+    """Extensions an `.htaccess` maps to PHP beyond the usual ones, and whether it makes
+    every file in its folder executable (a `SetHandler` outside any `<Files>` block).
+    `<FilesMatch "\\.jpg$"> SetHandler ...php` maps that block's extensions."""
+    exts: set[str] = set()
+    rest = content
+    for block in _FILES_BLOCK.finditer(content):
+        if _SET_HANDLER.search(block.group("body")):
+            exts |= {f".{alt.casefold()}" for m in _PATTERN_EXT.finditer(block.group("pattern"))
+                     for alt in m.group("alts").split("|") if alt}
+        rest = rest.replace(block.group(0), "")
+    exts |= {f".{e.strip().lstrip('.').casefold()}" for m in _HANDLER_LINE.finditer(content)
+             for e in m.group("exts").split() if e.strip(".")}
+    return frozenset(exts - _EXECUTABLE_EXTENSIONS), bool(_SET_HANDLER.search(rest))
+
+
+HTACCESS_RULE = "FILE-HTACCESS-PHP-HANDLER"
+HANDLED_RULE = "FILE-HANDLER-EXEC"
+
+
+@dataclass(frozen=True)
+class HandlerScope:
+    """An `.htaccess` that makes more files run as PHP, for its folder and below."""
+
+    htaccess: FileEvidence
+    folder: str  # "" for the webroot itself, else "a/b/"
+    extensions: frozenset[str]
+    every_file: bool
+
+
+def handler_scopes(files: Iterable[FileEvidence]) -> list[HandlerScope]:
+    scopes = []
+    for file in files:
+        path = file.path.replace("\\", "/")
+        if path.rsplit("/", 1)[-1] != ".htaccess" or file.baseline_status is (
+                BaselineStatus.UNCHANGED):
+            continue
+        content = _read_content(file)
+        if content is None:
+            continue
+        exts, every = handler_extensions(content)
+        if exts or every:
+            folder = path.rsplit("/", 1)[0] + "/" if "/" in path else ""
+            scopes.append(HandlerScope(file, folder, exts, every))
+    return scopes
+
+
+def handled_by(path: str, scopes: list[HandlerScope]) -> HandlerScope | None:
+    """The `.htaccess` that makes this non-script file run as PHP, if any."""
+    path = path.replace("\\", "/")
+    name = path.rsplit("/", 1)[-1]
+    if name == ".htaccess" or has_executable_extension(path):
+        return None
+    suffix = Path(name.casefold()).suffix
+    return next((s for s in scopes if path.startswith(s.folder)
+                 and (s.every_file or suffix in s.extensions)), None)
+
+
+def handler_findings(file: FileEvidence, scopes: list[HandlerScope]) -> list[Finding]:
+    found = []
+    own = next((s for s in scopes if s.htaccess.evidence_id == file.evidence_id), None)
+    if own is not None:
+        found.append(_finding(
+            file, HTACCESS_RULE, FindingCategory.PERSISTENCE, Severity.HIGH, Confidence.MEDIUM,
+            f"finding.{HTACCESS_RULE}",
+            {"extensions": ", ".join(sorted(own.extensions)) or "*"}, ("T1505.003",)))
+    scope = handled_by(file.path, scopes)
+    if scope is not None:
+        found.append(_finding(
+            file, HANDLED_RULE, FindingCategory.WEBSHELL, Severity.HIGH, Confidence.MEDIUM,
+            f"finding.{HANDLED_RULE}",
+            {"path": truncate_excerpt(file.path), "htaccess": scope.htaccess.path},
+            ("T1505.003",)))
+    return found
 
 
 def is_entrypoint_name(path: str) -> bool:
@@ -93,8 +190,7 @@ def detect_file(file: FileEvidence) -> list[Finding]:
     findings: list[Finding] = []
     path = file.path.replace("\\", "/")
     parts = [part.casefold() for part in path.split("/")]
-    suffix = Path(parts[-1]).suffix.casefold()
-    if suffix in _EXECUTABLE_EXTENSIONS and _WRITABLE_DIRS.intersection(parts[:-1]):
+    if has_executable_extension(path) and _WRITABLE_DIRS.intersection(parts[:-1]):
         findings.append(_finding(
             file, "FILE-WEBSHELL-WRITABLE-EXEC", FindingCategory.WEBSHELL,
             Severity.HIGH, Confidence.MEDIUM, "finding.FILE-WEBSHELL-WRITABLE-EXEC",

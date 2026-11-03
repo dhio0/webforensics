@@ -37,9 +37,15 @@ from webforensics.correlate.seeds import (
     rare_post_finding,
 )
 from webforensics.detect import RULESET_VERSION
-from webforensics.detect.file_rules import detect_file
+from webforensics.detect.file_rules import (
+    detect_file,
+    handler_findings,
+    handler_scopes,
+    has_executable_extension,
+)
 from webforensics.detect.log_rules import detect_requests
 from webforensics.models import (
+    BaselineStatus,
     Citation,
     Confidence,
     CorrelationResult,
@@ -142,6 +148,8 @@ class _Chain:
     # Invokers who did more than fetch the file (POST, or a flagged request like ?cmd=).
     suspect_invokers: set[str] = field(default_factory=set)
     rare_post: Finding | None = None
+    # The writer's own requests leading up to the write, and a clean login (D94).
+    session: list[_Draft] = field(default_factory=list)
 
 
 @lru_cache(maxsize=65536)
@@ -482,6 +490,142 @@ def _actor_history(index: _Index, write: _Write) -> list[LogEvent]:
     return history
 
 
+def _guessed(index: _Index, login: LogEvent) -> bool:
+    """The same actor failed on the same login before this success (guessing, brute force
+    or a bypass that took tries). A login with no such sign may use stolen or known
+    credentials, which the log cannot show."""
+    since = login.ts - _seconds(index.config.lookback_s)
+    for e in index.actor_since(index.actor(login), since):
+        if (e.ts, e.log_file, e.line_no) >= (login.ts, login.log_file, login.line_no):
+            return False
+        if e.path == login.path and index.login_failed(e):
+            return True
+    return False
+
+
+SESSION_MAX = 20
+SESSION_SPAN = timedelta(hours=1)
+
+
+def _session(chain: _Chain, index: _Index, history: list[LogEvent],
+             login: LogEvent | None) -> None:
+    """The writer's own requests in the hour before the write (D94): the pages the attacker
+    opened between getting in and writing the file. Failed logins and flagged requests are
+    left to the context step, static assets are skipped, and the most recent are kept."""
+    write = chain.write
+    if write is None or not write.actor:
+        return
+    start = write.ts - SESSION_SPAN
+    if login is not None:
+        start = min(start, login.ts)
+    own = [e for e in history if e.ts >= start and not rq.is_static_asset(e.path)
+           and not index.login_failed(e) and not index.of(e)
+           and (login is None or e.evidence_id != login.evidence_id)]
+    for event in own[-SESSION_MAX:]:
+        chain.session.append(_log_draft(index, "actor_request", event, Confidence.HIGH, None,
+                                        file=chain.file.path))
+
+
+LOGIN_FORM_SPAN = timedelta(minutes=10)
+EXECUTED_RULE = "CORR-STATIC-FILE-EXECUTED"
+
+
+def _executed_static(file: FileEvidence, index: _Index) -> Finding | None:
+    """A new or changed file without a script extension, POSTed to and answered 2xx with a
+    size unlike the file's own: the server ran it instead of sending it (D94). This catches
+    an image run as PHP through an `.htaccess` handler even when the `.htaccess` content is
+    not in the evidence."""
+    if file.baseline_status not in (BaselineStatus.NEW, BaselineStatus.MODIFIED):
+        return None
+    if has_executable_extension(file.path) or file.size is None:
+        return None
+    hit = next((e for e in index.hits(file) if e.method == "POST" and 200 <= e.status < 300
+                and e.bytes_sent and e.bytes_sent != file.size), None)
+    if hit is None:
+        return None
+    return Finding(
+        finding_id=stable_id(EXECUTED_RULE, file.evidence_id), rule_id=EXECUTED_RULE,
+        rule_version=RULESET_VERSION, category=FindingCategory.WEBSHELL,
+        subject=file.evidence_id, severity=Severity.HIGH, confidence=Confidence.MEDIUM,
+        reasons=(Reason(key=f"finding.{EXECUTED_RULE}", params={
+            "path": file.path, "status": str(hit.status), "bytes": str(hit.bytes_sent),
+            "size": str(file.size)}),),
+        citations=(hit.citation(), file.citation()), mitre=("T1505.003",),
+    )
+
+
+def _login_context(chain: _Chain, index: _Index, login: LogEvent) -> None:
+    """The login before the write stays in the timeline: as access with valid credentials
+    when it is clean, as a plain session request after failed tries."""
+    if _guessed(index, login):
+        chain.session.append(_log_draft(index, "actor_request", login, Confidence.HIGH, None,
+                                        file=chain.file.path))
+        return
+    seen = _log_draft(index, "login_valid_credentials", login, Confidence.MEDIUM, "T1078")
+    seen.reasons += [as_reason(index.logins[login.evidence_id][1]),
+                     Reason(key="login.no_failed_attempts")]
+    chain.session.append(seen)
+# The weakness a successful attack request on the writing endpoint shows (D94).
+_VULN_BY_RULE = (("LOG-CMDI-", "os_command_injection"), ("LOG-SQLI-", "sql_injection"),
+                 ("LOG-RCE-", "remote_code_execution"), ("LOG-TRAVERSAL-", "path_traversal"))
+
+
+def _exploited_endpoint(chain: _Chain, index: _Index, history: list[LogEvent]) -> bool:
+    """The writer attacked this very endpoint earlier (command injection, SQLi, ...) and
+    was answered 2xx; then a request to it wrote the file. The payload of the writing
+    request is in its POST body, unseen, but the endpoint is shown to be exploitable, so
+    the write is the exploit (D94)."""
+    creation, write = chain.creation, chain.write
+    assert creation is not None and write is not None
+    attacked = [e for e in history if e.path == write.path and rq.is_success(e)
+                and any(f.category is FindingCategory.EXPLOIT_ATTEMPT for f in index.of(e))]
+    if not attacked:
+        return False
+    rules = [f.rule_id for f in index.of(attacked[0])
+             if f.category is FindingCategory.EXPLOIT_ATTEMPT]
+    vuln = next((v for prefix, v in _VULN_BY_RULE for r in rules if r.startswith(prefix)), "")
+    creation.kind = "exploited_endpoint_write"
+    creation.technique = "T1190"
+    creation.params |= {"vuln_class": vuln, "attempts": str(len(attacked)),
+                        "first_line": str(attacked[0].line_no)}
+    creation.root_cap = Confidence.MEDIUM
+    creation.root_reasons += [Reason(key="root.endpoint_attacked_then_write", params={
+        "attempts": str(len(attacked)), "first_line": str(attacked[0].line_no)}),
+        Reason(key="creation.post_body_not_logged")]
+    chain.root = creation
+    return True
+
+
+def _after_clean_login(chain: _Chain, index: _Index, login: LogEvent) -> None:
+    """A login with no failed try and no attack pattern before the write (D94).
+
+    The log cannot show how the credentials were obtained, so the login is not called the
+    way in. The write that brought the attacker's file is the first evidence of the attack
+    and becomes the root cause; the login stays in the timeline as access with valid
+    credentials (T1078), and the recommendations ask for a credential reset."""
+    creation, write = chain.creation, chain.write
+    assert creation is not None and write is not None
+    likely = write.level is rq.WriteLevel.LIKELY
+    creation.kind = "upload_after_login" if likely else "write_after_login"
+    creation.params["vuln_class"] = "valid_account_abuse"
+    creation.params["login_path"] = login.path or ""
+    creation.root_cap = Confidence.MEDIUM
+    creation.root_reasons += [Reason(key="root.write_after_clean_login"),
+                              Reason(key="confidence.auth_method_not_visible")]
+    chain.root = creation
+    _login_context(chain, index, login)
+    form = None
+    for e in index.actor_since(write.actor, login.ts - LOGIN_FORM_SPAN):
+        if e.ts > login.ts:
+            break
+        if (e.evidence_id != login.evidence_id and e.path == login.path
+                and e.method == "GET" and rq.is_success(e)):
+            form = e
+    if form is not None:
+        chain.session.append(_log_draft(index, "actor_request", form, Confidence.HIGH,
+                                        None, file=chain.file.path))
+
+
 def _entry_point(chain: _Chain, index: _Index) -> None:
     creation, write = chain.creation, chain.write
     if creation is None or write is None:
@@ -490,6 +634,14 @@ def _entry_point(chain: _Chain, index: _Index) -> None:
     bypass = next((e for e in history if rq.is_login_endpoint(e.path)
                    and rq.has_sqli(index.of(e)) and index.login_succeeded(e)), None)
     login = next((e for e in history if index.login_succeeded(e)), None)
+    _session(chain, index, history, bypass or login)
+    if _exploited_endpoint(chain, index, history):
+        if login is not None:
+            _login_context(chain, index, login)
+        return
+    if bypass is None and login is not None and not _guessed(index, login):
+        _after_clean_login(chain, index, login)
+        return
     entry = bypass or login
     if entry is None:
         creation.kind = "upload_exploit" if write.level is rq.WriteLevel.LIKELY else "write_exploit"
@@ -700,6 +852,13 @@ def _entry_by_code_execution(chain: _Chain, anchor: Anchor, index: _Index) -> No
     chain.root = root
 
 
+def _logged_in_before(index: _Index, event: LogEvent) -> bool:
+    since = event.ts - _seconds(index.config.lookback_s)
+    position = (event.ts, event.log_file, event.line_no)
+    return any(index.login_succeeded(e) for e in index.actor_since(index.actor(event), since)
+               if (e.ts, e.log_file, e.line_no) < position)
+
+
 def _log_only_drafts(shell: LogOnlyFile, index: _Index,
                      webroot_seen: bool = True) -> tuple[list[_Draft], _Draft | None]:
     """Timeline events for one log-only script, and its entry point if it shows one."""
@@ -722,11 +881,24 @@ def _log_only_drafts(shell: LogOnlyFile, index: _Index,
         root.root_cap = Confidence.MEDIUM
         root.root_reasons.append(Reason(key="root.sqli_file_write"))
         drafts.append(root)
+    elif writer is not None and shell.uploaded and not _logged_in_before(index, writer):
+        # Uploaded with no login seen, then driven through POST bodies (D94).
+        root = _log_draft(index, "upload_exploit", writer, Confidence.MEDIUM, "T1190",
+                          file=shell.url, vuln_class="unrestricted_file_upload")
+        root.reasons.append(Reason(key="logonly.uploaded_then_posted",
+                                   params={"posts": str(len(shell.uses))}))
+        root.root_cap = Confidence.MEDIUM
+        root.root_reasons += [Reason(key="root.write_without_prior_login"),
+                              Reason(key="confidence.no_login_is_absence_of_evidence")]
+        drafts.append(root)
     elif writer is not None:
         write = _log_draft(index, "file_write_request", writer, Confidence.MEDIUM,
                            "T1505.003", file=shell.url)
         write.reasons.append(Reason(key="logonly.write_inferred"))
         drafts.append(write)
+    if shell.gone_at is not None:
+        drafts.append(_log_draft(index, "log_only_file_gone", shell.gone_at, Confidence.HIGH,
+                                 None, file=shell.url))
     if shell.deleted_by is not None:
         gone = _log_draft(index, "file_deleted_by_command", shell.deleted_by, Confidence.MEDIUM,
                           "T1070.004", file=shell.url)
@@ -756,6 +928,72 @@ def _trace(file: FileEvidence, findings: list[Finding], index: _Index,
     _entry_point(chain, index)
     if chain.creation is None:
         _entry_by_code_execution(chain, anchor, index)
+    return chain
+
+
+def _attacked_before(index: _Index, actor: str, until: datetime) -> bool:
+    """The actor sent an attack request that was answered 2xx before `until`."""
+    for e in index.actor_since(actor, until - _seconds(index.config.lookback_s)):
+        if e.ts > until:
+            return False
+        if rq.is_success(e) and any(f.category is FindingCategory.EXPLOIT_ATTEMPT
+                                    for f in index.of(e)):
+            return True
+    return False
+
+
+def _attacker_side_file(file: FileEvidence, index: _Index,
+                        actors: set[str]) -> _Chain | None:
+    """A new or changed file that is not code, written in the same seconds as a request
+    from an attacker (D94): a marker, a dropped text file, data written by a command.
+
+    Such files are everywhere on a live site (uploads, caches), so the link must come from
+    the attacker: an actor already implicated by a code file, whose request of any kind
+    falls within the clock skew of the file's trusted write time; or an actor whose attack
+    request on some endpoint was answered 2xx, through a write request (POST/PUT) within
+    the skew. Without a baseline, "new" is unknown and nothing is linked here."""
+    if file.baseline_status not in (BaselineStatus.NEW, BaselineStatus.MODIFIED):
+        return None
+    anchor = choose_anchor(file, index.config)
+    if anchor is None or anchor.basis is TimestampBasis.MTIME:
+        return None
+    skew = _seconds(index.config.clock_skew_s)
+    nearby = [e for e in index.between(anchor.ts - skew, anchor.ts + skew)
+              if rq.is_success(e)]
+
+    def eligible(e: LogEvent) -> bool:
+        actor = index.actor(e)
+        if actor in actors:
+            return True
+        return (rq.write_level(e, index.of(e)) > rq.WriteLevel.NONE
+                and _attacked_before(index, actor, e.ts))
+
+    if not nearby:
+        return None
+    # The request that best explains the file (the closest, then a write, as for code
+    # files, D54) must be the attacker's: a visitor's upload in that second explains it.
+    best = min(nearby, key=lambda e: (
+        abs(e.ts - anchor.ts), rq.write_level(e, index.of(e)) is rq.WriteLevel.NONE,
+        e.log_file, e.line_no))
+    if not eligible(best):
+        return None
+    findings: list[Finding] = []
+    chain = _Chain(file=file, file_event=_file_draft(file, anchor, findings, index.config),
+                   findings=findings)
+    chain.file_event.reasons.append(Reason(key="seed.attacker_side_file"))
+    _invocations(chain, anchor, index)
+    writes = rq.write_level(best, index.of(best)) > rq.WriteLevel.NONE
+    kind = "file_write_request" if writes else "file_side_write"
+    draft = _log_draft(index, kind, best, Confidence.MEDIUM, "T1505.003" if writes else None,
+                       file=file.path)
+    draft.citations.append(file.citation())
+    draft.reasons.append(Reason(key="creation.same_second_as_attacker"))
+    draft.window = chain.file_event.window
+    chain.creation, chain.write = draft, _access_write(best, index)
+    chain.file_event.order = (best.log_file, best.line_no, 1)
+    chain.invocations = [d for d in chain.invocations if d.subject != draft.subject]
+    if writes and index.actor(best) not in actors:
+        _entry_point(chain, index)  # a new attacker: their way in is still unknown
     return chain
 
 
@@ -881,6 +1119,10 @@ def _root_cause(roots: list[_Draft], chains: list[_Chain],
     alternatives = [r.event_id for r in roots[1:] if r.event_id != primary.event_id]
     if primary_chain is not None and primary_chain.root is primary_chain.creation:
         alternatives += [a.event_id for a in primary_chain.alternatives]
+    elif (primary_chain is not None and primary_chain.creation is not None
+          and primary.kind == "login_method_unknown"):
+        # If the password was known beforehand, the write itself is the first attack step.
+        alternatives.append(primary_chain.creation.event_id)
     return RootCause(
         event_id=primary.event_id, vuln_class=primary.params.get("vuln_class") or None,
         confidence=cap(primary.confidence, primary.root_cap),
@@ -917,8 +1159,15 @@ def _correlate(logs: LogCollection, files: FileCollection, *,
     chains: list[_Chain] = []
     extra: list[_Draft] = []
     unexplained: list[str] = []
+    scopes = handler_scopes(files.files)
     for file in sorted(files.files, key=lambda f: f.path):
-        file_findings = detect_file(file)
+        file_findings = detect_file(file) + handler_findings(file, scopes)
+        if (executed := _executed_static(file, index)) is not None:
+            file_findings.append(executed)
+        if file.baseline_status is BaselineStatus.UNCHANGED:
+            # Identical to the known-good copy: its content signals (an encoded blob in a
+            # core file) are not news, and listing them for review buries the incident (D94).
+            continue
         findings.extend(file_findings)
         strong = is_strong_seed(file, file_findings)
         # Written with many other files (a deploy or install) and nothing in its content
@@ -965,14 +1214,25 @@ def _correlate(logs: LogCollection, files: FileCollection, *,
         made, root = _log_only_drafts(shell, index, webroot_seen=bool(files.files))
         shell_drafts += made
         shell_roots += [root] if root is not None else []
+    roots = [*(c.root for c in chains if c.root), *shell_roots]
+    actors = _implicated_actors(chains, roots) | {s.actor for s in shells}
+    taken_paths = {c.file.path for c in chains} | set(unexplained)
+    for file in sorted(files.files, key=lambda f: f.path):
+        if file.path in taken_paths or file.path in deploys:
+            continue
+        chain = _attacker_side_file(file, index, actors)
+        if chain is not None:
+            chains.append(chain)
+            findings.extend(chain.findings)
     roots = sorted([*(c.root for c in chains if c.root), *shell_roots],
                    key=lambda d: (d.ts, d.order))
     actors = _implicated_actors(chains, roots) | {s.actor for s in shells}
 
     drafts: dict[str, _Draft] = {}
     for chain in chains:
+        session = [d for d in chain.session if d.kind != "actor_request"]
         for draft in (chain.root, chain.creation, *chain.alternatives, chain.file_event,
-                      *chain.invocations):
+                      *chain.invocations, *session):
             if draft is not None:
                 drafts.setdefault(draft.event_id, draft)
     for draft in [*extra, *shell_drafts]:
@@ -980,6 +1240,13 @@ def _correlate(logs: LogCollection, files: FileCollection, *,
     taken = {d.subject for d in drafts.values() if d.basis is TimestampBasis.LOG}
     for draft in _context(index, actors, taken, roots):
         drafts.setdefault(draft.event_id, draft)
+    # Plain session requests fill in last: a request that is already a first sighting,
+    # an attack attempt or a failed login keeps that more telling label (D94).
+    for chain in chains:
+        for draft in chain.session:
+            if draft.kind == "actor_request" and draft.subject not in taken:
+                taken.add(draft.subject)
+                drafts.setdefault(draft.event_id, draft)
 
     ordered = sorted(drafts.values(), key=lambda d: (d.ts, d.order))
     _corroborate(ordered, index)

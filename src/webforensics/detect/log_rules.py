@@ -105,10 +105,19 @@ LOG_RULES: tuple[LogRule, ...] = (
             r"|\bsystem\s*\(\s*['\"$]|<\?php|\bphp\s+-r\s"
             r"|\[#(?:post_render|pre_render|lazy_builder|access_callback|value_callback)\]"),
     ),
+    # OS command injection (D94): a shell separator, then a command that only probes or
+    # reads (`;cat /etc/passwd`, `|id`, `$(whoami)`), as commix and manual tests send.
+    LogRule(
+        "LOG-CMDI-SHELL", FindingCategory.EXPLOIT_ATTEMPT, Severity.HIGH, Confidence.MEDIUM,
+        ("T1190", "T1059.004"), Target.QUERY,
+        _rx(r"(?:[;|`]|&&|\$\()\s*(?:cat|id|whoami|uname|ls|dir|type|echo|sleep|ping"
+            r"|wget|curl|nc|ncat|bash|sh|pwd|hostname|ifconfig|ipconfig|nslookup)\b"),
+    ),
     LogRule(
         "LOG-SCANNER-UA", FindingCategory.RECON, Severity.LOW, Confidence.MEDIUM,
         ("T1595.002",), Target.USER_AGENT,
-        _rx(r"\b(?:sqlmap|nikto|nmap|acunetix|nessus|wpscan|masscan|dirbuster|gobuster|havij)\b"),
+        _rx(r"\b(?:sqlmap|nikto|nmap|acunetix|nessus|wpscan|masscan|dirbuster|gobuster|havij"
+            r"|commix|wfuzz|ffuf|nuclei)\b"),
     ),
     LogRule(
         "LOG-WEBSHELL-UPLOAD-DIR", FindingCategory.WEBSHELL, Severity.HIGH, Confidence.MEDIUM,

@@ -276,7 +276,9 @@
           "params": {}
         }
       ],
-      "alternative_event_ids": []
+      "alternative_event_ids": [
+        "7d4bba0373ee495f"
+      ]
     },
     "findings": [
       {
@@ -419,6 +421,12 @@
         "path": "/admin/login.php",
         "at": "2026-10-29T05:17:11+00:00",
         "confidence": "low"
+      }
+    },
+    {
+      "key": "summary.alternatives",
+      "params": {
+        "count": "1"
       }
     }
   ],
