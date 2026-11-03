@@ -1,0 +1,12 @@
+[
+  {
+    "action": "scanner_sweep (native burst)",
+    "offset_seconds": 0.0008087170001545019,
+    "started_at_utc": "2026-11-02T10:17:44.888597+00:00"
+  },
+  {
+    "action": "sqlmap (native burst)",
+    "offset_seconds": 185.00096438900005,
+    "started_at_utc": "2026-11-02T10:20:49.880896+00:00"
+  }
+]

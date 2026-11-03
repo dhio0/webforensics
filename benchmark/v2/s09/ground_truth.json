@@ -1,0 +1,89 @@
+{
+  "scenario_id": "s09",
+  "description": "An administrator installs a local fixture archive containing a Weevely agent. The pinned agent's file timestamp module changes the agent's modification time to an earlier date and verifies the result.",
+  "attacker_ips": [
+    "192.0.2.131"
+  ],
+  "steps": [
+    {
+      "id": "administrator_login",
+      "category": "valid_account_access",
+      "mitre": [
+        "T1078.003"
+      ],
+      "log_file": "access.log.gz",
+      "line_no": 7095,
+      "is_root_cause": false,
+      "expected_in_timeline": false
+    },
+    {
+      "id": "plugin_upload_form",
+      "category": "reconnaissance",
+      "mitre": [
+        "T1595"
+      ],
+      "log_file": "access.log.gz",
+      "line_no": 7234,
+      "is_root_cause": false,
+      "expected_in_timeline": false
+    },
+    {
+      "id": "agent_upload",
+      "category": "tool_upload",
+      "mitre": [
+        "T1505.003"
+      ],
+      "log_file": "access.log.gz",
+      "line_no": 7365,
+      "is_root_cause": false,
+      "expected_in_timeline": false
+    },
+    {
+      "id": "agent_timestomp",
+      "category": "timestamp_manipulation",
+      "mitre": [
+        "T1070.006"
+      ],
+      "log_file": "access.log.gz",
+      "line_no": 7524,
+      "is_root_cause": true
+    }
+  ],
+  "files": [
+    {
+      "path": "wp-content/plugins/m8v2-timestomp/m8v2-s09-agent.php",
+      "sha256": "87664fdbd79f94154ad9aac384134d1316a81154764e3a5e831e81bd078e075b",
+      "change": "created",
+      "role": "webshell_agent"
+    },
+    {
+      "path": "wp-content/plugins/m8v2-timestomp/m8v2-timestomp.php",
+      "sha256": "8d6f593c95bb4c31c4da7fcf5833c89d898226fc776a37e5d5fe5b972e4fbf2b",
+      "change": "created",
+      "role": "attacker_plugin"
+    },
+    {
+      "path": "wp-content/uploads/wp-file-manager-pro/fm_backup/index.php",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "change": "modified",
+      "role": "side_effect",
+      "expected_in_report": false
+    }
+  ],
+  "root_cause_step": "agent_timestomp",
+  "split": "held_out",
+  "expected_rule_ids": [],
+  "analysis": {
+    "access_logs": [
+      "access.log.gz"
+    ],
+    "error_logs": [
+      "app-error.log"
+    ],
+    "error_log_format": "apache",
+    "error_log_utc_offset": "+0000",
+    "manifest": "manifest.tsv",
+    "baseline": "baseline.tsv",
+    "trusted_proxies": []
+  }
+}

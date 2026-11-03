@@ -411,6 +411,13 @@ Status: accepted (M8, post-hoc on the fourth case). One run over all 22 virtual 
 - **Only 2xx is output.** The size test counts 2xx answers only, as the D85 rule described: a redirect carries no script output.
 - **Verified.** Lab benchmark, cases 1 and 3, Organization X and all 21 per-site runs of Organization Y: results identical. Case 2's webshell copy is blocked by antivirus again (the exclusion was removed), so the tool was run before and after D89 on the same evidence: identical. One run over all 7.4M lines: `/1514.php` gone, the same webshell and writer as the per-site runs, 221 s, 6.0 GB.
 
+## D90 — Scoring benchmark v2
+Status: accepted (M8, benchmark v2). The rules were fixed and the scorer's hash recorded (`benchmark/v2/results/PREREG.md`) before the first v2 run; the analysis code is frozen at 93d205b.
+- **Layout and webroot.** `webforensics eval benchmark/v2` reads `<benchmark>/<id>/` when there is no `scenarios/` folder. v2 commits only the changed (defanged) files, so `--webroot-root DIR` points at full trees rebuilt by `lab/v2/restore_webroot.py`, one folder per scenario id.
+- **Which files count.** A ground-truth file with `expected_in_report` (default true) must be reported. One marked false is neutral when it is a side effect of the app (reporting it is neither missed nor false), and a false accusation when its role is `benign_*` (a legitimate update or upload). v1 has neither field, so its scores are unchanged.
+- **Deleted files.** A deleted file cannot be in the affected list; it counts as found when the tool names it as deleted or as a script seen only in the logs (D85). That excuse holds only for deleted files.
+- **Vulnerable line.** v2 names the file as in the app's source repository (`phpmyfaq/src/...`), one folder above the webroot; the finding must match whole trailing path segments.
+
 ## D91 — Interactive viewer: same text as the report, static page, no network
 Status: accepted (portfolio, on branch `ui-viewer`, independent of the benchmark work). The static HTML report is right for reading and printing, but a case with thousands of events is hard to explore in one long table. `webforensics view report.json` writes `viewer.html`.
 - **Same facts as the report.** The viewer reads `report.json` (format `webforensics-report/1`; other files are refused), builds the same `Document` and uses the same `Texts`, so every sentence is the report's sentence. Only the timeline tab is built from the events themselves (chart, filters, collapsed bursts, detail panel); the other tabs show the report's sections. Indonesian UI strings live in `messages_id.VIEWER`.

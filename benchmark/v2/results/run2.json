@@ -1,0 +1,269 @@
+{
+  "scenarios": [
+    {
+      "scenario_id": "s01",
+      "adapter": "file",
+      "split": "dev",
+      "passed": true,
+      "step_recall": 1.0,
+      "steps_expected": 4,
+      "missed_steps": [],
+      "root_cause": "correct",
+      "false_ips": [],
+      "false_files": [],
+      "missed_files": [],
+      "missed_rules": [],
+      "code_line": "-",
+      "runtime_s": 91.651
+    },
+    {
+      "scenario_id": "s02",
+      "adapter": "file",
+      "split": "held_out",
+      "passed": false,
+      "step_recall": 1.0,
+      "steps_expected": 4,
+      "missed_steps": [],
+      "root_cause": "wrong",
+      "false_ips": [],
+      "false_files": [],
+      "missed_files": [],
+      "missed_rules": [],
+      "code_line": "-",
+      "runtime_s": 5.533
+    },
+    {
+      "scenario_id": "s03",
+      "adapter": "file",
+      "split": "dev",
+      "passed": false,
+      "step_recall": 0.0,
+      "steps_expected": 3,
+      "missed_steps": [
+        "editor_login",
+        "news_editor_open",
+        "save_news_sql_injection"
+      ],
+      "root_cause": "missed",
+      "false_ips": [],
+      "false_files": [],
+      "missed_files": [],
+      "missed_rules": [],
+      "code_line": "missed",
+      "runtime_s": 80.644
+    },
+    {
+      "scenario_id": "s04",
+      "adapter": "file",
+      "split": "dev",
+      "passed": false,
+      "step_recall": 0.0,
+      "steps_expected": 4,
+      "missed_steps": [
+        "editor_login",
+        "category_editor_open",
+        "category_image_upload",
+        "uploaded_file_execution"
+      ],
+      "root_cause": "missed",
+      "false_ips": [],
+      "false_files": [],
+      "missed_files": [
+        "images/category-1-.php.."
+      ],
+      "missed_rules": [],
+      "code_line": "n/a",
+      "runtime_s": 60.254
+    },
+    {
+      "scenario_id": "s05",
+      "adapter": "file",
+      "split": "dev",
+      "passed": false,
+      "step_recall": 0.0,
+      "steps_expected": 5,
+      "missed_steps": [
+        "editor_login",
+        "security_page_open",
+        "security_level_set",
+        "command_injection_file_write",
+        "marker_file_check"
+      ],
+      "root_cause": "missed",
+      "false_ips": [],
+      "false_files": [],
+      "missed_files": [
+        "hackable/uploads/m8v2-s05-marker.txt"
+      ],
+      "missed_rules": [],
+      "code_line": "-",
+      "runtime_s": 3.168
+    },
+    {
+      "scenario_id": "s06",
+      "adapter": "file",
+      "split": "held_out",
+      "passed": false,
+      "step_recall": 0.0,
+      "steps_expected": 1,
+      "missed_steps": [
+        "lfi_file_read"
+      ],
+      "root_cause": "missed",
+      "false_ips": [],
+      "false_files": [],
+      "missed_files": [],
+      "missed_rules": [],
+      "code_line": "-",
+      "runtime_s": 1.841
+    },
+    {
+      "scenario_id": "s07",
+      "adapter": "file",
+      "split": "dev",
+      "passed": false,
+      "step_recall": 0.0,
+      "steps_expected": 7,
+      "missed_steps": [
+        "hydra_valid_login",
+        "login_form",
+        "editor_login",
+        "plugin_upload_form",
+        "plugin_upload",
+        "plugin_activation",
+        "marker_check"
+      ],
+      "root_cause": "missed",
+      "false_ips": [],
+      "false_files": [],
+      "missed_files": [
+        "wp-content/plugins/m8v2-maintenance/m8v2-maintenance.php",
+        "wp-content/uploads/m8v2-s07-marker.txt"
+      ],
+      "missed_rules": [],
+      "code_line": "-",
+      "runtime_s": 98.2
+    },
+    {
+      "scenario_id": "s08",
+      "adapter": "file",
+      "split": "dev",
+      "passed": false,
+      "step_recall": 0.0,
+      "steps_expected": 6,
+      "missed_steps": [
+        "unauthenticated_file_upload",
+        "agent_identity",
+        "agent_working_directory",
+        "agent_user",
+        "agent_deleted",
+        "agent_absent_check"
+      ],
+      "root_cause": "missed",
+      "false_ips": [],
+      "false_files": [],
+      "missed_files": [
+        "wp-content/plugins/wp-file-manager/lib/files/m8v2-s08-agent.php"
+      ],
+      "missed_rules": [],
+      "code_line": "-",
+      "runtime_s": 83.261
+    },
+    {
+      "scenario_id": "s09",
+      "adapter": "file",
+      "split": "held_out",
+      "passed": false,
+      "step_recall": 1.0,
+      "steps_expected": 1,
+      "missed_steps": [],
+      "root_cause": "wrong",
+      "false_ips": [],
+      "false_files": [],
+      "missed_files": [
+        "wp-content/plugins/m8v2-timestomp/m8v2-timestomp.php"
+      ],
+      "missed_rules": [],
+      "code_line": "-",
+      "runtime_s": 83.377
+    },
+    {
+      "scenario_id": "s10",
+      "adapter": "file",
+      "split": "dev",
+      "passed": false,
+      "step_recall": 0.0,
+      "steps_expected": 5,
+      "missed_steps": [
+        "login_form",
+        "editor_login",
+        "plugin_upload_form",
+        "persistence_upload",
+        "image_agent_command"
+      ],
+      "root_cause": "missed",
+      "false_ips": [],
+      "false_files": [],
+      "missed_files": [
+        "wp-content/plugins/m8v2-persistence/.htaccess",
+        "wp-content/plugins/m8v2-persistence/m8v2-persistence.php",
+        "wp-content/plugins/m8v2-persistence/m8v2-photo.jpg"
+      ],
+      "missed_rules": [],
+      "code_line": "-",
+      "runtime_s": 85.177
+    },
+    {
+      "scenario_id": "s11",
+      "adapter": "file",
+      "split": "held_out",
+      "passed": true,
+      "step_recall": null,
+      "steps_expected": 0,
+      "missed_steps": [],
+      "root_cause": "correct",
+      "false_ips": [],
+      "false_files": [],
+      "missed_files": [],
+      "missed_rules": [],
+      "code_line": "-",
+      "runtime_s": 14.264
+    },
+    {
+      "scenario_id": "s12",
+      "adapter": "file",
+      "split": "dev",
+      "passed": true,
+      "step_recall": null,
+      "steps_expected": 0,
+      "missed_steps": [],
+      "root_cause": "correct",
+      "false_ips": [],
+      "false_files": [],
+      "missed_files": [],
+      "missed_rules": [],
+      "code_line": "-",
+      "runtime_s": 7.859
+    }
+  ],
+  "totals": {
+    "file": {
+      "dev": {
+        "scenarios": 8,
+        "passed": 2,
+        "step_recall": 0.1176,
+        "root_cause_correct": 2,
+        "false_accusations": 0,
+        "accusation_precision": 1.0
+      },
+      "held_out": {
+        "scenarios": 4,
+        "passed": 1,
+        "step_recall": 0.8333,
+        "root_cause_correct": 1,
+        "false_accusations": 0,
+        "accusation_precision": 1.0
+      }
+    }
+  }
+}

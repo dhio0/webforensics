@@ -1,0 +1,83 @@
+{
+  "scenario_id": "s02",
+  "description": "After the preconfigured DVWA administrator session is established, pinned sqlmap confirms SQL injection and attempts a user-table dump; the same session uploads and briefly verifies an agent. The SQLi is not represented as the cause of the login because this DVWA module requires authentication.",
+  "attacker_ips": [
+    "192.0.2.131"
+  ],
+  "root_cause_step": "agent_upload",
+  "steps": [
+    {
+      "id": "sqlmap_injection_check",
+      "category": "sql_injection",
+      "mitre": [
+        "T1190"
+      ],
+      "label_method": "attacker_ip_time_window",
+      "attacker_ip": "192.0.2.131",
+      "started_at": "2026-11-02T10:24:15.810292+00:00",
+      "ended_at": "2026-11-02T10:25:12.305494+00:00",
+      "request": "GET /vulnerabilities/sqli/?id=1&Submit=Submit HTTP/1.1",
+      "status": 200,
+      "candidate_ordinal": 1
+    },
+    {
+      "id": "administrator_login",
+      "category": "valid_account_access",
+      "mitre": [
+        "T1078"
+      ],
+      "label_method": "header"
+    },
+    {
+      "id": "security_level_low",
+      "category": "valid_account_access",
+      "mitre": [
+        "T1078"
+      ],
+      "label_method": "header"
+    },
+    {
+      "id": "upload_form",
+      "category": "reconnaissance",
+      "mitre": [
+        "T1595"
+      ],
+      "label_method": "header",
+      "expected_in_timeline": false
+    },
+    {
+      "id": "agent_upload",
+      "category": "file_upload",
+      "mitre": [
+        "T1505.003"
+      ],
+      "label_method": "header"
+    }
+  ],
+  "files": [
+    {
+      "path": "/hackable/uploads/m8v2-s02-agent.php",
+      "role": "webshell_agent"
+    },
+    {
+      "path": "/hackable/uploads/.htaccess",
+      "role": "side_effect",
+      "expected_in_report": false
+    }
+  ],
+  "analysis": {
+    "access_logs": [
+      "access.log.gz"
+    ],
+    "error_logs": [
+      "app-error.log"
+    ],
+    "error_log_format": "apache",
+    "error_log_utc_offset": "+0000",
+    "manifest": "manifest.tsv",
+    "baseline": "baseline.tsv",
+    "trusted_proxies": []
+  },
+  "split": "held_out",
+  "expected_rule_ids": []
+}

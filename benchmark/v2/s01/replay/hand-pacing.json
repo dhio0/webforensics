@@ -1,0 +1,42 @@
+[
+  {
+    "action": "site_check",
+    "offset_seconds": 7.641799993507448e-05,
+    "started_at_utc": "2026-11-01T07:00:18.328342+00:00"
+  },
+  {
+    "action": "plugin_version_check",
+    "offset_seconds": 53.553938243000175,
+    "started_at_utc": "2026-11-01T07:01:11.879653+00:00"
+  },
+  {
+    "action": "admin_probe",
+    "offset_seconds": 107.97885546099997,
+    "started_at_utc": "2026-11-01T07:02:06.302949+00:00"
+  },
+  {
+    "action": "xmlrpc_probe",
+    "offset_seconds": 164.05815831900009,
+    "started_at_utc": "2026-11-01T07:03:02.379406+00:00"
+  },
+  {
+    "action": "unauthenticated_file_upload",
+    "offset_seconds": 217.54953963700018,
+    "started_at_utc": "2026-11-01T07:03:55.867682+00:00"
+  },
+  {
+    "action": "agent_command",
+    "offset_seconds": 264.3419052459999,
+    "started_at_utc": "2026-11-01T07:04:42.657511+00:00"
+  },
+  {
+    "action": "agent_command",
+    "offset_seconds": 311.25393844500013,
+    "started_at_utc": "2026-11-01T07:05:29.567851+00:00"
+  },
+  {
+    "action": "agent_command",
+    "offset_seconds": 364.8481187719999,
+    "started_at_utc": "2026-11-01T07:06:23.159190+00:00"
+  }
+]

@@ -1,0 +1,152 @@
+{
+  "scenario_id": "s12",
+  "description": "An administrator checks core updates, updates a local cache plugin, uploads media, and warms a benign PHP cache. A scanner receives a catch-all 200; there is no compromise.",
+  "attacker_ips": [],
+  "steps": [
+    {
+      "id": "admin_login_form",
+      "category": "benign_admin_activity",
+      "mitre": [],
+      "log_file": "access.log.gz",
+      "line_no": 5254,
+      "is_root_cause": false,
+      "expected_in_timeline": false
+    },
+    {
+      "id": "admin_login",
+      "category": "benign_admin_activity",
+      "mitre": [],
+      "log_file": "access.log.gz",
+      "line_no": 5573,
+      "is_root_cause": false,
+      "expected_in_timeline": false
+    },
+    {
+      "id": "core_update_check",
+      "category": "benign_core_update_check",
+      "mitre": [],
+      "log_file": "access.log.gz",
+      "line_no": 5774,
+      "is_root_cause": false,
+      "expected_in_timeline": false
+    },
+    {
+      "id": "plugin_update_form",
+      "category": "benign_plugin_update",
+      "mitre": [],
+      "log_file": "access.log.gz",
+      "line_no": 5846,
+      "is_root_cause": false,
+      "expected_in_timeline": false
+    },
+    {
+      "id": "plugin_update_package",
+      "category": "benign_plugin_update",
+      "mitre": [],
+      "log_file": "access.log.gz",
+      "line_no": 6060,
+      "is_root_cause": false,
+      "expected_in_timeline": false
+    },
+    {
+      "id": "plugin_update_apply",
+      "category": "benign_plugin_update",
+      "mitre": [],
+      "log_file": "access.log.gz",
+      "line_no": 6678,
+      "is_root_cause": false,
+      "expected_in_timeline": false
+    },
+    {
+      "id": "cache_warm_form",
+      "category": "benign_cache_activity",
+      "mitre": [],
+      "log_file": "access.log.gz",
+      "line_no": 7103,
+      "is_root_cause": false,
+      "expected_in_timeline": false
+    },
+    {
+      "id": "cache_generation",
+      "category": "benign_cache_activity",
+      "mitre": [],
+      "log_file": "access.log.gz",
+      "line_no": 7219,
+      "is_root_cause": false,
+      "expected_in_timeline": false
+    },
+    {
+      "id": "media_upload_form",
+      "category": "benign_media_upload",
+      "mitre": [],
+      "log_file": "access.log.gz",
+      "line_no": 7371,
+      "is_root_cause": false,
+      "expected_in_timeline": false
+    },
+    {
+      "id": "media_upload",
+      "category": "benign_media_upload",
+      "mitre": [],
+      "log_file": "access.log.gz",
+      "line_no": 7399,
+      "is_root_cause": false,
+      "expected_in_timeline": false
+    },
+    {
+      "id": "scanner_catchall_probe",
+      "category": "benign_scanner_request",
+      "mitre": [],
+      "log_file": "access.log.gz",
+      "line_no": 7569,
+      "is_root_cause": false,
+      "expected_in_timeline": false
+    }
+  ],
+  "files": [
+    {
+      "path": "wp-content/cache/m8v2-s12-page.php",
+      "sha256": "179ffacefc0f4b7adf265caa685ec8cea07d8cbf3ce7075e4263f9619e921d5e",
+      "change": "created",
+      "role": "benign_cache_generated",
+      "expected_in_report": false
+    },
+    {
+      "path": "wp-content/plugins/m8v2-cache-fixture/m8v2-cache-fixture.php",
+      "sha256": "c6ba6f948994088302d96b79f52b4106f8601a5a6fe17c107cc109e36fa78b78",
+      "change": "modified",
+      "role": "benign_plugin_update",
+      "expected_in_report": false
+    },
+    {
+      "path": "wp-content/uploads/2026/11/m8v2-s12-admin-media.png",
+      "sha256": "f7523048129270f0519f7172cb961633d2d4f7d72905ec153e3175d9b71d5295",
+      "change": "created",
+      "role": "benign_media_upload",
+      "expected_in_report": false
+    },
+    {
+      "path": "wp-content/uploads/wp-file-manager-pro/fm_backup/index.php",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "change": "modified",
+      "role": "side_effect",
+      "expected_in_report": false
+    }
+  ],
+  "root_cause_step": null,
+  "split": "dev",
+  "expected_rule_ids": [],
+  "analysis": {
+    "access_logs": [
+      "access.log.gz"
+    ],
+    "error_logs": [
+      "app-error.log"
+    ],
+    "error_log_format": "apache",
+    "error_log_utc_offset": "+0000",
+    "manifest": "manifest.tsv",
+    "baseline": "baseline.tsv",
+    "trusted_proxies": []
+  }
+}

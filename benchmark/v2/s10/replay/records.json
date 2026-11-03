@@ -1,0 +1,126 @@
+{
+  "scenario_id": "s10",
+  "description": "An administrator session installs a plugin archive containing a handler configuration and an agent disguised with an image extension. The agent is used once to confirm that the configuration executes it.",
+  "attacker_ips": [
+    "192.0.2.131"
+  ],
+  "root_cause_step": "persistence_upload",
+  "steps": [
+    {
+      "id": "site_check",
+      "category": "reconnaissance",
+      "mitre": [
+        "T1595"
+      ],
+      "label_method": "header",
+      "expected_in_timeline": false
+    },
+    {
+      "id": "login_page_probe",
+      "category": "reconnaissance",
+      "mitre": [
+        "T1595"
+      ],
+      "label_method": "header",
+      "expected_in_timeline": false
+    },
+    {
+      "id": "admin_probe",
+      "category": "reconnaissance",
+      "mitre": [
+        "T1595"
+      ],
+      "label_method": "header",
+      "expected_in_timeline": false
+    },
+    {
+      "id": "plugin_upload_probe",
+      "category": "reconnaissance",
+      "mitre": [
+        "T1595"
+      ],
+      "label_method": "header",
+      "expected_in_timeline": false
+    },
+    {
+      "id": "login_form",
+      "category": "valid_account_access",
+      "mitre": [
+        "T1078.003"
+      ],
+      "label_method": "header"
+    },
+    {
+      "id": "editor_login",
+      "category": "valid_account_access",
+      "mitre": [
+        "T1078.003"
+      ],
+      "label_method": "header"
+    },
+    {
+      "id": "plugin_upload_form",
+      "category": "valid_account_access",
+      "mitre": [
+        "T1078.003"
+      ],
+      "label_method": "header"
+    },
+    {
+      "id": "persistence_upload",
+      "category": "persistence_installation",
+      "mitre": [
+        "T1505.003"
+      ],
+      "label_method": "header"
+    },
+    {
+      "id": "image_agent_command",
+      "category": "webshell_command",
+      "mitre": [
+        "T1059.004"
+      ],
+      "label_method": "attacker_ip_time_window",
+      "attacker_ip": "192.0.2.131",
+      "started_at": "2026-11-01T18:00:12.294221+00:00",
+      "ended_at": "2026-11-01T18:01:07.343431+00:00",
+      "request": "POST /wp-content/plugins/m8v2-persistence/m8v2-photo.jpg HTTP/1.1",
+      "status": 200,
+      "candidate_ordinal": 1
+    }
+  ],
+  "files": [
+    {
+      "path": "/wp-content/plugins/m8v2-persistence/.htaccess",
+      "role": "persistence_config"
+    },
+    {
+      "path": "/wp-content/plugins/m8v2-persistence/m8v2-persistence.php",
+      "role": "malicious_plugin"
+    },
+    {
+      "path": "/wp-content/plugins/m8v2-persistence/m8v2-photo.jpg",
+      "role": "webshell_agent"
+    },
+    {
+      "path": "/wp-content/uploads/wp-file-manager-pro/fm_backup/index.php",
+      "role": "side_effect",
+      "expected_in_report": false
+    }
+  ],
+  "analysis": {
+    "access_logs": [
+      "access.log.gz"
+    ],
+    "error_logs": [
+      "app-error.log"
+    ],
+    "error_log_format": "apache",
+    "error_log_utc_offset": "+0000",
+    "manifest": "manifest.tsv",
+    "baseline": "baseline.tsv",
+    "trusted_proxies": []
+  },
+  "split": "dev",
+  "expected_rule_ids": []
+}

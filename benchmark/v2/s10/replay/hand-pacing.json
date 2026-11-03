@@ -1,0 +1,47 @@
+[
+  {
+    "action": "site_check",
+    "offset_seconds": 0.0007527350001055311,
+    "started_at_utc": "2026-11-01T17:53:44.873500+00:00"
+  },
+  {
+    "action": "login_page_probe",
+    "offset_seconds": 59.30716256200003,
+    "started_at_utc": "2026-11-01T17:54:44.174690+00:00"
+  },
+  {
+    "action": "admin_probe",
+    "offset_seconds": 104.43564962900018,
+    "started_at_utc": "2026-11-01T17:55:29.300838+00:00"
+  },
+  {
+    "action": "plugin_upload_probe",
+    "offset_seconds": 164.277569222,
+    "started_at_utc": "2026-11-01T17:56:29.138433+00:00"
+  },
+  {
+    "action": "login_form",
+    "offset_seconds": 218.98137069200016,
+    "started_at_utc": "2026-11-01T17:57:23.837993+00:00"
+  },
+  {
+    "action": "editor_login",
+    "offset_seconds": 277.055352419,
+    "started_at_utc": "2026-11-01T17:58:21.907663+00:00"
+  },
+  {
+    "action": "plugin_upload_form",
+    "offset_seconds": 330.6218919800001,
+    "started_at_utc": "2026-11-01T17:59:15.470945+00:00"
+  },
+  {
+    "action": "persistence_upload",
+    "offset_seconds": 387.3474192850001,
+    "started_at_utc": "2026-11-01T18:00:12.192461+00:00"
+  },
+  {
+    "action": "agent_command",
+    "offset_seconds": 442.137766971,
+    "started_at_utc": "2026-11-01T18:01:06.979200+00:00"
+  }
+]

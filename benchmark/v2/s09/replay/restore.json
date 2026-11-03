@@ -1,0 +1,9 @@
+{
+  "application": "WordPress 5.5.3",
+  "app_type": "wordpress",
+  "attacker_image": "sha256:7f204b8e3a5c6b44cbcc38772557520f8c08f8348fbfc42f70472d53919ddbf8",
+  "webroot": "/var/www/html",
+  "recording_image": "sha256:6aa609c47d86f9b97787b26a627cf1f86d2edf1492d6b0cd01e89b4a6853ff3c",
+  "version": 2,
+  "inputs": "lab/v2/portable-inputs.json"
+}

@@ -1,0 +1,32 @@
+[
+  {
+    "action": "site_check",
+    "offset_seconds": 0.00035980900008780736,
+    "started_at_utc": "2026-11-01T17:44:01.350737+00:00"
+  },
+  {
+    "action": "category_admin_probe",
+    "offset_seconds": 49.94670984700008,
+    "started_at_utc": "2026-11-01T17:44:51.293779+00:00"
+  },
+  {
+    "action": "editor_login",
+    "offset_seconds": 99.07354295899995,
+    "started_at_utc": "2026-11-01T17:45:40.415990+00:00"
+  },
+  {
+    "action": "category_editor_open",
+    "offset_seconds": 153.13939641699994,
+    "started_at_utc": "2026-11-01T17:46:34.476429+00:00"
+  },
+  {
+    "action": "category_image_upload",
+    "offset_seconds": 200.12046010400013,
+    "started_at_utc": "2026-11-01T17:47:21.454915+00:00"
+  },
+  {
+    "action": "uploaded_file_execution",
+    "offset_seconds": 249.04801124999994,
+    "started_at_utc": "2026-11-01T17:48:10.377260+00:00"
+  }
+]

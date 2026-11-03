@@ -1,0 +1,6 @@
+{
+  "app_type": "wordpress",
+  "recording_image": "sha256:8a32825062d4dfbe4dc4fa8460e00c61857faf47fc0358335c9298ac6534b601",
+  "version": 2,
+  "inputs": "lab/v2/portable-inputs.json"
+}

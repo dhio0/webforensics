@@ -1,0 +1,62 @@
+[
+  {
+    "action": "site_check",
+    "offset_seconds": 0.0005030530001022271,
+    "started_at_utc": "2026-11-01T17:52:26.278084+00:00"
+  },
+  {
+    "action": "login_page_probe",
+    "offset_seconds": 46.87949684,
+    "started_at_utc": "2026-11-01T17:53:13.149741+00:00"
+  },
+  {
+    "action": "admin_area_probe",
+    "offset_seconds": 100.58475798300015,
+    "started_at_utc": "2026-11-01T17:54:06.851368+00:00"
+  },
+  {
+    "action": "plugin_upload_probe",
+    "offset_seconds": 157.28845896500002,
+    "started_at_utc": "2026-11-01T17:55:03.550367+00:00"
+  },
+  {
+    "action": "hydra (native burst)",
+    "offset_seconds": 211.78754537200007,
+    "started_at_utc": "2026-11-01T17:55:58.046778+00:00"
+  },
+  {
+    "action": "login_form",
+    "offset_seconds": 262.254646158,
+    "started_at_utc": "2026-11-01T17:56:48.509999+00:00"
+  },
+  {
+    "action": "editor_login",
+    "offset_seconds": 309.09564906800006,
+    "started_at_utc": "2026-11-01T17:57:35.347198+00:00"
+  },
+  {
+    "action": "plugin_upload_form",
+    "offset_seconds": 367.43946408400006,
+    "started_at_utc": "2026-11-01T17:58:33.687416+00:00"
+  },
+  {
+    "action": "plugin_upload",
+    "offset_seconds": 415.2555302420001,
+    "started_at_utc": "2026-11-01T17:59:21.501304+00:00"
+  },
+  {
+    "action": "form_navigation",
+    "offset_seconds": 465.3500488090001,
+    "started_at_utc": "2026-11-01T18:00:11.591785+00:00"
+  },
+  {
+    "action": "plugin_activation",
+    "offset_seconds": 514.6416571930001,
+    "started_at_utc": "2026-11-01T18:01:00.879834+00:00"
+  },
+  {
+    "action": "marker_check",
+    "offset_seconds": 571.3034674780001,
+    "started_at_utc": "2026-11-01T18:01:57.539620+00:00"
+  }
+]

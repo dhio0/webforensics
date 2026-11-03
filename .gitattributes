@@ -5,6 +5,7 @@
 tests/fixtures/** -text
 benchmark/scenarios/** -text
 benchmark/external/** -text
+benchmark/v2/** -text
 
 # Lab files are mounted into Linux containers.
 lab/** text eol=lf

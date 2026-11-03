@@ -1,0 +1,32 @@
+[
+  {
+    "action": "site_check",
+    "offset_seconds": 5.531199997221847e-05,
+    "started_at_utc": "2026-11-01T17:43:18.615380+00:00"
+  },
+  {
+    "action": "news_admin_probe",
+    "offset_seconds": 47.39239922499996,
+    "started_at_utc": "2026-11-01T17:44:06.002882+00:00"
+  },
+  {
+    "action": "editor_login",
+    "offset_seconds": 103.641974269,
+    "started_at_utc": "2026-11-01T17:45:02.246890+00:00"
+  },
+  {
+    "action": "news_editor_open",
+    "offset_seconds": 152.91729292800005,
+    "started_at_utc": "2026-11-01T17:45:51.519930+00:00"
+  },
+  {
+    "action": "sqlmap (native burst)",
+    "offset_seconds": 203.577177162,
+    "started_at_utc": "2026-11-01T17:46:42.174321+00:00"
+  },
+  {
+    "action": "save_news_sql_injection",
+    "offset_seconds": 259.6559223889999,
+    "started_at_utc": "2026-11-01T17:47:38.247855+00:00"
+  }
+]

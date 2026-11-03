@@ -1,0 +1,47 @@
+[
+  {
+    "action": "form_navigation",
+    "offset_seconds": 0.02423012600002039,
+    "started_at_utc": "2026-11-02T10:20:49.529958+00:00"
+  },
+  {
+    "action": "administrator_login",
+    "offset_seconds": 54.59210303400005,
+    "started_at_utc": "2026-11-02T10:21:44.095043+00:00"
+  },
+  {
+    "action": "form_navigation",
+    "offset_seconds": 103.42737109099994,
+    "started_at_utc": "2026-11-02T10:22:32.927495+00:00"
+  },
+  {
+    "action": "form_navigation",
+    "offset_seconds": 161.24525282399986,
+    "started_at_utc": "2026-11-02T10:23:30.744150+00:00"
+  },
+  {
+    "action": "security_level_low",
+    "offset_seconds": 206.30821040699993,
+    "started_at_utc": "2026-11-02T10:24:15.803800+00:00"
+  },
+  {
+    "action": "sqlmap (native burst)",
+    "offset_seconds": 260.3255919609999,
+    "started_at_utc": "2026-11-02T10:25:09.818582+00:00"
+  },
+  {
+    "action": "upload_form",
+    "offset_seconds": 311.01209588200004,
+    "started_at_utc": "2026-11-02T10:26:00.503225+00:00"
+  },
+  {
+    "action": "agent_upload",
+    "offset_seconds": 370.48363841399987,
+    "started_at_utc": "2026-11-02T10:26:59.970668+00:00"
+  },
+  {
+    "action": "agent_command",
+    "offset_seconds": 417.07334788899993,
+    "started_at_utc": "2026-11-02T10:27:46.558178+00:00"
+  }
+]

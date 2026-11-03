@@ -1,0 +1,96 @@
+{
+  "scenario_id": "s03",
+  "description": "An authenticated phpMyFAQ administrator account opens the news editor. A pinned sqlmap run performs a generic test that does not detect the cross-field flaw; a single maintainer-documented time-delay check then confirms SQL injection in Save News. The check delays one database query briefly and creates no server file.",
+  "attacker_ips": [
+    "192.0.2.131"
+  ],
+  "steps": [
+    {
+      "id": "site_check",
+      "category": "reconnaissance",
+      "mitre": [
+        "T1595"
+      ],
+      "log_file": "access.log.gz",
+      "line_no": 5402,
+      "is_root_cause": false,
+      "expected_in_timeline": false
+    },
+    {
+      "id": "news_admin_probe",
+      "category": "reconnaissance",
+      "mitre": [
+        "T1595"
+      ],
+      "log_file": "access.log.gz",
+      "line_no": 5722,
+      "is_root_cause": false,
+      "expected_in_timeline": false
+    },
+    {
+      "id": "editor_login",
+      "category": "valid_account_access",
+      "mitre": [
+        "T1078"
+      ],
+      "log_file": "access.log.gz",
+      "line_no": 5823,
+      "is_root_cause": false,
+      "expected_in_timeline": true
+    },
+    {
+      "id": "news_editor_open",
+      "category": "credential_access",
+      "mitre": [
+        "T1078"
+      ],
+      "log_file": "access.log.gz",
+      "line_no": 5868,
+      "is_root_cause": false,
+      "expected_in_timeline": true
+    },
+    {
+      "id": "save_news_sql_injection",
+      "category": "sql_injection",
+      "mitre": [
+        "T1190"
+      ],
+      "log_file": "access.log.gz",
+      "line_no": 6831,
+      "is_root_cause": true,
+      "expected_in_timeline": true
+    }
+  ],
+  "files": [
+    {
+      "path": "data/tracking01112026",
+      "sha256": "a8887432a7fdabe0d26343908fc93f3d6f08f82983c5591a4bba4d00443da17e",
+      "change": "modified",
+      "role": "side_effect",
+      "expected_in_report": false
+    }
+  ],
+  "root_cause_step": "save_news_sql_injection",
+  "split": "dev",
+  "expected_rule_ids": [],
+  "analysis": {
+    "access_logs": [
+      "access.log.gz"
+    ],
+    "error_logs": [
+      "app-error.log"
+    ],
+    "error_log_format": "apache",
+    "error_log_utc_offset": "+0000",
+    "manifest": "manifest.tsv",
+    "baseline": "baseline.tsv",
+    "trusted_proxies": []
+  },
+  "vulnerable_code": {
+    "file": "phpmyfaq/src/phpMyFAQ/News.php",
+    "line": 289,
+    "sha256": "b5bc9846390989799935252d07ba16ce480b0ca4a5ef7a1d9fc8de758421cd2a",
+    "vuln_class": "sql_injection",
+    "advisory_url": "https://github.com/thorsten/phpMyFAQ/security/advisories/GHSA-qgxx-4xv5-6hcw"
+  }
+}

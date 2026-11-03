@@ -1,0 +1,8 @@
+{
+  "application": "phpMyFAQ 3.2.5",
+  "database": "PostgreSQL",
+  "category_image_upload_test": "PASS",
+  "execution_marker_confirmed": true,
+  "vulnerable_source_sha256": "6574d0456a975bb018aca1f09f6e7f3ca9daee2af6560ec060bd741e98754dc0",
+  "vulnerable_source_line": 124
+}

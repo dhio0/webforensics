@@ -1,0 +1,175 @@
+{
+  "log_span_seconds": 4379.0,
+  "average_requests_per_second": 3.42932,
+  "maximum_background_requests_per_second": 20,
+  "maximum_overall_requests_per_second": 20,
+  "attack_span_seconds": 443.0,
+  "background_writes_to_static_assets": 0,
+  "scanner_disguised_api_static_suffix_probes": 1,
+  "top_10_post_targets": [
+    [
+      "/wp-comments-post.php",
+      661
+    ],
+    [
+      "/wp-login.php",
+      419
+    ],
+    [
+      "/wp-login.php?action=lostpassword",
+      210
+    ],
+    [
+      "/wp-admin/54.php",
+      37
+    ],
+    [
+      "/wp-admin/261.php?page=smartcode",
+      5
+    ],
+    [
+      "/ajax-api/2.0/mlflow/registered-models/create",
+      4
+    ],
+    [
+      "/wp-content/plugins/delightful-downloads/assets/vendor/jqueryFileTree/connectors/246.php",
+      3
+    ],
+    [
+      "/mgmt/shared/authn/login",
+      3
+    ],
+    [
+      "/wp-admin/92.php",
+      3
+    ],
+    [
+      "/wp-json/click5_sitemap/API/update_html_option_AJAX",
+      3
+    ]
+  ],
+  "activity_client_ips": [
+    "192.0.2.131"
+  ],
+  "whole_actor_window_position_range": [
+    0.4296464007458214,
+    0.5451821269228208
+  ],
+  "parse_failures": {
+    "access": 0,
+    "manifest": 0,
+    "error": 0
+  },
+  "restore": {
+    "result": "PASS",
+    "manifest_entries_verified": 2847,
+    "destination": "C:\\Users\\Pongo\\Documents\\cases\\benchmark-v2-full\\restore-round7\\s10-0d074e39be",
+    "destination_was_empty": true,
+    "local_app_images_removed_and_absence_verified": [],
+    "recorded_app_image_absent_before_restore": true,
+    "image_removal_proof": "PASS",
+    "completed_at_utc": "2026-11-02T18:15:16.726370+00:00",
+    "inputs": "repository, public digest-pinned base, SHA-256-pinned source archives"
+  },
+  "restore_with_app_images_removed": "PASS",
+  "defender_scan": "PASS; detections=0; real-time protection enabled",
+  "analyst_read": {
+    "result": "PASS",
+    "sample_seed": 7010,
+    "sample_background_line_numbers": [
+      253,
+      658,
+      1226,
+      1352,
+      1547,
+      1803,
+      1858,
+      2414,
+      2597,
+      3231,
+      3646,
+      3706,
+      4238,
+      4576,
+      5135,
+      5333,
+      5470,
+      5625,
+      5921,
+      6265,
+      6282,
+      6557,
+      7191,
+      7673,
+      7764,
+      8311,
+      8460,
+      8925,
+      9522,
+      9790,
+      9896,
+      9974,
+      10249,
+      10584,
+      11568,
+      11798,
+      12187,
+      12297,
+      12326,
+      12495,
+      13179,
+      13180,
+      13210,
+      13375,
+      13567,
+      13716,
+      13911,
+      13922,
+      14626,
+      14935
+    ],
+    "attack_window": {
+      "start_line": 6452,
+      "end_line": 8187
+    },
+    "access_log_sha256": "bbcc00be2d3947acc03e8f53bd4bd85f093569aba9075ad2577680fd0645c9d4",
+    "notes": "notes.md"
+  },
+  "replay_started_at_utc": "2026-11-01T17:41:44.076538+00:00",
+  "replay_ended_at_utc": "2026-11-01T18:54:43.764778+00:00",
+  "uninterrupted_run": "PASS; no part resumed",
+  "native_tool_bursts_exempt": [
+    "Weevely internal exchanges within hand-paced agent commands"
+  ],
+  "hand_action_minimum_spacing_seconds": 45.12848706700015,
+  "write_candidates_within_5_seconds_of_ctime": {
+    "wp-content/plugins/m8v2-persistence/.htaccess": 4,
+    "wp-content/plugins/m8v2-persistence/m8v2-persistence.php": 4,
+    "wp-content/plugins/m8v2-persistence/m8v2-photo.jpg": 4,
+    "wp-content/uploads/wp-file-manager-pro/fm_backup/index.php": 2
+  },
+  "scenario": "s10",
+  "schema": "PASS",
+  "file_role_expectations": "PASS",
+  "ground_truth_regeneration": "PASS",
+  "access_rows": 15017,
+  "background_rows": 15000,
+  "background_clients": 10384,
+  "private_background_client_addresses": 0,
+  "largest_background_client_share": 0.00973,
+  "background_user_agents": 903,
+  "largest_user_agent_share": 0.04407,
+  "largest_overall_user_agent_share": 0.04402,
+  "top_user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/217.155.106.155 Safari/537.36 Edg/217.155.106.155",
+  "nested_path_share": 0.00027,
+  "request_paths_with_lab_terms": 6,
+  "visitor_success_share": 0.99942,
+  "scanner_rows": 2923,
+  "attack_position_range": [
+    0.42965,
+    0.54485
+  ],
+  "defanged_files": 7,
+  "scenario_bytes": 3371800,
+  "ground_truth_sha256": "7d8775826f346bd2a18a20d2bf8afbcabbe51bf3fdc6c40ea40e8c68a35e1fbc"
+}

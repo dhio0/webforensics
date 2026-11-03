@@ -1,0 +1,381 @@
+# Benchmark v2 status - round 8 complete
+
+## Round 8 completion (2026-11-03, WIB)
+
+- All five fixes are complete. The fresh final analyst pass read every step line, twenty new seeded background lines and the final note for every scenario. No new recording defect was found. Full evidence and hash tables are in ROUND8.md.
+- Known limits are mirrored in README, ROUND7 and SOURCES; HELDOUT has current log hashes. Referrer wording is precise: all background referrers are empty, while fifteen application cron self-requests have nonempty referrers and remain intact.
+- Full pytest: 571 passed, 8 skipped. Ruff passed. No uncommitted task work is intended after the final documentation commit; ignored round8-final-read.json is only the review view, with no live attacker code.
+
+## Round 8: current notes complete
+
+- Fix 4 replaces every scenario note with current story, labelled steps, timing, write candidates, review provenance and limits. Old measurements were removed; short History sections retain commits without superseded line numbers.
+- `python -m lab.v2.scenario_notes` checks all twelve notes byte for byte against current ground truth, self-check values, current log statuses and source history. All pass.
+
+## Round 8: address remap complete
+
+- Fix 3 applies the production mapper, retaining the first 635 mappings. Each new TSV matches a separate address-only rerun over the recorded seed and background input.
+- All non-client log fields, actor lines and labelled step lines are byte-identical. Client counts and top shares are unchanged. Ground truth regenerates identically and attacker addresses are unchanged.
+- Encrypted captures retain the original mapping. Webroot, manifests and restore inputs are unchanged; prior restore proofs remain valid.
+- Complete old-range search, including gzip files: only the historical range and its inventory entry in each ip-remap.json remain; no old-range client or scanner-path leftover.
+- All twelve parser checks and self-checks pass. Full pytest: 571 passed, 8 skipped; Ruff passed.
+
+| ID | Private clients before / after | Rows rewritten | All clients | Historical log SHA-256 before | Current log SHA-256 after | Self-check |
+|---|---:|---:|---:|---|---|---|
+| s01 | 9749 / 0 | 13190 | 10386 | `ad6b6342b9d13d57c4f82b3027c1594ae5f6fa760d6b94fa02aa870fcde764cf` | `651e953a5e95cd5ab556f98e1409279e439aebee6444a63f48bba0ead8362d26` | PASS |
+| s02 | 9749 / 0 | 13190 | 10385 | `fde6c98868469eca7e91da47730e4d73a3f6d473984d14de4123e8104813b16c` | `ebb9c26f22dbd9abb99b5bba1a5bf4ba624db6c7d060b93fbe4dd8938ae8599e` | PASS |
+| s03 | 9749 / 0 | 13190 | 10385 | `4c4a1c4e7cf6df742bcb27ffb636c80267df43dd1bf06ae4d25f65181fa4a045` | `aef7541b0ec11c684e5f924e344ee3c05c412452713e67ba8b18f74ab666151e` | PASS |
+| s04 | 9749 / 0 | 13190 | 10385 | `0accbb144f8c46671ce4cd75a906881230a236c25a3f58b5fc78d9dd0953fe2d` | `6237ecf2861109dd45ed3cfc813576b01160dd4b928b9fe7d137cdfafea3278d` | PASS |
+| s05 | 9749 / 0 | 13190 | 10385 | `c42f73e71d2d0b60148b1a0986a54c63192921d79bdba5cedb5ff36ce49124be` | `a99a7536f13d11078b730650e60c3947b682d7c21e9a32f66662f4934b8e3530` | PASS |
+| s06 | 9749 / 0 | 13190 | 10385 | `1c43bbf130af4a06c78ae5fd9be661c099518d2f4efd7e3da92c292d621cfd99` | `594a4ac89cb11af16eb35d9d27fc6a3d37927fb15599db573825c4d4f8bf95f4` | PASS |
+| s07 | 9749 / 0 | 13190 | 10386 | `b5121f5f3314296323f874c350f48b79a2a5b465d62e5309aad06eda55f14504` | `ceeebe499c897cb20e017d0406f8218e2c46916cdcae97d9ec881523a0dbc228` | PASS |
+| s08 | 9749 / 0 | 13190 | 10386 | `41dae3ac94acd54ded33886ad7e10b23285d7e0545185999693ed226bea7d422` | `b7693e3b6ab93992ebd8197c64037465ac30655fae5db5ef6fa7c29b52a0d6ae` | PASS |
+| s09 | 9749 / 0 | 13190 | 10386 | `1e00261c82f31500caac35c0a8a478aeeda020bfd64af4d409f7873e06fc30c7` | `8731fcd3d044c47f00e6f3a1e8d6aaef54c0022a89a445a3d31f76b2ef02c956` | PASS |
+| s10 | 9749 / 0 | 13190 | 10386 | `1f9c2b2b48df14b2ce7c53f122e74b2aec6e751523391b59b0e2c2d9588a42af` | `bbcc00be2d3947acc03e8f53bd4bd85f093569aba9075ad2577680fd0645c9d4` | PASS |
+| s11 | 9749 / 0 | 13190 | 10386 | `b38b72849f67566a0846ab241e5059694ba6f5313db79d6eaecec0d31b012640` | `2b5d1a0e799d65b6f3a4b0aebbd477bd96b676b9955a02ce16bf3b20f24001be` | PASS |
+| s12 | 9749 / 0 | 13190 | 10386 | `5cb56c159a934ba35f513b4fc2493f528e64b72f972a443fe6978963310aaa82` | `276c8355de25a0a68c66357cb38710ba9598e3566ce2ee30a660bb9ef5aaa3c2` | PASS |
+
+## Round 8: fixes 1 and 2
+
+- s07 backup index is a side effect excluded from reports; replay records and scenario source agree. Ground truth was regenerated with label.py twice, byte-identically.
+- Historical ground-truth SHA-256 before: `e9d8600bef80213e10e7473c88a9a54abb12b23325ff254976700150a446ef1f`; after: `98eac551a0af55b4c1b75dbd888e3cb6d4dee4620f2f855c4dc94be3e58fa9df`.
+- New file-role rule rejects unexplained unclassified changes and requires non-attacker changes to be excluded or benign. All twelve self-checks pass; no defect in the other eleven scenarios.
+- Exact next step: none; round 8 complete and ready for review/merge by Claude.
+- No recording, Docker, restore rerun, v2 analysis/evaluation, results read, push, pull or merge.
+
+# Benchmark v2 status - round 7 complete
+
+## Completion (2026-11-03, WIB)
+
+- Round 7 is complete on `m8-benchmark-v2`. All twelve uninterrupted recordings have completed analyst reads, valid byte-identically regenerated ground truth, clean Defender scans, and self-checks without PENDING.
+- Held-out replacement commits: s02 `cff2660`, s06 `22c9a33`, s09 `4f190e1`, s11 `371d603`; hashes and provenance are in HELDOUT.md. s11 split was fixed at the configuration source, then regenerated with `label.py`. s02 Defender was rerun alone; scan errors now terminate before success is written (`8bb71fc`).
+- All twelve clean-empty restores passed again after local app-image removal. Proof commit: `41c60fe`; exact destinations and counts are in `restore-all-round7.json` and each `replay/restore-validation.txt`.
+- README, SOURCES and ROUND7 report are current. The report lists all scenario metrics, write ambiguity counts, hashes, commits, portable inputs/overlay behavior and adaptations. Deleted s08 agent ctime is unavailable and explicitly N/A.
+- Full pytest: **564 passed, 8 skipped**; `ruff check .`: **all checks passed** before every commit. Goldens/original scenarios remain identical to main; scorer/unit tests unchanged from `fbdb09f`. No v2 analysis/evaluation was run and results were not read.
+- AC lid-close restored to **Sleep (1)**; DC remains Sleep (1), both verified in `power-restored-round7.txt`.
+- Half-done work: none. Exact next step: none for this recording task; ready for Claude's independent review/merge. No push, pull or merge was performed.
+- Leftover files: no uncommitted task files after the final documentation commit. Ignored build/source caches, runner logs, analyst progress and resume helpers remain under `lab/v2/.cache/`. Encrypted current captures, all twelve preserved `old-round6/` captures, and external restore validation trees remain outside the repository in the locations documented below. No raw attacker file was exported.
+
+The following sections are historical session and recording provenance, including superseded next steps and discarded-run diagnoses; they do not describe active work.
+
+## Session continuation (2026-11-02, WIB)
+
+- Seven replacement dev recordings are complete and committed separately: s03 `368bd39`, s04 `e60a707`, s05 `6ed94b6`, s07 `be1c149`, s08 `1d11e98`, s10 `0fd5bf5`, s12 `4dfb7ed`. All have completed analyst reviews and clean-empty portable restore proofs after app-image removal, with no PENDING in self-checks. Full pytest (564 passed, 8 skipped) and Ruff passed before each commit.
+- s05 retry 3 review read all 1,880 final activity-window rows, 21 raw actor rows, and 50 seed-7005 background lines; the stale earlier progress file was replaced. All seven good recordings were preserved.
+- Held-out s02/s06/s09/s11 are now recording from clean isolated volumes. Images were built once before replay; four projects have independent internal networks and volumes. Exact replay starts and expected ends are at the bottom of this file (approximately 18:21-18:22 WIB). No recording interruption or error has been observed.
+- Exact next step: read the four complete activity windows, then after capture read each seeded final sample and normalized User-Agents, remove local app images, prove restore and run self-checks without PENDING. Commit each held-out scenario separately and update HELDOUT.md. Then prove all-twelve restore, finish README/SOURCES/report/STATUS, and restore AC lid-close Sleep (1).
+- Leftovers: inherited README/SOURCES edits remain uncommitted for final docs; live held-out evidence/replay files must not be staged mid-run. Ignored runners/metadata are `.cache/round7-heldout-batch.json`, `round7-heldout-sXX-host.*.txt`, `round7-heldout-build.txt`, and helper scripts under `lab/v2/.cache/`. Prior batch caches and external encrypted captures remain in their documented locations. No raw attacker file was exported.
+- The older failed/active run sections below are historical. Current held-out recordings must finish uninterrupted; never stitch or resume them.
+
+## Failed seven-scenario batch diagnosis (2026-11-02)
+
+- The s03, s04, s05, s07, s08, s10 and s12 recordings begun on 2026-11-01 are invalid and must be re-recorded from clean volumes. Their `background-error.json` files show `RuntimeError`, `uninterrupted: false`, and termination near source line 11,950-12,100.
+- Windows System events identify the cause: Kernel-Power event 42 says the machine entered sleep at 2026-11-01 09:12:18 UTC because of **Button or Lid**; Power-Troubleshooter event 1 reports sleep at 09:12:13 UTC and wake at 09:12:32 UTC. All seven replay errors were written at 09:12:32-33 UTC. The replay clock intentionally rejects such a suspension. The existing `SetThreadExecutionState` request did not prevent a manual button/lid sleep transition.
+- Docker inspection of representative background and app containers reported `OOMKilled=false`; the later exit code 137 occurred when Docker was shut down at 11:09 UTC. The different HTTP error totals before suspension (4 to 5,182) are not the common stopping cause.
+- The seven scenario folders were restored to their last committed state and their untracked partial files were removed. Only those seven stopped Compose projects and their disposable volumes were removed.
+- For the new recordings, the active Balanced power plan's AC lid-close action was temporarily changed from Sleep (1) to Do nothing (0) and verified; the DC action remains Sleep (1). Restore the AC value to 1 after the recordings. Each host runner also requests continuous system execution. No partial log, file snapshot, label, or timestamp from the failed batch will be reused.
+- Ignored `.cache/sXX-window-review-progress.json` files for the failed batch are stale and must not be used to claim review of the new recordings.
+- The replacement recordings began from clean volumes in seven isolated projects. All seven scripted activity sequences finished without an attack error. The live windows have been parsed row by row for methods, statuses, clients, request targets, server errors, and writes to static suffixes; s10's six image-suffix POSTs are the intentional agent commands. The final 50-line samples, normalized User-Agents, and clean-image restore proofs remain pending until each background replay ends.
+- Next: let the seven uninterrupted background replays finish, complete each analyst review and validation, then continue held-out scenarios, all-twelve restore, and final docs.
+
+## s05 retry during replacement batch
+
+- The first replacement s05 background replay finished uninterrupted, but ground-truth generation rejected two sidecar rows with the same `editor_login` label: the DVWA login POST and its immediate redirect GET. That recording is discarded, including its log and encrypted capture; no part will be stitched into the retry.
+- Commit `75283d5` changes the labelled DVWA login in s05, s02, and s06 to keep the label on the POST and check the landing page with an unlabelled GET. Full pytest (564 passed, 8 skipped) and Ruff passed before the commit.
+- s05 retry 3 was launched on 2026-11-02 at approximately 01:50 WIB. Its runner removes the earlier s05 project and volumes before recording; expected completion is approximately 03:03 WIB. The other six replacement dev recordings continue in isolated projects.
+- The other six replacement dev recordings have now ended without replay errors. Their final analyst samples and activity windows were reviewed, and their self-checks pass with only the explicitly deferred image-removal proof. No six-scenario folder will be committed until s05 stops and the local images can be removed for clean restore validation.
+
+
+## Round 7 progress (2026-11-01)
+
+- Step 0 complete: all four password values in ignored `lab/v2/.env` were rotated locally. No values were printed or committed.
+- Lab changes implemented: source-gap scaling (3.5 target requests/second), live rolling burst cap, detached background and attack workers, suspension/stall rejection, seeded human action spacing, and method-aware crawl/remapping.
+- Portable restore implemented from registry-digest-pinned public WordPress files and SHA-256-pinned app/plugin/Composer archives. Generated install files use a small safe overlay; secret configuration and generated executables are stubs listed in `defanged.tsv`. Restore never reads `.env` or uses a local scenario image.
+- Self-checks now report timing, background/overall peaks, hand spacing, native tool exemptions, POST targets, nearby writes, uninterrupted-run metadata, parser results, Defender, and clean-empty restore proof.
+- Focused tests: 34 passed. Full suite: 563 passed, 8 skipped; `ruff check .` passed.
+- Pilot s01 is complete and committed in `e9eec25`. Seven dev cases (s03, s04, s05, s07, s08, s10, s12) are recording in isolated projects; their scripted activity completed without errors. No results directory was read; scorer, unit tests, and goldens are unchanged.
+- **Exact next step:** read the seven completed activity windows while their detached background replays finish at 16:36-16:37 WIB. After all projects stop, remove local app images, prove portable restore, read each seeded final sample, finalize self-checks/notes, and commit s03, s04, s05, s07, s08, s10, s12 separately. Then record the four held-out cases, prove all-twelve restore, and finalize docs.
+- Step 1 implemented in `b1ff768` and startup fix `9864a5c`; the first pilot setup found a pre-existing WordPress startup race, fixed by waiting for the app listener before bootstrap and making bootstrap fail on early termination. No recording began. Round-6 source selection still uses GET/HEAD/POST; replay/remapping additionally support PUT/PATCH when the crawl discovers accepting endpoints. The discarded s01 run is listed below. The first live run must validate integration and may reveal recording defects; none of the new scenario metrics or clean-machine proofs is claimed yet.
+
+The source includes one scanner POST to a semicolon-suffixed API probe ending in `.js`. It is retained unchanged as a scanner endpoint probe, not treated as a browser asset request, and reported separately as `scanner_disguised_api_static_suffix_probes`. Visitor POST/PUT/PATCH remapping rejects static assets. This interpretation preserves the unchanged scanner stream and makes the suffix exception visible.
+
+### Concurrent recording support
+
+Separate projects may set `COMPOSE_PROJECT_NAME`, `LAB_PREFIX` (a unique 172.31.x prefix), and `EDGE_PORT`. Internal-only networks and per-project volumes remain isolated. The proxy maps physical project addresses back to the accepted logical lab addresses; explicit background IP headers keep their existing mapping. See `parallel-isolation-round7.txt` for the live two-network test.
+
+For a concurrent batch only, set `M8V2_DEFER_IMAGE_PROOF=1`: restore still uses public inputs and validates all files, but the image-removal proof is explicitly PENDING because other recordings still use those images. After every project is down, clear that variable, call `recording.validate_portable_restore()` for each scenario, and rerun `self_check.py`. Do not commit a scenario with PENDING proof or analyst review.
+
+### Preserved encrypted round-6 captures
+
+All twelve files were moved without overwriting or deleting them. They are outside Git beneath `C:\Users\Pongo\Documents\cases\benchmark-v2-full\old-round6\`:
+
+- `s01/full-evidence.tar.gz.enc`
+- `s02/full-evidence.tar.gz.enc`
+- `s03/full-evidence.tar.gz.enc`
+- `s04/full-evidence.tar.gz.enc`
+- `s05/full-evidence.tar.gz.enc`
+- `s06/full-evidence.tar.gz.enc`
+- `s07/full-evidence.tar.gz.enc`
+- `s08/full-evidence.tar.gz.enc`
+- `s09/full-evidence.tar.gz.enc`
+- `s10/full-evidence.tar.gz.enc`
+- `s11/full-evidence.tar.gz.enc`
+- `s12/full-evidence.tar.gz.enc`
+
+Ignored build inputs remain in `lab/v2/.cache/`, including the newly pinned Composer archives in `.cache/portable/`. No raw attacker files were exported. The legacy round-6 status below is historical, not a round-7 completion claim.
+
+## Round 6 changes
+
+Claude reviewed all twelve scenarios before scoring. The review prompted these evidence and ground-truth fixes:
+
+- Every evidence access log uses deterministic User-Agent mappings in `replay/ua_map.tsv`. SQLmap lines use the pinned tool's default identifier; scripted requests use a common browser or HTTP library identifier. The encrypted captures were left untouched for these rewrites.
+- s01 excludes the six app-crawl requests from both the access log and label sidecar. The current first attack line is at 53.96% of the log.
+- s03 and s04 were re-recorded after fixing crawler URL resolution, normalization, repeated-block rejection, and deduplication. The nested path share is 0.027% in both. Their phpMyFAQ tracking files are ordinary-traffic side effects and are not expected in reports.
+- s06 records the successful local file read as its root cause and expected timeline step. The login step remains outside the incident timeline; no code execution or file write is claimed.
+- s11 names the scanner address as the actor and remains a no-compromise scenario with no root cause.
+
+## Round 6 commits
+
+- UA normalization: `5ff2319` â€” `bench v2: neutral user agents in evidence`
+- s01 crawl exclusion: `a519440` â€” `bench v2: s01 without crawl lines`
+- s03/s04 crawler fix and re-recording: `23b518b` â€” `bench v2: s03/s04 fixed crawl and re-recorded`
+- held-out ground-truth fixes: `0595d50` â€” `bench v2: held-out ground-truth fixes (s06, s11)`
+
+The original recording commits remain listed below. Development split: s01, s03, s04, s05, s07, s08, s10, s12. Held-out split: s02, s06, s09, s11.
+
+## Validation
+
+- `pytest`: **536 passed, 8 skipped**.
+- `ruff check .`: **All checks passed**.
+- All twelve self-checks pass schema validation, byte-identical ground-truth regeneration, evidence-label joins, and the new User-Agent/path checks. Access, manifest, and error-log parse failures are zero in all scenarios.
+- No access-log User-Agent contains `M8`, `m8v2`, or `crawler`. The remaining request-path counts are listed in [README.md](README.md); those are filenames and URLs.
+- Repeated-segment paths account for **0.027%** of background requests in each scenario, below the 1% limit.
+- Every compromise root-cause position is between 30% and 70%, including s01 and s06.
+- The s03/s04 restore checks validated all 2,880 and 2,881 manifest entries. The other scenario restores passed in earlier rounds.
+- Defender found zero detections in each scenario and in the full `benchmark/v2/` scan. The full-scan record is [defender-scan-round6.txt](defender-scan-round6.txt).
+- `git diff --stat main -- benchmark/scenarios tests/golden` is empty; `src/webforensics/` is unchanged.
+- No v2 analysis or evaluation was run. No Defender exclusion was added, and all attacks ran on the isolated lab network.
+- `benchmark/v2/` is 35,903,281 bytes; every scenario is below 5 MB.
+
+## Resume notes
+
+Round 6 was complete on branch `m8-benchmark-v2`. For current work, use the round-7 progress and next step above. The held-out hashes and change notes are in [HELDOUT.md](HELDOUT.md). No scoring run has been performed on v2.
+
+## Original recording commits
+
+- s01 `10a8298`
+- s03 `4c57176`
+- s04 `c211f41`
+- s05 `a5fda70`
+- s07 `a769ddb`
+- s08 `e9b2116`
+- s10 `a540ea6`
+- s12 `7362475`
+- s11 `aff8cbf`
+- s02 `ead8215`
+- s06 `b983dee`
+- s09 `cd8786e`
+
+## Adaptations and limits
+
+- s03 uses licensed phpMyFAQ instead of a small PHP app; vulnerable source and CVE fix provenance are recorded.
+- s02 uses DVWA. Its SQLi page requires login; sqlmap confirmed injection but produced no user-table dump. The later agent upload is the ground-truth root cause, so this does not claim SQLi supplied the login.
+- s06 verifies a local-file read in DVWA only. Log/session poisoning and RCE were not verified.
+- s09 and s10 use the normal authenticated WordPress plugin installer and make no CVE claim for that installer. s07 likewise makes no CVE claim for plugin installation.
+- s11 uses a failed sqlmap/search probe and scanner sweep. Some known WordPress paths returned normal 200/302/405 responses instead of only errors.
+- s12 could not fetch a WordPress core update package on the internal-only network. It records opening the core-update page and uses a local benign cache-plugin update instead.
+
+Encrypted full captures remain outside Git under the directory configured by `lab/v2/.env`. Source archives and replay inputs under `lab/v2/.cache/` are ignored build inputs. Restore validation trees are outside the repository.
+
+## Discarded round-7 run: s01 (attempt 1)
+
+- Started: 2026-11-01T06:29:10.117605+00:00 (2026-11-01 13:29:10 WIB).
+- Expected replay end: 2026-11-01T07:42:09.796410+00:00.
+- Background and attack are detached in their isolated containers.
+- Windows sleep prevention requested. Any interruption invalidates the run.
+
+- Discarded at 2026-11-01T06:46:47.777396+00:00 after identifying form-query routing defects. The host process and all lab volumes were stopped and removed. No part will be reused or stitched.
+- phpMyFAQ preflight now discovers 31 URLs and 11 POST targets after rejecting static HTML fallbacks and removing per-visit tracking IDs. Its temporary project/volumes were removed.
+
+## Completed round-7 run: s01 (attempt 2)
+
+- Started: 2026-11-01T06:48:41.689427+00:00 (2026-11-01 13:48:41 WIB).
+- Expected replay end: 2026-11-01T08:01:41.368232+00:00.
+- Background and attack are detached in their isolated containers.
+- Windows sleep prevention requested. Any interruption invalidates the run.
+
+- Additional pristine DVWA preflight found and corrected the old PHP truthiness authentication bypass; real anonymous denial and token-bearing login were verified. See `preflight-round7.txt`. Scenario step IDs and incident meanings are unchanged; s02 gains an ordinary login-form GET prerequisite.
+- Ignored leftovers include `.cache/network-proof/`, `.cache/preflight-phpmyfaq/`, `.cache/preflight-dvwa/`, and `.cache/round7-s01-host.stdout.txt` / `.stderr.txt`, in addition to pinned source caches. No preflight containers or volumes remain.
+- After the pilot completes, invoke the current `recording.validate_portable_restore()` once more before its commit: it now also removes surviving untagged historical app image IDs. The running host imported the earlier helper version.
+
+- Analyst review is recorded only after reading: `replay/analyst-review.json` binds seed 7000 + scenario number, 50 exact background line numbers, the complete actor window, and the access-log SHA-256. `self_check.py` stays PENDING for analyst review until that matching record exists.
+
+- s01 attempt 2 attack completed: eight hand-run actions, 17 actor HTTP requests, 365 seconds from first reconnaissance to final command. All 1,736 rows in lines 6153-7888 were read in a lossless table with complete request/User-Agent dictionaries; actor lines were also read raw. Review findings and raw/core hashes are in ignored `.cache/s01-window-review-progress.json`. The final 50-line random sample is not yet read and no completed analyst proof exists.
+- Current pilot host PID: 6796. Continue polling; expected replay completion remains 15:01 WIB. No error flags were present at 14:17 WIB. Do not restart its containers or edit the live evidence log.
+- For each concurrent batch, build the app/attacker/collector images once before startup, then set `M8V2_USE_PREBUILT_IMAGES=1` on its runners. This prevents concurrent tag/provenance changes. Use distinct projects/prefixes/ports and defer only the image-removal proof until all batch projects are down. Clear both batch flags before the final proof/check pass.
+
+- s01 attempt 2 completed at 15:01 WIB; collection/restore/Defender finished afterward. It passed every recording check: 4,379-second log, 3.42955 overall requests/second, 20 maximum background/overall, 365-second attack, positions 40.97%-52.52%, zero static writes (one separately reported disguised scanner API probe). Analyst window and all 50 seeded final background lines have now been read and the proof written. Ground truth SHA-256: `1355a7e6ef9d4b41576a9b175625d664bef5f68a28d1369b139486febcbc4971`.
+- Two empty external restore trees for s01 are preserved under `FULL_EVIDENCE_DIR/restore-round7/`: `s01-6ba1bb8034` and `s01-0f15bb83cb`. The current full capture is encrypted in external `s01/full-evidence.tar.gz.enc`; old round-6 captures remain untouched under `old-round6/`.
+
+## Active round-7 run: s05
+
+- Started: 2026-11-01T08:23:01.024555+00:00 (2026-11-01 15:23:01 WIB).
+- Expected replay end: 2026-11-01T09:36:00.703360+00:00.
+- Background and attack are detached in their isolated containers.
+- Windows sleep prevention requested. Any interruption invalidates the run.
+
+## Active round-7 run: s03
+
+- Started: 2026-11-01T08:23:41.262146+00:00 (2026-11-01 15:23:41 WIB).
+- Expected replay end: 2026-11-01T09:36:40.940951+00:00.
+- Background and attack are detached in their isolated containers.
+- Windows sleep prevention requested. Any interruption invalidates the run.
+
+## Active round-7 run: s07
+
+- Started: 2026-11-01T08:23:41.794952+00:00 (2026-11-01 15:23:41 WIB).
+- Expected replay end: 2026-11-01T09:36:41.473757+00:00.
+- Background and attack are detached in their isolated containers.
+- Windows sleep prevention requested. Any interruption invalidates the run.
+
+## Active round-7 run: s10
+
+- Started: 2026-11-01T08:23:42.910533+00:00 (2026-11-01 15:23:42 WIB).
+- Expected replay end: 2026-11-01T09:36:42.589338+00:00.
+- Background and attack are detached in their isolated containers.
+- Windows sleep prevention requested. Any interruption invalidates the run.
+
+## Active round-7 run: s04
+
+- Started: 2026-11-01T08:23:43.658655+00:00 (2026-11-01 15:23:43 WIB).
+- Expected replay end: 2026-11-01T09:36:43.337460+00:00.
+- Background and attack are detached in their isolated containers.
+- Windows sleep prevention requested. Any interruption invalidates the run.
+
+## Active round-7 run: s08
+
+- Started: 2026-11-01T08:23:44.906982+00:00 (2026-11-01 15:23:44 WIB).
+- Expected replay end: 2026-11-01T09:36:44.585787+00:00.
+- Background and attack are detached in their isolated containers.
+- Windows sleep prevention requested. Any interruption invalidates the run.
+
+## Active round-7 run: s12
+
+- Started: 2026-11-01T08:23:45.607780+00:00 (2026-11-01 15:23:45 WIB).
+- Expected replay end: 2026-11-01T09:36:45.286585+00:00.
+- Background and attack are detached in their isolated containers.
+- Windows sleep prevention requested. Any interruption invalidates the run.
+
+- The benign s12 activity window is derived from clients of labelled steps, including unlabelled redirects from those clients. This validation-only correction preserves an empty attacker list and null root cause. Regression/full checks: 564 passed, 8 skipped; Ruff passed. No live evidence or timestamp was changed.
+- Batch runner PIDs/projects are in ignored `.cache/round7-dev-batch.json`; per-case host stdout/stderr are `.cache/round7-sXX-host.*.txt`. All seven attacks completed without error markers by 15:51 WIB; background replay continues.
+
+- Full activity windows have now been read for all seven active dev cases using complete lossless row/dictionary views plus raw actor lines: s03 5402-6830 (1,429 rows), s04 5703-7099 (1,397), s05 5553-7391 (1,839), s07 5853-8253 (2,401), s08 6605-8244 (1,640), s10 6452-8187 (1,736), s12 5254-7569 (2,316). Ignored `.cache/sXX-window-review-progress.json` files preserve hashes/findings. Final normalized-UA confirmation and the 50 seeded final background samples remain pending until collection. No completed analyst proof is claimed yet.
+
+## Active round-7 run: s04
+
+- Started: 2026-11-01T17:34:51.407493+00:00 (2026-11-02 00:34:51 WIB).
+- Expected replay end: 2026-11-01T18:47:51.086298+00:00.
+- Background and attack are detached in their isolated containers.
+- Windows sleep prevention requested. Any interruption invalidates the run.
+
+## Active round-7 run: s03
+
+- Started: 2026-11-01T17:34:51.478486+00:00 (2026-11-02 00:34:51 WIB).
+- Expected replay end: 2026-11-01T18:47:51.157291+00:00.
+- Background and attack are detached in their isolated containers.
+- Windows sleep prevention requested. Any interruption invalidates the run.
+
+## Active round-7 run: s05
+
+- Started: 2026-11-01T17:34:59.133923+00:00 (2026-11-02 00:34:59 WIB).
+- Expected replay end: 2026-11-01T18:47:58.812728+00:00.
+- Background and attack are detached in their isolated containers.
+- Windows sleep prevention requested. Any interruption invalidates the run.
+
+## Active round-7 run: s07
+
+- Started: 2026-11-01T17:41:41.651822+00:00 (2026-11-02 00:41:41 WIB).
+- Expected replay end: 2026-11-01T18:54:41.330627+00:00.
+- Background and attack are detached in their isolated containers.
+- Windows sleep prevention requested. Any interruption invalidates the run.
+
+## Active round-7 run: s10
+
+- Started: 2026-11-01T17:41:43.783079+00:00 (2026-11-02 00:41:43 WIB).
+- Expected replay end: 2026-11-01T18:54:43.461884+00:00.
+- Background and attack are detached in their isolated containers.
+- Windows sleep prevention requested. Any interruption invalidates the run.
+
+## Active round-7 run: s12
+
+- Started: 2026-11-01T17:41:44.524900+00:00 (2026-11-02 00:41:44 WIB).
+- Expected replay end: 2026-11-01T18:54:44.203705+00:00.
+- Background and attack are detached in their isolated containers.
+- Windows sleep prevention requested. Any interruption invalidates the run.
+
+## Active round-7 run: s08
+
+- Started: 2026-11-01T17:41:44.555875+00:00 (2026-11-02 00:41:44 WIB).
+- Expected replay end: 2026-11-01T18:54:44.234680+00:00.
+- Background and attack are detached in their isolated containers.
+- Windows sleep prevention requested. Any interruption invalidates the run.
+
+## Active round-7 run: s05
+
+- Started: 2026-11-01T18:51:31.495694+00:00 (2026-11-02 01:51:31 WIB).
+- Expected replay end: 2026-11-01T20:04:31.174499+00:00.
+- Background and attack are detached in their isolated containers.
+- Windows sleep prevention requested. Any interruption invalidates the run.
+
+- Session continuation: s04 final analyst proof and clean-image restore passed (2881 manifest files); self-check has no PENDING; full pytest and Ruff passed before its separate commit.
+
+- Session continuation: s05 final analyst proof and clean-image restore passed (252 manifest files); self-check has no PENDING; full pytest and Ruff passed before its separate commit.
+
+- Session continuation: s07 final analyst proof and clean-image restore passed (2846 manifest files); self-check has no PENDING; full pytest and Ruff passed before its separate commit.
+
+- Session continuation: s08 final analyst proof and clean-image restore passed (2844 manifest files); self-check has no PENDING; full pytest and Ruff passed before its separate commit.
+
+- Session continuation: s10 final analyst proof and clean-image restore passed (2847 manifest files); self-check has no PENDING; full pytest and Ruff passed before its separate commit.
+
+- Session continuation: s12 final analyst proof and clean-image restore passed (2847 manifest files); self-check has no PENDING; full pytest and Ruff passed before its separate commit.
+
+## Held-out round-7 batch (session continuation)
+
+- Launch begins 2026-11-02T10:07:57.808073+00:00 (2026-11-02 17:07:57 WIB); replay should finish about 75-85 minutes after each app starts. Exact per-scenario start/expected-end follows below.
+- Seven dev replacements are committed separately. Held-out stories, ground-truth meanings, and round-6 seeds are unchanged. Four clean projects use independent networks/volumes; builds finished before attack time. AC lid-close stays Do nothing temporarily and every runner requests continuous execution; restore AC Sleep (1) at completion.
+- Image-removal proof is deferred only while this batch uses the images; all proofs and analyst reads must finish before commits.
+
+## Active round-7 run: s02
+
+- Started: 2026-11-02T10:08:29.895319+00:00 (2026-11-02 17:08:29 WIB).
+- Expected replay end: 2026-11-02T11:21:29.574124+00:00.
+- Background and attack are detached in their isolated containers.
+- Windows sleep prevention requested. Any interruption invalidates the run.
+
+## Active round-7 run: s06
+
+- Started: 2026-11-02T10:08:33.234107+00:00 (2026-11-02 17:08:33 WIB).
+- Expected replay end: 2026-11-02T11:21:32.912912+00:00.
+- Background and attack are detached in their isolated containers.
+- Windows sleep prevention requested. Any interruption invalidates the run.
+
+## Active round-7 run: s11
+
+- Started: 2026-11-02T10:08:58.203032+00:00 (2026-11-02 17:08:58 WIB).
+- Expected replay end: 2026-11-02T11:21:57.881837+00:00.
+- Background and attack are detached in their isolated containers.
+- Windows sleep prevention requested. Any interruption invalidates the run.
+
+## Active round-7 run: s09
+
+- Started: 2026-11-02T10:08:59.585121+00:00 (2026-11-02 17:08:59 WIB).
+- Expected replay end: 2026-11-02T11:21:59.263926+00:00.
+- Background and attack are detached in their isolated containers.
+- Windows sleep prevention requested. Any interruption invalidates the run.
+
+## Held-out activity review progress (2026-11-02 17:29 WIB)
+
+- All four scripted activity sequences completed without error markers. Background replays continue uninterrupted; expected ends remain approximately 18:21-18:22 WIB.
+- Complete live activity windows were read in lossless row/dictionary views: s02 lines 6605-8408 (1,804 rows, 249 actor requests, 417 seconds); s06 5254-6652 (1,399 rows, six actor requests, 262 seconds); s09 6604-7527 (924 rows, 14 actor requests, 262 seconds); s11 5553-6490 (938 rows, 104 actor requests, 189 seconds). Full request, User-Agent, referrer, status/size dictionaries were read.
+- No recording defect was found. s09 includes two ordinary app-address WordPress loopback cron requests. Native scanner/sqlmap/agent bursts remain distinct from human action spacing. Claims retain the existing limits for SQLi, local-file read, authenticated installation, and no-compromise scanning.
+- Hashes and findings are in ignored `.cache/sXX-window-review-progress.json`. Final normalized-UA confirmation and seeded 50-line background samples remain pending until collection; no final analyst proof has been written for a held-out case.
+- Exact next step: keep polling without touching live logs, then confirm core window hashes, read the final samples, write analyst proofs/notes, remove app images, restore each held-out case and rerun self-checks.

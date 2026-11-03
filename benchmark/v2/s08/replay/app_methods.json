@@ -1,0 +1,9 @@
+{
+  "POST": [
+    "/wp-comments-post.php",
+    "/wp-login.php",
+    "/wp-login.php?action=lostpassword"
+  ],
+  "PUT": [],
+  "PATCH": []
+}

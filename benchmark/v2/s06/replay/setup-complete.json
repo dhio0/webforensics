@@ -1,0 +1,8 @@
+{
+  "application": "DVWA",
+  "source_commit": "a1978a2fed195acd093010af6395f86a281537ca",
+  "database_setup": "PASS",
+  "authenticated_module_check": "PASS",
+  "vulnerable_source_sha256": "399a0d5dd28436a952a5bb0d14390eb421e57ab2e7add68813b6ce283cc70f28",
+  "vulnerable_source_line": 14
+}

@@ -1,0 +1,8 @@
+{
+  "application": "DVWA",
+  "app_type": "dvwa",
+  "webroot": "/var/www/html",
+  "recording_image": "sha256:185036f948b4ef34554878ff2ea6011c50ccdfb795c7dfdaf44ed92e273431fd",
+  "version": 2,
+  "inputs": "lab/v2/portable-inputs.json"
+}

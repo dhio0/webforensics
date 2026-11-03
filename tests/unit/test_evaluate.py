@@ -214,3 +214,78 @@ def test_scenario_inputs_follow_the_analysis_block(tmp_path):
     assert inputs.error_logs == (evidence / "e.log",) and inputs.error_utc_offset == "+0700"
     assert inputs.baseline == evidence / "baseline.tsv" and inputs.base_dir == evidence
     assert config.trusted_proxies == ("10.0.0.1",)
+
+
+# --- Benchmark v2 scoring rules (D90) -----------------------------------------------------
+
+
+def _with_files(*extra: dict) -> dict:
+    truth = _case_truth(attacker_ips=[ATTACKER, VISITOR])
+    truth["files"] = [*truth["files"], *extra]
+    return truth
+
+
+def _extra(path: str, **fields) -> dict:
+    return {"path": path, "sha256": "0" * 64, "change": "created", **fields}
+
+
+def test_a_side_effect_file_is_neither_missed_nor_a_false_accusation():
+    truth = _with_files(_extra("cache/x.tmp", expected_in_report=False, role="side_effect"))
+    s = score(truth, _upload_case(), 0.0)
+    assert s.passed and s.truth_files == 1 and not s.missed_files
+
+
+def test_reporting_a_benign_change_is_a_false_accusation():
+    truth = _case_truth(attacker_ips=[ATTACKER, VISITOR], files=[
+        _extra("uploads/x.php", expected_in_report=False, role="benign_media_upload")])
+    s = score(truth, _upload_case(), 0.0)
+    assert s.false_files == ("uploads/x.php",) and s.truth_files == 0 and not s.passed
+
+
+def test_a_deleted_file_counts_as_found_when_named_as_deleted_or_log_only():
+    gone = _extra("uploads/gone.php", change="deleted")
+    result = _upload_case()
+    assert score(_with_files(gone), result, 0.0).missed_files == ("uploads/gone.php",)
+    for field in ("deleted_paths", "log_only_files"):
+        named = result.model_copy(update={field: ("/uploads/gone.php",)})
+        assert score(_with_files(gone), named, 0.0).passed, field
+
+
+def test_log_only_names_do_not_excuse_a_missed_file_that_still_exists():
+    kept = _extra("uploads/kept.php")
+    named = _upload_case().model_copy(update={"log_only_files": ("/uploads/kept.php",)})
+    assert score(_with_files(kept), named, 0.0).missed_files == ("uploads/kept.php",)
+
+
+def _finding(file: str, line: int):
+    from webforensics.models import Citation, CitationKind, CodeLocation, Confidence
+    return CodeLocation(file=file, line=line, snippet="q", vuln_class="sql_injection",
+                        confidence=Confidence.HIGH,
+                        citation=Citation(kind=CitationKind.FILE, source=file, sha256="0" * 64))
+
+
+@pytest.mark.parametrize(("spec_file", "found", "verdict"), [
+    ("lab/app/admin/login.php", "admin/login.php", "correct"),
+    ("phpmyfaq/src/phpMyFAQ/News.php", "src/phpMyFAQ/News.php", "correct"),
+    ("phpmyfaq/src/phpMyFAQ/News.php", "phpMyFAQ/News.php", "correct"),
+    ("phpmyfaq/src/phpMyFAQ/News.php", "Faq/News.php", "missed"),
+    ("phpmyfaq/src/phpMyFAQ/News.php", "rcphpMyFAQ/News.php", "missed"),
+])
+def test_code_line_matches_whole_trailing_path_segments(spec_file, found, verdict):
+    truth = {"vulnerable_code": {"file": spec_file, "line": 7, "vuln_class": "sql_injection"}}
+    assert evaluate.code_verdict(truth, (_finding(found, 7),)).value == verdict
+
+
+def test_flat_benchmark_layout_and_restored_webroot(tmp_path):
+    flat = tmp_path / "v2"
+    shutil.copytree(SCENARIOS / "a", flat / "a")
+    assert evaluate.scenario_folders(flat) == [flat / "a"]
+    restored = tmp_path / "restored" / "a"
+    restored.mkdir(parents=True)
+    inputs, _ = evaluate.scenario_inputs(flat / "a", _truth("a"), restored)
+    assert inputs.webroot == restored
+    result = runner.invoke(app, ["eval", str(flat), "--no-runtime",
+                                 "--webroot-root", str(tmp_path / "restored")])
+    assert result.exit_code == 0, result.output
+    missing = runner.invoke(app, ["eval", str(flat), "--webroot-root", str(tmp_path / "no")])
+    assert missing.exit_code == 2

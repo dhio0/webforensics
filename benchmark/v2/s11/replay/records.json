@@ -1,0 +1,104 @@
+{
+  "scenario_id": "s11",
+  "description": "A pinned sqlmap run and a short scanner pass probe the isolated WordPress site. No injectable parameter or compromise is found; no files are changed.",
+  "attacker_ips": [
+    "192.0.2.131"
+  ],
+  "root_cause_step": null,
+  "steps": [
+    {
+      "id": "scanner_probe_1",
+      "category": "scanner_probe",
+      "mitre": [
+        "T1595"
+      ],
+      "label_method": "header",
+      "expected_in_timeline": false
+    },
+    {
+      "id": "scanner_probe_2",
+      "category": "scanner_probe",
+      "mitre": [
+        "T1595"
+      ],
+      "label_method": "header",
+      "expected_in_timeline": false
+    },
+    {
+      "id": "scanner_probe_3",
+      "category": "scanner_probe",
+      "mitre": [
+        "T1595"
+      ],
+      "label_method": "header",
+      "expected_in_timeline": false
+    },
+    {
+      "id": "scanner_probe_4",
+      "category": "scanner_probe",
+      "mitre": [
+        "T1595"
+      ],
+      "label_method": "header",
+      "expected_in_timeline": false
+    },
+    {
+      "id": "scanner_probe_5",
+      "category": "scanner_probe",
+      "mitre": [
+        "T1595"
+      ],
+      "label_method": "header",
+      "expected_in_timeline": false
+    },
+    {
+      "id": "scanner_probe_6",
+      "category": "scanner_probe",
+      "mitre": [
+        "T1595"
+      ],
+      "label_method": "header",
+      "expected_in_timeline": false
+    },
+    {
+      "id": "scanner_probe_7",
+      "category": "scanner_probe",
+      "mitre": [
+        "T1595"
+      ],
+      "label_method": "header",
+      "expected_in_timeline": false
+    },
+    {
+      "id": "scanner_probe_8",
+      "category": "scanner_probe",
+      "mitre": [
+        "T1595"
+      ],
+      "label_method": "header",
+      "expected_in_timeline": false
+    }
+  ],
+  "files": [
+    {
+      "path": "/wp-content/uploads/wp-file-manager-pro/fm_backup/index.php",
+      "role": "side_effect",
+      "expected_in_report": false
+    }
+  ],
+  "analysis": {
+    "access_logs": [
+      "access.log.gz"
+    ],
+    "error_logs": [
+      "app-error.log"
+    ],
+    "error_log_format": "apache",
+    "error_log_utc_offset": "+0000",
+    "manifest": "manifest.tsv",
+    "baseline": "baseline.tsv",
+    "trusted_proxies": []
+  },
+  "split": "held_out",
+  "expected_rule_ids": []
+}

@@ -1,0 +1,4 @@
+/
+/dvwa/css/login.css
+/dvwa/images/login_logo.png
+/login.php

@@ -1,0 +1,114 @@
+{
+  "scenario_id": "s04",
+  "description": "An authenticated phpMyFAQ administrator opens the category editor, submits an image whose declared upload type bypasses the category-image extension mapping, and confirms that the saved PHP file executes a fixed text marker.",
+  "attacker_ips": [
+    "192.0.2.131"
+  ],
+  "steps": [
+    {
+      "id": "site_check",
+      "category": "reconnaissance",
+      "mitre": [
+        "T1595"
+      ],
+      "log_file": "access.log.gz",
+      "line_no": 5703,
+      "is_root_cause": false,
+      "expected_in_timeline": false
+    },
+    {
+      "id": "category_admin_probe",
+      "category": "reconnaissance",
+      "mitre": [
+        "T1595"
+      ],
+      "log_file": "access.log.gz",
+      "line_no": 5791,
+      "is_root_cause": false,
+      "expected_in_timeline": false
+    },
+    {
+      "id": "editor_login",
+      "category": "valid_account_access",
+      "mitre": [
+        "T1078"
+      ],
+      "log_file": "access.log.gz",
+      "line_no": 5855,
+      "is_root_cause": false,
+      "expected_in_timeline": true
+    },
+    {
+      "id": "category_editor_open",
+      "category": "valid_account_access",
+      "mitre": [
+        "T1078"
+      ],
+      "log_file": "access.log.gz",
+      "line_no": 6250,
+      "is_root_cause": false,
+      "expected_in_timeline": true
+    },
+    {
+      "id": "category_image_upload",
+      "category": "unrestricted_upload",
+      "mitre": [
+        "T1190"
+      ],
+      "log_file": "access.log.gz",
+      "line_no": 6685,
+      "is_root_cause": true,
+      "expected_in_timeline": true
+    },
+    {
+      "id": "uploaded_file_execution",
+      "category": "remote_code_execution",
+      "mitre": [
+        "T1059.004"
+      ],
+      "log_file": "access.log.gz",
+      "line_no": 7099,
+      "is_root_cause": false,
+      "expected_in_timeline": true
+    }
+  ],
+  "files": [
+    {
+      "path": "data/tracking01112026",
+      "sha256": "0b06e6655ce3a062ae81efef05acd56c2b6aa5da36b6d27303167671f898d211",
+      "change": "modified",
+      "role": "side_effect",
+      "expected_in_report": false
+    },
+    {
+      "path": "images/category-1-.php..",
+      "sha256": "7ee88917606d721e1485abcd6885df913264b81c5d2ef5ce39dda9609e2490ed",
+      "change": "created",
+      "role": "attacker_file",
+      "expected_in_report": true
+    }
+  ],
+  "root_cause_step": "category_image_upload",
+  "split": "dev",
+  "expected_rule_ids": [],
+  "analysis": {
+    "access_logs": [
+      "access.log.gz"
+    ],
+    "error_logs": [
+      "app-error.log"
+    ],
+    "error_log_format": "apache",
+    "error_log_utc_offset": "+0000",
+    "manifest": "manifest.tsv",
+    "baseline": "baseline.tsv",
+    "trusted_proxies": []
+  },
+  "vulnerable_code": {
+    "file": "phpmyfaq/src/phpMyFAQ/Category/CategoryImage.php",
+    "line": 124,
+    "sha256": "6574d0456a975bb018aca1f09f6e7f3ca9daee2af6560ec060bd741e98754dc0",
+    "vuln_class": "unrestricted_file_upload",
+    "advisory_url": "https://github.com/thorsten/phpMyFAQ/security/advisories/GHSA-pwh2-fpfr-x5gf"
+  }
+}

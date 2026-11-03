@@ -1,0 +1,52 @@
+[
+  {
+    "action": "site_check",
+    "offset_seconds": 0.0002497810000932077,
+    "started_at_utc": "2026-11-01T19:00:18.355800+00:00"
+  },
+  {
+    "action": "login_page_probe",
+    "offset_seconds": 48.220618733000265,
+    "started_at_utc": "2026-11-01T19:01:06.571161+00:00"
+  },
+  {
+    "action": "command_module_probe",
+    "offset_seconds": 94.04726611699971,
+    "started_at_utc": "2026-11-01T19:01:52.396646+00:00"
+  },
+  {
+    "action": "editor_login",
+    "offset_seconds": 145.7493489620001,
+    "started_at_utc": "2026-11-01T19:02:44.094448+00:00"
+  },
+  {
+    "action": "form_navigation",
+    "offset_seconds": 195.83498653199968,
+    "started_at_utc": "2026-11-01T19:03:34.175856+00:00"
+  },
+  {
+    "action": "security_page_open",
+    "offset_seconds": 243.60464258699994,
+    "started_at_utc": "2026-11-01T19:04:21.943112+00:00"
+  },
+  {
+    "action": "security_level_set",
+    "offset_seconds": 291.2909830640001,
+    "started_at_utc": "2026-11-01T19:05:09.625222+00:00"
+  },
+  {
+    "action": "commix (native burst)",
+    "offset_seconds": 347.0870202139995,
+    "started_at_utc": "2026-11-01T19:06:05.417400+00:00"
+  },
+  {
+    "action": "command_injection_file_write",
+    "offset_seconds": 393.2094555530002,
+    "started_at_utc": "2026-11-01T19:06:51.537876+00:00"
+  },
+  {
+    "action": "marker_file_check",
+    "offset_seconds": 447.2507523860004,
+    "started_at_utc": "2026-11-01T19:07:45.574554+00:00"
+  }
+]

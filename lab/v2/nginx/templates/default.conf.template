@@ -1,0 +1,60 @@
+# Physical addresses can vary across isolated Compose projects. Evidence always
+# uses the accepted logical lab addresses, including tools without custom headers.
+map $remote_addr $logical_remote_addr {
+    default $remote_addr;
+    "${LAB_PREFIX}.130" 192.0.2.130;
+    "${LAB_PREFIX}.131" 192.0.2.131;
+    "${LAB_PREFIX}.132" 192.0.2.132;
+    "${LAB_PREFIX}.133" 192.0.2.133;
+    "${LAB_PREFIX}.134" 192.0.2.134;
+    "${LAB_PREFIX}.135" 192.0.2.135;
+    "${LAB_PREFIX}.136" 192.0.2.136;
+    "${LAB_PREFIX}.137" 192.0.2.137;
+    "${LAB_PREFIX}.138" 192.0.2.138;
+}
+
+map $http_x_lab_client_ip $lab_client_ip {
+    ""      $logical_remote_addr;
+    default $http_x_lab_client_ip;
+}
+
+log_format plain_combined
+    '$lab_client_ip - $remote_user [$time_local] "$request" $status '
+    '$body_bytes_sent "$http_referer" "$http_user_agent"';
+
+log_format replay_labels escape=json
+    '{"msec":"$msec","request_id":"$request_id",'
+    '"remote_addr":"$remote_addr","client_ip":"$lab_client_ip",'
+    '"request":"$request","status":"$status",'
+    '"step":"$http_x_lab_step"}';
+
+error_log /dev/stderr notice;
+access_log /var/log/v2/access.log plain_combined;
+access_log /var/log/v2/replay/labels.log replay_labels;
+
+server {
+    listen 80;
+    server_name _;
+    resolver 127.0.0.11 valid=10s ipv6=off;
+    set $lab_app_upstream ${APP_UPSTREAM};
+
+    location / {
+        proxy_set_header Host edge;
+        proxy_set_header User-Agent $http_user_agent;
+        proxy_set_header X-Forwarded-For $lab_client_ip;
+        proxy_set_header Content-Type $http_content_type;
+        proxy_set_header Content-Length $http_content_length;
+        proxy_set_header Content-Encoding $http_content_encoding;
+        proxy_set_header Cookie $http_cookie;
+        proxy_set_header Authorization $http_authorization;
+        proxy_set_header Accept $http_accept;
+        proxy_set_header Accept-Language $http_accept_language;
+        proxy_set_header Accept-Encoding $http_accept_encoding;
+        proxy_set_header Referer $http_referer;
+        proxy_set_header Origin $http_origin;
+        proxy_set_header X-Requested-With $http_x_requested_with;
+        proxy_set_header Connection "";
+        proxy_pass_request_headers off;
+        proxy_pass http://$lab_app_upstream;
+    }
+}

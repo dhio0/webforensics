@@ -16,6 +16,12 @@ out/
 # Runtime lab logs; the curated copy lives in benchmark/scenarios/*/evidence/.
 lab/logs/*.log
 
+# M8 benchmark v2 secrets and encrypted full webroot captures.
+lab/v2/.env
+lab/v2/.cache/
+benchmark/v2/.env
+benchmark/v2/*/full-evidence.tar.gz.enc
+
 # Wazuh lab: upstream GPL checkout, generated certificates/runtime config, secrets.
 lab/wazuh/.upstream/
 lab/wazuh/certs/

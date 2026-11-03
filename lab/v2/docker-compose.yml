@@ -1,0 +1,205 @@
+services:
+  db:
+    image: mariadb:10.5.27@sha256:6a12617127de7ad42895232407abf403ae79f465bb818a8ac7ffbb97b8b18937
+    environment:
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+    volumes:
+      - dbdata:/var/lib/mysql
+    networks:
+      lab:
+        ipv4_address: ${LAB_PREFIX:-192.0.2}.133
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 3s
+      timeout: 3s
+      retries: 30
+
+  pgdb:
+    image: postgres@sha256:1d04b9ba1d4996401f2552b51beda8187f175c0645c091e4781134fc9c9a3eef
+    environment:
+      POSTGRES_DB: ${MYSQL_DATABASE}
+      POSTGRES_USER: ${MYSQL_USER}
+      POSTGRES_PASSWORD: ${MYSQL_PASSWORD}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${MYSQL_USER} -d ${MYSQL_DATABASE}"]
+      interval: 3s
+      timeout: 3s
+      retries: 30
+    networks:
+      lab:
+        ipv4_address: ${LAB_PREFIX:-192.0.2}.137
+
+  wp:
+    image: m8v2-wordpress:pilot
+    build:
+      context: ../..
+      dockerfile: lab/v2/apps/Dockerfile
+    environment:
+      WORDPRESS_DB_HOST: db:3306
+      WORDPRESS_DB_NAME: ${MYSQL_DATABASE}
+      WORDPRESS_DB_USER: ${MYSQL_USER}
+      WORDPRESS_DB_PASSWORD: ${MYSQL_PASSWORD}
+      WORDPRESS_AUTH_KEY: ${WORDPRESS_AUTH_KEY:-m8v2-round5-auth-key-test-only}
+      WORDPRESS_SECURE_AUTH_KEY: ${WORDPRESS_SECURE_AUTH_KEY:-m8v2-round5-secure-auth-key-test-only}
+      WORDPRESS_LOGGED_IN_KEY: ${WORDPRESS_LOGGED_IN_KEY:-m8v2-round5-logged-in-key-test-only}
+      WORDPRESS_NONCE_KEY: ${WORDPRESS_NONCE_KEY:-m8v2-round5-nonce-key-test-only}
+      WORDPRESS_AUTH_SALT: ${WORDPRESS_AUTH_SALT:-m8v2-round5-auth-salt-test-only}
+      WORDPRESS_SECURE_AUTH_SALT: ${WORDPRESS_SECURE_AUTH_SALT:-m8v2-round5-secure-auth-salt-test-only}
+      WORDPRESS_LOGGED_IN_SALT: ${WORDPRESS_LOGGED_IN_SALT:-m8v2-round5-logged-in-salt-test-only}
+      WORDPRESS_NONCE_SALT: ${WORDPRESS_NONCE_SALT:-m8v2-round5-nonce-salt-test-only}
+      BENCH_ADMIN_USER: ${BENCH_ADMIN_USER}
+      BENCH_ADMIN_PASSWORD: ${BENCH_ADMIN_PASSWORD}
+      BENCH_ADMIN_EMAIL: ${BENCH_ADMIN_EMAIL}
+      WORDPRESS_CONFIG_EXTRA: |
+        define('WP_HOME', 'http://edge');
+        define('WP_SITEURL', 'http://edge');
+    volumes:
+      - wpdata:/var/www/html
+      - collector-work:/collector-work
+      - ./scenarios/fixtures:/opt/fixtures:ro
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      lab:
+        ipv4_address: ${LAB_PREFIX:-192.0.2}.132
+
+  phpfaq:
+    image: m8v2-phpmyfaq:3.2.5
+    build:
+      context: ../..
+      dockerfile: lab/v2/apps/phpmyfaq/Dockerfile
+    environment:
+      PMF_DB_HOST: pgdb
+      PMF_DB_NAME: ${MYSQL_DATABASE}
+      PMF_DB_USER: ${MYSQL_USER}
+      PMF_DB_PASS: ${MYSQL_PASSWORD}
+      TZ: UTC
+    volumes:
+      - faqdata:/var/www/html
+      - collector-work:/collector-work
+    depends_on:
+      pgdb:
+        condition: service_healthy
+    networks:
+      lab:
+        ipv4_address: ${LAB_PREFIX:-192.0.2}.136
+
+  dvwa:
+    image: m8v2-dvwa:a1978a2
+    build:
+      context: ../..
+      dockerfile: lab/v2/apps/dvwa/Dockerfile
+    environment:
+      DBMS: MySQL
+      DB_SERVER: db
+      DB_DATABASE: ${MYSQL_DATABASE}
+      DB_USER: ${MYSQL_USER}
+      DB_PASSWORD: ${MYSQL_PASSWORD}
+      DB_PORT: "3306"
+      DEFAULT_SECURITY_LEVEL: low
+      # DVWA uses PHP truthiness: the string "false" enables its auth bypass.
+      DISABLE_AUTHENTICATION: "0"
+      TZ: UTC
+    volumes:
+      - dvwadata:/var/www/html
+      - collector-work:/collector-work
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      lab:
+        ipv4_address: ${LAB_PREFIX:-192.0.2}.138
+
+  edge:
+    image: nginx:1.27.5-alpine@sha256:65645c7bb6a0661892a8b03b89d0743208a18dd2f3f17a54ef4b76fb8e2f2a10
+    environment:
+      APP_UPSTREAM: ${APP_UPSTREAM:-wp:80}
+      LAB_PREFIX: ${LAB_PREFIX:-192.0.2}
+    ports:
+      - "127.0.0.1:${EDGE_PORT:-8081}:80"
+    volumes:
+      - ./nginx/templates:/etc/nginx/templates:ro
+      - ../../benchmark/v2/${SCENARIO:-s01}/evidence/access.log:/var/log/v2/access.log
+      - ../../benchmark/v2/${SCENARIO:-s01}/replay:/var/log/v2/replay
+    networks:
+      lab:
+        ipv4_address: ${LAB_PREFIX:-192.0.2}.130
+
+  attacker:
+    image: m8v2-attacker:pilot
+    environment:
+      BENCH_AGENT_PASSWORD: ${BENCH_AGENT_PASSWORD}
+      BENCH_ADMIN_USER: ${BENCH_ADMIN_USER}
+      BENCH_ADMIN_PASSWORD: ${BENCH_ADMIN_PASSWORD}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+    build:
+      context: ../..
+      dockerfile: lab/v2/attacker/Dockerfile
+    volumes:
+      - ./scenarios:/opt/scenarios:ro
+      - ./background.py:/opt/v2/background.py:ro
+      - ./pacing.py:/opt/v2/pacing.py:ro
+      - ./crawl_app.py:/opt/crawl_app.py:ro
+      - ../../benchmark/v2/${SCENARIO:-s01}/replay:/replay
+      - ${APP_DATA_VOLUME:-wpdata}:/app-webroot:ro
+    depends_on:
+      - edge
+    networks:
+      lab:
+        ipv4_address: ${LAB_PREFIX:-192.0.2}.131
+
+  background:
+    image: m8v2-attacker:pilot
+    command: ["sleep", "infinity"]
+    volumes:
+      - ./background.py:/opt/v2/background.py:ro
+      - ./pacing.py:/opt/v2/pacing.py:ro
+      - ./crawl_app.py:/opt/crawl_app.py:ro
+      - ../../benchmark/v2/${SCENARIO:-s01}/replay:/replay
+    depends_on:
+      - edge
+    networks:
+      lab:
+        ipv4_address: ${LAB_PREFIX:-192.0.2}.135
+
+  collector:
+    image: m8v2-collector:pilot
+    build:
+      context: ../..
+      dockerfile: lab/v2/collector/Dockerfile
+    environment:
+      BENCHMARK_V2_ENCRYPTION_KEY: ${BENCHMARK_V2_ENCRYPTION_KEY}
+      FULL_EVIDENCE_DIR: /full-evidence
+    volumes:
+      - ${APP_DATA_VOLUME:-wpdata}:/app-webroot:ro
+      - collector-work:/collector-work
+      - ../../benchmark/v2/${SCENARIO:-s01}/evidence:/capture
+      - ../../benchmark/v2/${SCENARIO:-s01}/replay:/replay
+      - ${FULL_EVIDENCE_DIR}:/full-evidence
+    networks:
+      lab:
+        ipv4_address: ${LAB_PREFIX:-192.0.2}.134
+
+networks:
+  lab:
+    driver: bridge
+    internal: true
+    ipam:
+      config:
+        - subnet: ${LAB_PREFIX:-192.0.2}.128/25
+          gateway: ${LAB_PREFIX:-192.0.2}.129
+
+volumes:
+  dbdata:
+  pgdata:
+  wpdata:
+  faqdata:
+  dvwadata:
+  collector-work:

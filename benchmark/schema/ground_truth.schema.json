@@ -140,8 +140,18 @@
         "change": {
           "enum": [
             "created",
-            "modified"
+            "modified",
+            "deleted"
           ]
+        },
+        "role": {
+          "type": "string",
+          "minLength": 1
+        },
+        "expected_in_report": {
+          "type": "boolean",
+          "default": true,
+          "description": "Whether a correct report is expected to include this file; defaults to true."
         }
       }
     },
@@ -168,8 +178,12 @@
           "description": "SHA-256 of the file as it was when the evidence was collected; the line refers to that version"
         },
         "vuln_class": {
-          "enum": ["sql_injection", "unrestricted_file_upload"],
-          "description": "Weakness at that line. eval scores line localization only for classes the tool localizes (sql_injection since M7)."
+          "enum": ["sql_injection", "unrestricted_file_upload", "command_injection", "local_file_inclusion"],
+          "description": "Weakness at that line."
+        },
+        "advisory_url": {
+          "type": "string",
+          "format": "uri"
         }
       }
     },

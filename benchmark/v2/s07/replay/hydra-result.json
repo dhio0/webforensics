@@ -1,0 +1,7 @@
+{
+  "tool": "Hydra",
+  "source_commit": "a247d063e35f24218f55cc3c705e20073d1379eb",
+  "returncode": 0,
+  "candidate_passwords": 4,
+  "valid_login_confirmed": true
+}

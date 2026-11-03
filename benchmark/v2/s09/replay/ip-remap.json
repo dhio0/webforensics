@@ -1,0 +1,41 @@
+{
+  "scenario": "s09",
+  "original_revision": "76034f5",
+  "seed": 5209,
+  "rule": "Production IPMapper in recorded first-seen order; replace only old overflow clients",
+  "historical_overflow_range": "10.0.0.0/8",
+  "new_overflow_range": "198.18.0.0/15",
+  "documentation_ranges_first": [
+    "198.51.100.0/24",
+    "203.0.113.0/24",
+    "192.0.2.0/24"
+  ],
+  "addresses_rewritten": 9749,
+  "rows_rewritten": 13190,
+  "private_client_addresses_before": 9749,
+  "private_client_addresses_after": 0,
+  "historical_log_sha256_before": "1e00261c82f31500caac35c0a8a478aeeda020bfd64af4d409f7873e06fc30c7",
+  "log_sha256_after": "8731fcd3d044c47f00e6f3a1e8d6aaef54c0022a89a445a3d31f76b2ef02c956",
+  "client_count_before": 10386,
+  "client_count_after": 10386,
+  "background_client_count": 10384,
+  "top_client_share_before": 0.009722314709995338,
+  "top_client_share_after": 0.009722314709995338,
+  "rows_before": 15017,
+  "rows_after": 15017,
+  "all_non_client_fields_byte_identical": true,
+  "all_actor_lines_byte_identical": 14,
+  "ground_truth_step_lines_byte_identical": 4,
+  "ground_truth_regeneration": "PASS; byte-identical; attacker_ips unchanged",
+  "mapping_rerun": "PASS; production IPMapper over recorded background.log.gz, byte-identical TSV",
+  "ip_map_sha256": "6ca236c068177bd6af2c262c472f7c5491c54cd7bf78d287510bf8caef5b5b32",
+  "encrypted_capture": "Unchanged; holds the original mapping",
+  "restore": "Prior proof retained; webroot, manifests and restore inputs unchanged",
+  "leftover_old_range_literals": [
+    {
+      "file": "replay/ip-remap.json",
+      "address": "10.0.0.0",
+      "reason": "Historical range and leftover inventory metadata; not a client"
+    }
+  ]
+}

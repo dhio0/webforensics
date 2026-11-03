@@ -1,0 +1,5 @@
+path	original_sha256	original_size	role	reason
+wp-content/uploads/wp-file-manager-pro/fm_backup/index.php	e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855	0	side_effect	new or changed executable, script-tagged, zip, or phar file
+.htaccess	43fb6a39fad49b760cc1a5ee89070b01e5ac85ddca2057670148ce3f0b4188e1	234	install_file	generated install executable; inert restore stub
+wp-config-sample.php	07dc88bf63a70b6e4d621391b150f3e0fae5f69f9e9352a912a92e80b2ad2411	2823	install_file	generated install executable; inert restore stub
+wp-config.php	9ca130be1b5ec30d28974c7905c9b9e5ae7be3787c71ba3c0a69d4196279b913	3299	install_file	secret install configuration; credentials and salts omitted

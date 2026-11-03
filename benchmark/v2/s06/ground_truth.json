@@ -1,0 +1,48 @@
+{
+  "scenario_id": "s06",
+  "description": "A logged-in user invokes the DVWA local-file-inclusion exercise and reads a container-local system file. The successful file read is the root cause; no log poisoning, command execution, or file write is claimed.",
+  "attacker_ips": [
+    "192.0.2.131"
+  ],
+  "steps": [
+    {
+      "id": "training_account_login",
+      "category": "valid_account_access",
+      "mitre": [
+        "T1078"
+      ],
+      "log_file": "access.log.gz",
+      "line_no": 5578,
+      "is_root_cause": false,
+      "expected_in_timeline": false
+    },
+    {
+      "id": "lfi_file_read",
+      "category": "local_file_inclusion",
+      "mitre": [
+        "T1005"
+      ],
+      "log_file": "access.log.gz",
+      "line_no": 6652,
+      "is_root_cause": true,
+      "expected_in_timeline": true
+    }
+  ],
+  "files": [],
+  "root_cause_step": "lfi_file_read",
+  "split": "held_out",
+  "expected_rule_ids": [],
+  "analysis": {
+    "access_logs": [
+      "access.log.gz"
+    ],
+    "error_logs": [
+      "app-error.log"
+    ],
+    "error_log_format": "apache",
+    "error_log_utc_offset": "+0000",
+    "manifest": "manifest.tsv",
+    "baseline": "baseline.tsv",
+    "trusted_proxies": []
+  }
+}

@@ -1,0 +1,129 @@
+{
+  "scenario_id": "s01",
+  "description": "A remote user checks the WordPress and file-manager versions, makes a few routine probes, then abuses the unauthenticated upload and runs three identification commands through the uploaded agent. Background visitors and scanners reach the same application from separate client addresses.",
+  "attacker_ips": [
+    "192.0.2.131"
+  ],
+  "root_cause_step": "unauthenticated_file_upload",
+  "steps": [
+    {
+      "id": "site_check",
+      "category": "reconnaissance",
+      "mitre": [
+        "T1595"
+      ],
+      "label_method": "header",
+      "expected_in_timeline": false
+    },
+    {
+      "id": "plugin_version_check",
+      "category": "reconnaissance",
+      "mitre": [
+        "T1595"
+      ],
+      "label_method": "header",
+      "expected_in_timeline": false
+    },
+    {
+      "id": "admin_probe",
+      "category": "reconnaissance",
+      "mitre": [
+        "T1595"
+      ],
+      "label_method": "header",
+      "expected_in_timeline": false
+    },
+    {
+      "id": "xmlrpc_probe",
+      "category": "reconnaissance",
+      "mitre": [
+        "T1595"
+      ],
+      "label_method": "header",
+      "expected_in_timeline": false
+    },
+    {
+      "id": "unauthenticated_file_upload",
+      "category": "unrestricted_upload",
+      "mitre": [
+        "T1190"
+      ],
+      "label_method": "header",
+      "expected_in_timeline": true
+    },
+    {
+      "id": "agent_identity",
+      "category": "webshell_command",
+      "mitre": [
+        "T1059.004"
+      ],
+      "label_method": "attacker_ip_time_window",
+      "attacker_ip": "192.0.2.131",
+      "started_at": "2026-11-01T07:03:55.910870+00:00",
+      "ended_at": "2026-11-01T07:04:43.122380+00:00",
+      "command_started_at": "2026-11-01T07:03:55.910870+00:00",
+      "command_ended_at": "2026-11-01T07:04:43.122380+00:00",
+      "request": "POST /wp-content/plugins/wp-file-manager/lib/files/maintenance-agent.php HTTP/1.1",
+      "status": 200,
+      "candidate_ordinal": 1
+    },
+    {
+      "id": "agent_working_directory",
+      "category": "webshell_command",
+      "mitre": [
+        "T1059.004"
+      ],
+      "label_method": "attacker_ip_time_window",
+      "attacker_ip": "192.0.2.131",
+      "started_at": "2026-11-01T07:04:43.122398+00:00",
+      "ended_at": "2026-11-01T07:05:29.839432+00:00",
+      "command_started_at": "2026-11-01T07:04:43.122398+00:00",
+      "command_ended_at": "2026-11-01T07:05:29.839432+00:00",
+      "request": "POST /wp-content/plugins/wp-file-manager/lib/files/maintenance-agent.php HTTP/1.1",
+      "status": 200,
+      "candidate_ordinal": 1
+    },
+    {
+      "id": "agent_user",
+      "category": "webshell_command",
+      "mitre": [
+        "T1059.004"
+      ],
+      "label_method": "attacker_ip_time_window",
+      "attacker_ip": "192.0.2.131",
+      "started_at": "2026-11-01T07:05:29.839450+00:00",
+      "ended_at": "2026-11-01T07:06:23.464934+00:00",
+      "command_started_at": "2026-11-01T07:05:29.839450+00:00",
+      "command_ended_at": "2026-11-01T07:06:23.464934+00:00",
+      "request": "POST /wp-content/plugins/wp-file-manager/lib/files/maintenance-agent.php HTTP/1.1",
+      "status": 200,
+      "candidate_ordinal": 1
+    }
+  ],
+  "files": [
+    {
+      "path": "/wp-content/plugins/wp-file-manager/lib/files/maintenance-agent.php",
+      "role": "webshell_agent"
+    },
+    {
+      "path": "/wp-content/uploads/wp-file-manager-pro/fm_backup/index.php",
+      "role": "side_effect",
+      "expected_in_report": false
+    }
+  ],
+  "analysis": {
+    "access_logs": [
+      "access.log.gz"
+    ],
+    "error_logs": [
+      "app-error.log"
+    ],
+    "error_log_format": "apache",
+    "error_log_utc_offset": "+0000",
+    "manifest": "manifest.tsv",
+    "baseline": "baseline.tsv",
+    "trusted_proxies": []
+  },
+  "split": "dev",
+  "expected_rule_ids": []
+}

@@ -1,0 +1,42 @@
+{
+  "sqlmap_commit": "c42ebd7acf47c88b6407995dd9842a2eb5d6534d",
+  "sqlmap_exit_code": 0,
+  "scanner_results": [
+    {
+      "path": "/wp-login.php",
+      "status": 200
+    },
+    {
+      "path": "/wp-admin/",
+      "status": 302
+    },
+    {
+      "path": "/xmlrpc.php",
+      "status": 405
+    },
+    {
+      "path": "/wp-json/wp/v2/users",
+      "status": 200
+    },
+    {
+      "path": "/wp-content/plugins/",
+      "status": 200
+    },
+    {
+      "path": "/.env",
+      "status": 404
+    },
+    {
+      "path": "/phpmyadmin/",
+      "status": 404
+    },
+    {
+      "path": "/administrator/",
+      "status": 404
+    }
+  ],
+  "injection_detected": false,
+  "output_summary": [
+    "[10:20:54] [CRITICAL] all tested parameters do not appear to be injectable. Try to increase values for '--level'/'--risk' options if you wish to perform more tests. If you suspect that there is some kind of protection mechanism involved (e.g. WAF) maybe you could try to use option '--tamper' (e.g. '--tamper=space2comment') and/or switch '--random-agent'"
+  ]
+}

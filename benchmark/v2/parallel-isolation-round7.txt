@@ -1,0 +1,15 @@
+Round-7 concurrent-project isolation smoke test
+Completed: 2026-11-01 13:33 WIB
+
+Primary s01 project: original internal 192.0.2.128/25 network.
+Second project: m8v2-network-proof, internal 172.31.200.128/25 network,
+separate containers and loopback-only port 8120. No app or incident was replayed
+in the second project; its proxy intentionally had no app upstream.
+
+TCP connection from second-project attacker to outside address: refused/unreachable.
+TCP connection from second-project attacker to first-project app: refused/unreachable.
+Native request from physical second-project attacker: logged as logical 192.0.2.131.
+Header-mapped background-style request: logged as logical 203.0.113.15.
+Both proxy requests returned the expected 502 because no app was attached.
+Second-project containers and network were removed after the test.
+The s01 recording continued without restarting any of its containers.
