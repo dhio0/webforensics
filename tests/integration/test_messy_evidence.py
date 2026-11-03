@@ -116,7 +116,8 @@ def test_a_gzip_log_cut_short_keeps_what_can_be_read(tmp_path):
 def test_a_manifest_time_out_of_range_is_a_bad_row_not_a_crash():
     header = "#webforensics-manifest v1\n#columns=path_hex,type,size,mode,uid,inode,atime," \
              "mtime,ctime,btime,sha256\n"
-    row = "\t".join(["612e706870", "f", "1", "644", "33", "1", "0", "99999999999", "0", "0",
+    # 1e308 is out of range everywhere; 99999999999 (year 5138) only on Windows.
+    row = "\t".join(["612e706870", "f", "1", "644", "33", "1", "0", "1e308", "0", "0",
                      "a" * 64])
     _, entries, failures = parse_manifest((header + row + "\n").splitlines(True), "m.tsv")
     assert entries == [] and [f.reason for f in failures] == ["timestamp_out_of_range"]
