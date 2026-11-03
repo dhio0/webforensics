@@ -34,6 +34,7 @@ from webforensics.detect.file_rules import has_executable_extension
 from webforensics.models import LogEvent
 
 CMD_RULE = "LOG-WEBSHELL-CMD-PARAM"
+UPLOAD_DIR_RULE = "LOG-WEBSHELL-UPLOAD-DIR"
 _OUTFILE = re.compile(r"\binto\s+(?:out|dump)file\s+(['\"])(?P<target>[^'\"]+)\1", re.I)
 _DELETE = re.compile(r"(?:^|[\s;&|=])(?:del|erase|rm|unlink|remove-item)\b", re.I)
 # How long after an INTO OUTFILE request the written file is looked for.
@@ -51,6 +52,7 @@ class LogOnlyFile:
     deleted_by: LogEvent | None = None
     commands: list[LogEvent] = field(default_factory=list)
     uploaded: bool = False  # written_by is an upload just before POST-driven use (D94)
+    varied: bool = False  # a script in an upload folder answering POSTs with varied output
     gone_at: LogEvent | None = None  # the same actor later got 404/410 for the URL
 
 
@@ -157,9 +159,10 @@ def find_log_only_files(index, served: set[str]) -> list[LogOnlyFile]:
             shell.written_by, shell.outfile = event, True
 
     _uploaded_then_posted(index, found, record)
+    _varied_posts_in_upload_dir(index, found, record)
 
     shells = sorted((s for s in found.values()
-                     if s.outfile or s.uploaded
+                     if s.outfile or s.uploaded or s.varied
                      or len({e.bytes_sent for e in s.commands if _is_output(e)}) >= 2),
                     key=lambda s: (s.uses[0].ts, s.uses[0].line_no))
     for shell in shells:
@@ -176,6 +179,62 @@ def find_log_only_files(index, served: set[str]) -> list[LogOnlyFile]:
                               and site_of(e) == shell.site and e.status in (404, 410)
                               and (e.ts, e.line_no) > (last.ts, last.line_no)), None)
     return shells
+
+
+def _varied_posts_in_upload_dir(index, found: dict, record) -> None:
+    """A script in an upload folder, POSTed to without a query string and answered 2xx
+    with at least two different sizes, by one or two clients only (D95). The output changes
+    with the command sent in the body; a site that answers any URL with the same page does
+    not. Hits are not capped: a shell in use for long is still a shell.
+
+    The writer is the closest upload-like request answered 2xx before the first use, from
+    the same actor or, failing that, from another client that had already sent flagged
+    requests (attackers often upload with one tool and drive the shell from another
+    address). Nothing else links the two, so that writer is only an inference."""
+    posts: dict[tuple[str, str, str], list[LogEvent]] = {}
+    for event in index.events:
+        if (event.method == "POST" and _is_output(event) and not event.query
+                and any(f.rule_id == UPLOAD_DIR_RULE for f in index.of(event))):
+            key = (site_of(event), index.actor(event), index.url_key(event.path or ""))
+            posts.setdefault(key, []).append(event)
+    for (_site, _actor, key), own in posts.items():
+        if len({e.bytes_sent for e in own}) < 2:
+            continue
+        clients = {index.actor(e) for e in index.by_url.get(key, []) if rq.is_success(e)}
+        if len(clients) > index.config.rare_post_max_clients:
+            continue
+        shell = record(own[0])
+        if shell is None:
+            continue
+        shell.uses = sorted({*shell.uses, *own}, key=lambda e: (e.ts, e.log_file, e.line_no))
+        shell.varied = True
+        if shell.written_by is None:
+            writer = _upload_before(index, shell)
+            if writer is not None:
+                shell.written_by, shell.uploaded = writer, True
+
+
+def _upload_before(index, shell: LogOnlyFile) -> LogEvent | None:
+    first = shell.uses[0]
+    start = first.ts - timedelta(seconds=index.config.creation_window_s)
+    uploads = [e for e in index.between(start, first.ts)
+               if (e.ts, e.line_no) < (first.ts, first.line_no) and site_of(e) == shell.site
+               and index.url_key(e.path or "") != index.url_key(shell.url) and _is_output(e)
+               and rq.write_level(e, index.of(e)) is rq.WriteLevel.LIKELY]
+    own = [e for e in uploads if index.actor(e) == shell.actor]
+    if own:
+        return own[-1]
+    flagged = [e for e in uploads if _flagged_before(index, index.actor(e), e)]
+    return flagged[-1] if flagged else None
+
+
+def _flagged_before(index, actor: str, event: LogEvent) -> bool:
+    for e in index.by_actor.get(actor, []):
+        if (e.ts, e.line_no) >= (event.ts, event.line_no):
+            return False
+        if index.of(e):
+            return True
+    return False
 
 
 def _writer(index, shell: LogOnlyFile) -> LogEvent | None:

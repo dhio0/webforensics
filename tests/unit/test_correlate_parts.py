@@ -109,3 +109,13 @@ def test_parse_errors_become_bounded_gaps():
     assert len(gaps) == 1
     assert (gaps[0].start, gaps[0].end) == (at(0), at(30))
     assert gaps[0].detail.params["count"] == "2"
+
+
+def test_parse_error_gap_when_the_log_is_not_in_time_order():
+    """Apache writes a line when the request ends, so the line after an unparsed one can
+    carry an earlier time (BTLO WordPress log, D95). The gap must still be valid."""
+    events = numbered((20, "/"), (99, "/"), (10, "/")).events
+    kept = tuple(e for e in events if e.line_no != 2)
+    failures = (ParseFailure(source="access.log", line_no=2, reason="format_mismatch"),)
+    gaps = parse_error_gaps(LogCollection(events=kept, failures=failures))
+    assert (gaps[0].start, gaps[0].end) == (at(10), at(20))

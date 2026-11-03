@@ -1,0 +1,24 @@
+run: run2   timeline rows: 0
+
+Events (timeline citations; background examples listed apart)
+  MISS E1 WPScan (only as unrelated activity)
+  MISS E2 sqlmap
+  MISS E3 Simple File List upload / rename
+  MISS E4 shell use (first use, last 404) (only as unrelated activity)
+  event recall 0/4
+
+Scripts seen only in the logs
+  MISS /wp-content/uploads/simple-file-list/fr34k.php
+  false scripts: []
+  disappearance (404) shown: False
+
+IPs (IOC list)
+  attackers accused: [] of ['103.69.55.212', '119.241.22.121', '168.22.54.119']
+  unsure accused (not scored): []
+  false accusations: []
+  affected files (none expected: no webroot): []
+
+Root cause
+  none   strict MISS   lenient MISS
+
+Gaps: ['no_baseline', 'no_log_lines', 'no_manifest', 'parse_errors', 'untrusted_file_timestamps']  (no-baseline gap: True)

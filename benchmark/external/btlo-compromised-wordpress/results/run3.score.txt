@@ -1,0 +1,25 @@
+run: run3   timeline rows: 22
+
+Events (timeline citations; background examples listed apart)
+  HIT  E1 WPScan
+  MISS E2 sqlmap (only as unrelated activity)
+  HIT  E3 Simple File List upload / rename
+  HIT  E4 shell use (first use, last 404)
+  event recall 3/4
+
+Scripts seen only in the logs
+  HIT  /wp-content/uploads/simple-file-list/fr34k.php
+  false scripts: []
+  disappearance (404) shown: True
+
+IPs (IOC list)
+  attackers accused: ['103.69.55.212', '119.241.22.121'] of ['103.69.55.212', '119.241.22.121', '168.22.54.119']
+  unsure accused (not scored): []
+  false accusations: []
+  affected files (none expected: no webroot): []
+
+Root cause
+  timeline.upload_exploit lines [1716] vuln unrestricted_file_upload confidence medium
+  strict OK   lenient OK
+
+Gaps: ['no_baseline', 'no_log_lines', 'no_manifest', 'parse_errors', 'untrusted_file_timestamps']  (no-baseline gap: True)

@@ -97,9 +97,14 @@ def parse_error_gaps(logs: LogCollection) -> list[EvidenceGap]:
         for run in file_runs:
             before = [lines[n].ts for n in lines if n < run[0]]
             after = [lines[n].ts for n in lines if n > run[-1]]
+            start = max(before) if before else None
+            end = min(after) if after else None
+            if start is not None and end is not None and end < start:
+                # Lines are written when a request ends, so a log is not strictly in time
+                # order: a later line can carry an earlier time (D95).
+                start, end = end, start
             gaps.append(make_gap(
-                GapKind.PARSE_ERRORS, source, max(before) if before else None,
-                min(after) if after else None, "gap.parse_errors",
+                GapKind.PARSE_ERRORS, source, start, end, "gap.parse_errors",
                 {"first_line": str(run[0]), "last_line": str(run[-1]), "count": str(len(run))},
             ))
     return gaps

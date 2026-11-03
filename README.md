@@ -11,7 +11,7 @@ A defensive tool that reconstructs **how a website was compromised**. It correla
 ## At a glance
 - **The problem.** When a small organization's site is hacked, the admin needs to know how the attacker got in, when, and what changed. Today that is a manual hunt: find the webshell, check its timestamps, then read the access log backwards from that moment.
 - **What it does.** It automates that hunt, starting from the file the way an analyst does: file → write time → the request that wrote it → the exploit that made that request possible. Every claim cites a log line or a file hash, evidence gaps lower the confidence explicitly, and for SQL injection it points at the vulnerable PHP line with a prepared-statement fix. Output: an Indonesian report in a CSIRT incident-handling flow, an interactive offline viewer, and alerts written back to Wazuh.
-- **How well it works.** All five lab scenarios are fully correct through both evidence paths (plain files and Wazuh). On four outside cases, each with an answer key written before the first run, the first runs were imperfect and are reported as they were; every miss became a general fix with a test. On benchmark v2, built from real applications and attack tools, the frozen tool made no false accusations but missed most attacks (held-out 1/4 fully correct). After fixes made from the dev scenarios only, held-out is 2/4, still with no false accusations; the held-out failures are left unexamined. One run over 7.4 million real log lines takes 3.7 minutes.
+- **How well it works.** All five lab scenarios are fully correct through both evidence paths (plain files and Wazuh). On five outside cases, each with an answer key written before the first run, the first runs were imperfect and are reported as they were; every miss became a general fix with a test. On benchmark v2, built from real applications and attack tools, the frozen tool made no false accusations but missed most attacks (held-out 1/4 fully correct). After fixes made from the dev scenarios only, held-out is 2/4, still with no false accusations; the held-out failures are left unexamined. One run over 7.4 million real log lines takes 3.7 minutes.
 - **Built with.** Python 3.11, Typer, pydantic, tree-sitter (code analysis), pytest (600+ tests, golden reports compared byte for byte), a Docker lab, and Wazuh 4.14 (indexer, FIM, custom integration and rules).
 
 ## How it works
@@ -227,6 +227,18 @@ one, with byte-identical reports (D88). One run over all 7.4M lines now complete
 min, 6.0 GB). Merging the sites first added one false file, since scripts were keyed by
 path alone; they are now keyed by site (D89), and the single run matches the per-site runs.
 
+### A fifth case, after M9
+
+A free Blue Team Labs Online challenge: the access log of a WordPress site that was scanned
+(WPScan, sqlmap), exploited through the Simple File List plugin, and used through a webshell
+that was gone at the end; no webroot
+([benchmark/external/btlo-compromised-wordpress](benchmark/external/btlo-compromised-wordpress/README.md)).
+The answer key was written before the download. Run 1, with the M9 tool, **crashed**: the log
+is not strictly in time order. With that fixed it still found nothing, because the shell was
+uploaded from one address and driven from another through POST bodies. After a general fix
+(D95), the shell, its disappearance and the upload request (the root cause) are found, with
+two of the three attacker addresses and no false accusation. That result is post-hoc.
+
 ## Development
 ```bash
 pytest
@@ -247,6 +259,7 @@ ruff check .
 - [benchmark/external/ashemery-linux1](benchmark/external/ashemery-linux1/README.md): the held-out Linux case
 - [benchmark/external/bnd-2016](benchmark/external/bnd-2016/README.md): the held-out BND case (defacement, cut log)
 - [benchmark/external/id-public-sector-2025](benchmark/external/id-public-sector-2025/README.md): real-scale logs of two Indonesian public-sector servers
+- [benchmark/external/btlo-compromised-wordpress](benchmark/external/btlo-compromised-wordpress/README.md): the BTLO WordPress log (crash, then a shell driven from another address)
 
 ## License
 MIT, see [LICENSE](LICENSE). Third-party code used as test fixtures keeps its own license; each fixture states its source and license.
