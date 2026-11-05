@@ -162,7 +162,7 @@ def analyze(inputs: EvidenceInputs, config: CorrelationConfig, generated_at: dat
     run = run_info(evidence, config, generated_at)
     case = case_info(evidence, run, options or CaseOptions())
     scope = evidence_scope(evidence.logs, evidence.files, evidence.baseline,
-                           file_adapter=evidence.adapter)
+                           file_adapter=evidence.adapter, result=result)
     code_findings, code_scope = review_code(result, evidence.files, inputs.webroot,
                                             inputs.url_prefix,
                                             case_insensitive=config.case_insensitive_paths)

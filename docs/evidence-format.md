@@ -40,6 +40,7 @@ Parser behavior:
 - Bad rows are counted as rejected with a reason and never crash the run.
 - Paths that are absolute or contain `.`/`..` segments are rejected (D15).
 - Duplicate paths keep the first row.
+- With `--webroot`, each regular file's content is taken from the copy only if it hashes to the manifest value. A file missing from the copy (`content_missing`), unreadable (`content_unreadable`, e.g. an antivirus lock) or with another hash (`content_hash_mismatch`) keeps its manifest metadata but has no content: its content rules do not run. These are not rejected rows. The report counts them in the evidence scope and names the code files among them; one whose URL got an attack-pattern request and that the conclusions do not include is said first in the summary (D101). An antivirus on the analyst's machine deleting the very webshell under investigation is the common cause: exclude the evidence folder before extracting.
 - Unknown `#key=value` header lines are preserved in `header.extra`.
 
 Known limitations of the collector:

@@ -318,7 +318,22 @@ MESSAGES: dict[str, str] = {
                                          "{last_at}."),
     "summary.log_only": "{count} skrip dipakai penyerang tetapi sudah tidak ada di webroot "
                         "(hanya terlihat di log): {paths}.",
-    "summary.judol": "Insiden ini berupa penyusupan konten judi online: {count} file berisi "
+    "summary.content_unread_attacked": "Isi {count} file kode tidak bisa dibaca dari salinan "
+                                       "webroot, padahal URL-nya diminta dengan pola "
+                                       "serangan: {paths}. Antivirus di mesin analis sering "
+                                       "mengkarantina webshell yang justru menjadi bukti. "
+                                       "Pulihkan salinannya (cocokkan hash-nya dengan "
+                                       "manifest) sebelum menyimpulkan apa pun: kesimpulan "
+                                       "di bawah bisa melewatkan file ini.",
+    "summary.content_unread": "Isi {count} file tidak bisa dibaca dari salinan webroot "
+                              "(hilang, terkunci antivirus, atau hash-nya berbeda dari "
+                              "manifest), termasuk file kode {paths}. Aturan isi file tidak "
+                              "berjalan untuk file itu.",
+    "summary.webroot_incomplete": "Salinan webroot tampaknya tidak lengkap atau path "
+                                  "--webroot salah: isi {count} dari {total} file di manifest "
+                                  "tidak bisa dibaca. Aturan isi file hanya berjalan untuk "
+                                  "file yang ada; periksa salinannya sebelum menyimpulkan.",
+    "summary.judol":"Insiden ini berupa penyusupan konten judi online: {count} file berisi "
                      "promosi judi online.",
     "summary.cloaking": "{count} skrip tampaknya menampilkan konten lain ke mesin pencari "
                         "(cloaking), cara umum menyembunyikan spam judi online dari pengunjung "
@@ -587,6 +602,7 @@ LABELS: dict[str, str] = {
     "scope.entries": "entri",
     "scope.files": "file",
     "scope.rejected": "baris manifest ditolak",
+    "scope.unread": "file tanpa isi yang bisa dibaca di salinan webroot",
     "scope.fim_files": "file berubah menurut Wazuh FIM",
     "scope.fim_baseline": "scan awal Wazuh FIM (file yang tidak berubah tidak tercantum)",
     "timeline.notes": "Catatan keyakinan",

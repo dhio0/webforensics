@@ -6,6 +6,7 @@ _WF-54BD23F4D5 · 2026-10-28 09:00:00 WIB_
 
 - Ditemukan 1 file mencurigakan yang terkait dengan 1 alamat IP. Aktivitas pertama aktor pada 2026-10-29 12:18:59 WIB, terakhir pada 2026-10-29 12:19:01 WIB.
 - Titik masuk yang paling mungkin: unrestricted file upload (upload tanpa validasi) lewat POST /admin/upload.php pada 2026-10-29 12:18:59 WIB (keyakinan sedang).
+- Isi 1 file tidak bisa dibaca dari salinan webroot (hilang, terkunci antivirus, atau hash-nya berbeda dari manifest), termasuk file kode uploads/scenario-e-marker.php. Aturan isi file tidak berjalan untuk file itu.
 
 ### Alur serangan
 
@@ -27,7 +28,7 @@ _WF-54BD23F4D5 · 2026-10-28 09:00:00 WIB_
 - **Periode access log:** 2026-10-29 12:18:53 WIB s.d. 2026-10-29 12:19:08 WIB
 - **Access log:** 7 baris terbaca
 - **Error log:** 1 entri
-- **Webroot:** 11 file
+- **Webroot:** 11 file, 1 file tanpa isi yang bisa dibaca di salinan webroot
 - **Bukti dikumpulkan:** 2026-10-29 12:19:16 WIB
 - **Baseline:** 10 file
 

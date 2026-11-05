@@ -600,6 +600,11 @@ class EvidenceScope(_Frozen):
     baseline_files: int | None = None  # None: no baseline given
     file_adapter: str = "file"  # "wazuh": `files` counts FIM-changed files, not the webroot
     collected_at: UtcDatetime | None = None  # from the manifest header
+    # Files whose content the webroot copy could not give (missing, unreadable, or a hash
+    # other than the manifest's, D101): their content rules did not run.
+    unread_files: int = 0
+    unread_code: tuple[str, ...] = ()  # code files among them, attacked ones first, capped
+    unread_attacked: tuple[str, ...] = ()  # code files whose URL got an attack-pattern request
 
 
 REPORT_FORMAT = "webforensics-report/1"

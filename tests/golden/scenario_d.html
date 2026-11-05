@@ -39,13 +39,13 @@ overflow-x:auto;font-size:.85rem}
 <nav><ol><li><a href="#ringkasan">1. Ringkasan</a></li><li><a href="#kasus">2. Informasi Kasus</a></li><li><a href="#kronologi">3. Kronologi Serangan</a></li><li><a href="#akar-masalah">4. Akar Masalah</a></li><li><a href="#file-terdampak">5. File Terdampak</a></li><li><a href="#tinjau">6. Perubahan yang Perlu Ditinjau</a></li><li><a href="#ioc">7. Indikator Kompromi (IOC)</a></li><li><a href="#celah-bukti">8. Celah Bukti</a></li><li><a href="#latar">9. Aktivitas Serangan Lain (Tidak Terkait Insiden)</a></li><li><a href="#tindakan">10. Tindakan yang Disarankan</a></li><li><a href="#keterbatasan">11. Keterbatasan</a></li><li><a href="#bukti">Lampiran A. Rujukan Bukti</a></li><li><a href="#reproduksi">Lampiran B. Reproduksibilitas</a></li></ol></nav>
 <section id="ringkasan">
 <h2>1. Ringkasan</h2>
-<ul><li>Tidak ditemukan file mencurigakan yang terkait dengan request HTTP. Ini tidak menjamin server bersih.</li><li>2 login lewat SQL injection ke /admin/login.php tampaknya berhasil (respons seperti login yang sukses), dari 2 klien yang tidak terkait insiden. Tidak ada yang dituduh, tetapi endpoint login ini kemungkinan besar bisa dibobol dan perlu diperbaiki.</li><li>1 perubahan file perlu ditinjau manual.</li><li>6 request berpola serangan dari pihak lain (misalnya bot) tidak terkait insiden ini.</li></ul>
+<ul><li>Tidak ditemukan file mencurigakan yang terkait dengan request HTTP. Ini tidak menjamin server bersih.</li><li>2 login lewat SQL injection ke /admin/login.php tampaknya berhasil (respons seperti login yang sukses), dari 2 klien yang tidak terkait insiden. Tidak ada yang dituduh, tetapi endpoint login ini kemungkinan besar bisa dibobol dan perlu diperbaiki.</li><li>Isi 2 file tidak bisa dibaca dari salinan webroot (hilang, terkunci antivirus, atau hash-nya berbeda dari manifest), termasuk file kode cache/page-1.php. Aturan isi file tidak berjalan untuk file itu.</li><li>1 perubahan file perlu ditinjau manual.</li><li>6 request berpola serangan dari pihak lain (misalnya bot) tidak terkait insiden ini.</li></ul>
 </section>
 <section id="kasus">
 <h2>2. Informasi Kasus</h2>
 <dl><dt>ID kasus</dt><dd>WF-72CCDBC9E8</dd><dt>Analis</dt><dd>-</dd><dt>Host target</dt><dd>f65084d6792d</dd><dt>Laporan dibuat</dt><dd>2026-10-28 09:00:00 WIB</dd><dt>Zona waktu laporan</dt><dd>WIB (UTC+07:00)</dd></dl>
 <h3>Cakupan bukti</h3>
-<dl><dt>Periode access log</dt><dd>2026-10-29 12:17:52 WIB s.d. 2026-10-29 12:18:12 WIB</dd><dt>Access log</dt><dd>32 baris terbaca</dd><dt>Error log</dt><dd>1 entri</dd><dt>Webroot</dt><dd>12 file</dd><dt>Bukti dikumpulkan</dt><dd>2026-10-29 12:18:21 WIB</dd><dt>Baseline</dt><dd>10 file</dd></dl>
+<dl><dt>Periode access log</dt><dd>2026-10-29 12:17:52 WIB s.d. 2026-10-29 12:18:12 WIB</dd><dt>Access log</dt><dd>32 baris terbaca</dd><dt>Error log</dt><dd>1 entri</dd><dt>Webroot</dt><dd>12 file, 2 file tanpa isi yang bisa dibaca di salinan webroot</dd><dt>Bukti dikumpulkan</dt><dd>2026-10-29 12:18:21 WIB</dd><dt>Baseline</dt><dd>10 file</dd></dl>
 </section>
 <section id="kronologi">
 <h2>3. Kronologi Serangan</h2>

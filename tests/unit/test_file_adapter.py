@@ -50,7 +50,10 @@ def test_manifest_source(fixtures_dir, tmp_path):
     assert len(mismatch) == 1 and mismatch[0].line_no == 14
     assert by_path["index.php"].content_ref is None  # not extracted
     assert by_path["index.php"].url_paths == ("/index.php", "/")
-    assert len(files.failures) == 3
+    # Files the manifest lists but the copy lacks are counted, not silent (D101).
+    missing = sorted(f.excerpt for f in files.failures if f.reason == "content_missing")
+    assert "index.php" in missing and "uploads/x.php" not in missing
+    assert len(files.failures) == 3 + len(missing)
     assert files.sources[0].path == "manifests/shop.manifest.tsv"
 
 

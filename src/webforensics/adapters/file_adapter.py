@@ -202,6 +202,19 @@ class ManifestFileSource:
             ),
         )
 
+    def _content_missing(self, file: FileEvidence, source: str,
+                         line_no: int) -> ParseFailure | None:
+        """A regular file the manifest lists but the webroot copy lacks (D101): deleted
+        by an antivirus on the analyst's machine, or an incomplete copy. Without this the
+        file silently had no content, and its content rules never ran."""
+        if self._webroot_dir is None or file.file_type is not FileType.FILE:
+            return None
+        candidate = self._webroot_dir / file.path
+        if candidate.is_symlink() or candidate.exists():
+            return None  # present: read, refused (symlink) or hash-checked elsewhere
+        return ParseFailure(source=source, line_no=line_no, reason="content_missing",
+                            excerpt=file.path)
+
     def load_files(self) -> FileCollection:
         source = _source_file(self._manifest_path, self._base_dir)
         with self._manifest_path.open(encoding="utf-8", errors="replace") as handle:
@@ -209,6 +222,9 @@ class ManifestFileSource:
         files: list[FileEvidence] = []
         for entry in entries:
             evidence = self._to_evidence(entry, source.path, header.collected_at)
+            missing = self._content_missing(evidence, source.path, entry.line_no)
+            if missing is not None:
+                failures.append(missing)
             mismatch = _content_mismatch(evidence, source.path, entry.line_no)
             if mismatch is not None:
                 failures.append(mismatch)

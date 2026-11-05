@@ -6,6 +6,7 @@ _WF-72CCDBC9E8 · 2026-10-28 09:00:00 WIB_
 
 - Tidak ditemukan file mencurigakan yang terkait dengan request HTTP. Ini tidak menjamin server bersih.
 - 2 login lewat SQL injection ke /admin/login.php tampaknya berhasil (respons seperti login yang sukses), dari 2 klien yang tidak terkait insiden. Tidak ada yang dituduh, tetapi endpoint login ini kemungkinan besar bisa dibobol dan perlu diperbaiki.
+- Isi 2 file tidak bisa dibaca dari salinan webroot (hilang, terkunci antivirus, atau hash-nya berbeda dari manifest), termasuk file kode cache/page-1.php. Aturan isi file tidak berjalan untuk file itu.
 - 1 perubahan file perlu ditinjau manual.
 - 6 request berpola serangan dari pihak lain (misalnya bot) tidak terkait insiden ini.
 
@@ -22,7 +23,7 @@ _WF-72CCDBC9E8 · 2026-10-28 09:00:00 WIB_
 - **Periode access log:** 2026-10-29 12:17:52 WIB s.d. 2026-10-29 12:18:12 WIB
 - **Access log:** 32 baris terbaca
 - **Error log:** 1 entri
-- **Webroot:** 12 file
+- **Webroot:** 12 file, 2 file tanpa isi yang bisa dibaca di salinan webroot
 - **Bukti dikumpulkan:** 2026-10-29 12:18:21 WIB
 - **Baseline:** 10 file
 

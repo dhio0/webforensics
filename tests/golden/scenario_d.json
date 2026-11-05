@@ -17,7 +17,12 @@
     "files_rejected": 0,
     "baseline_files": 10,
     "file_adapter": "file",
-    "collected_at": "2026-10-29T05:18:21Z"
+    "collected_at": "2026-10-29T05:18:21Z",
+    "unread_files": 2,
+    "unread_code": [
+      "cache/page-1.php"
+    ],
+    "unread_attacked": []
   },
   "run": {
     "tool_version": "0.1.0",
@@ -110,6 +115,13 @@
         "count": "2",
         "clients": "2",
         "paths": "/admin/login.php"
+      }
+    },
+    {
+      "key": "summary.content_unread",
+      "params": {
+        "count": "2",
+        "paths": "cache/page-1.php"
       }
     },
     {

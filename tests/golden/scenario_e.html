@@ -39,7 +39,7 @@ overflow-x:auto;font-size:.85rem}
 <nav><ol><li><a href="#ringkasan">1. Ringkasan</a></li><li><a href="#kasus">2. Informasi Kasus</a></li><li><a href="#kronologi">3. Kronologi Serangan</a></li><li><a href="#akar-masalah">4. Akar Masalah</a></li><li><a href="#file-terdampak">5. File Terdampak</a></li><li><a href="#tinjau">6. Perubahan yang Perlu Ditinjau</a></li><li><a href="#ioc">7. Indikator Kompromi (IOC)</a></li><li><a href="#celah-bukti">8. Celah Bukti</a></li><li><a href="#latar">9. Aktivitas Serangan Lain (Tidak Terkait Insiden)</a></li><li><a href="#tindakan">10. Tindakan yang Disarankan</a></li><li><a href="#keterbatasan">11. Keterbatasan</a></li><li><a href="#bukti">Lampiran A. Rujukan Bukti</a></li><li><a href="#reproduksi">Lampiran B. Reproduksibilitas</a></li></ol></nav>
 <section id="ringkasan">
 <h2>1. Ringkasan</h2>
-<ul><li>Ditemukan 1 file mencurigakan yang terkait dengan 1 alamat IP. Aktivitas pertama aktor pada 2026-10-29 12:18:59 WIB, terakhir pada 2026-10-29 12:19:01 WIB.</li><li>Titik masuk yang paling mungkin: unrestricted file upload (upload tanpa validasi) lewat POST /admin/upload.php pada 2026-10-29 12:18:59 WIB (keyakinan sedang).</li></ul>
+<ul><li>Ditemukan 1 file mencurigakan yang terkait dengan 1 alamat IP. Aktivitas pertama aktor pada 2026-10-29 12:18:59 WIB, terakhir pada 2026-10-29 12:19:01 WIB.</li><li>Titik masuk yang paling mungkin: unrestricted file upload (upload tanpa validasi) lewat POST /admin/upload.php pada 2026-10-29 12:18:59 WIB (keyakinan sedang).</li><li>Isi 1 file tidak bisa dibaca dari salinan webroot (hilang, terkunci antivirus, atau hash-nya berbeda dari manifest), termasuk file kode uploads/scenario-e-marker.php. Aturan isi file tidak berjalan untuk file itu.</li></ul>
 <h3>Alur serangan</h3>
 <ul><li>#1 2026-10-29 12:18:59 WIB: Upload yang menulis uploads/scenario-e-marker.php tanpa login sebelumnya: POST /admin/upload.php → 200.</li><li>#2 2026-10-29 12:18:59 WIB: File uploads/scenario-e-marker.php dibuat (SHA-256 3a33ab856f7e…).</li><li>#3 2026-10-29 12:19:01 WIB: File uploads/scenario-e-marker.php diakses: GET /uploads/scenario-e-marker.php → 200.</li><li>#4 2026-10-29 12:19:03 WIB: Timestamp uploads/scenario-e-marker.php tidak konsisten: dipalsukan (timestomping) atau terbawa dari arsip/salinan, jadi mtime-nya tidak dipakai.</li></ul>
 </section>
@@ -47,7 +47,7 @@ overflow-x:auto;font-size:.85rem}
 <h2>2. Informasi Kasus</h2>
 <dl><dt>ID kasus</dt><dd>WF-54BD23F4D5</dd><dt>Analis</dt><dd>-</dd><dt>Host target</dt><dd>705740dbd2a2</dd><dt>Laporan dibuat</dt><dd>2026-10-28 09:00:00 WIB</dd><dt>Zona waktu laporan</dt><dd>WIB (UTC+07:00)</dd></dl>
 <h3>Cakupan bukti</h3>
-<dl><dt>Periode access log</dt><dd>2026-10-29 12:18:53 WIB s.d. 2026-10-29 12:19:08 WIB</dd><dt>Access log</dt><dd>7 baris terbaca</dd><dt>Error log</dt><dd>1 entri</dd><dt>Webroot</dt><dd>11 file</dd><dt>Bukti dikumpulkan</dt><dd>2026-10-29 12:19:16 WIB</dd><dt>Baseline</dt><dd>10 file</dd></dl>
+<dl><dt>Periode access log</dt><dd>2026-10-29 12:18:53 WIB s.d. 2026-10-29 12:19:08 WIB</dd><dt>Access log</dt><dd>7 baris terbaca</dd><dt>Error log</dt><dd>1 entri</dd><dt>Webroot</dt><dd>11 file, 1 file tanpa isi yang bisa dibaca di salinan webroot</dd><dt>Bukti dikumpulkan</dt><dd>2026-10-29 12:19:16 WIB</dd><dt>Baseline</dt><dd>10 file</dd></dl>
 </section>
 <section id="kronologi">
 <h2>3. Kronologi Serangan</h2>

@@ -201,6 +201,8 @@ def _scope(ctx: _Ctx) -> Fields:
     files = _count(t, s.files, "scope.fim_files" if wazuh else "scope.files")
     if s.files_rejected:
         files += f", {_count(t, s.files_rejected, 'scope.rejected')}"
+    if s.unread_files:
+        files += f", {_count(t, s.unread_files, 'scope.unread')}"
     pairs.append((t.label("scope.webroot"), files))
     if s.collected_at:
         pairs.append((t.label("scope.collected_at"), t.time(s.collected_at)))

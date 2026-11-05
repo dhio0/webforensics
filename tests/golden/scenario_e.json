@@ -17,7 +17,12 @@
     "files_rejected": 0,
     "baseline_files": 10,
     "file_adapter": "file",
-    "collected_at": "2026-10-29T05:19:16Z"
+    "collected_at": "2026-10-29T05:19:16Z",
+    "unread_files": 1,
+    "unread_code": [
+      "uploads/scenario-e-marker.php"
+    ],
+    "unread_attacked": []
   },
   "run": {
     "tool_version": "0.1.0",
@@ -423,6 +428,13 @@
         "path": "/admin/upload.php",
         "at": "2026-10-29T05:18:59+00:00",
         "confidence": "medium"
+      }
+    },
+    {
+      "key": "summary.content_unread",
+      "params": {
+        "count": "1",
+        "paths": "uploads/scenario-e-marker.php"
       }
     }
   ],

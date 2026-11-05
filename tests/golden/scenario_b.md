@@ -7,6 +7,7 @@ _WF-6A5510F7FF · 2026-10-28 09:00:00 WIB_
 - Ditemukan 1 file mencurigakan yang terkait dengan 1 alamat IP. Aktivitas pertama aktor pada 2026-10-29 12:17:05 WIB, terakhir pada 2026-10-29 12:17:15 WIB.
 - Titik masuk yang paling mungkin: kelemahan yang belum bisa dipastikan lewat POST /admin/login.php pada 2026-10-29 12:17:11 WIB (keyakinan rendah).
 - Ada 1 kandidat titik masuk lain. Lihat bagian Akar Masalah.
+- Isi 1 file tidak bisa dibaca dari salinan webroot (hilang, terkunci antivirus, atau hash-nya berbeda dari manifest), termasuk file kode uploads/scenario-b-marker.php. Aturan isi file tidak berjalan untuk file itu.
 
 ### Alur serangan
 
@@ -28,7 +29,7 @@ _WF-6A5510F7FF · 2026-10-28 09:00:00 WIB_
 - **Periode access log:** 2026-10-29 12:17:05 WIB s.d. 2026-10-29 12:17:15 WIB
 - **Access log:** 6 baris terbaca
 - **Error log:** 1 entri
-- **Webroot:** 11 file
+- **Webroot:** 11 file, 1 file tanpa isi yang bisa dibaca di salinan webroot
 - **Bukti dikumpulkan:** 2026-10-29 12:17:20 WIB
 - **Baseline:** tidak ada
 

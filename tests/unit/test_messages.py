@@ -258,6 +258,15 @@ def _results(tmp_path):
     for logs, evidence, baseline in _wazuh_cases(tmp_path):
         yield (correlate(logs, evidence, baseline=baseline), logs,
                EvidenceScope(file_adapter="wazuh"), (), None)
+    # Webroot copies that could not give some content (D101): a quarantined shell whose
+    # URL was attacked, a missing code file, and a copy that is mostly absent.
+    logs, evidence = load_scenario("a")
+    result = correlate(logs, evidence)
+    for scope in (EvidenceScope(files=11, unread_files=1, unread_code=("uploads/x.php",),
+                                unread_attacked=("uploads/x.php",)),
+                  EvidenceScope(files=11, unread_files=1, unread_code=("uploads/x.php",)),
+                  EvidenceScope(files=11, unread_files=9, unread_code=("uploads/x.php",))):
+        yield result, logs, scope, (), None
 
 
 def _emitted(result) -> set[str]:

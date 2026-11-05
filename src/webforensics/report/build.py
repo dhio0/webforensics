@@ -5,11 +5,17 @@ recommendations follow from the root cause, and how unrelated attack noise is gr
 """
 
 from collections import Counter, defaultdict
+from urllib.parse import unquote
 
 from webforensics.correlate.actors import parse_networks, resolve_actor
 from webforensics.correlate.engine import BYPASS_RULE
 from webforensics.correlate.panel import PANEL_RULE
-from webforensics.detect.file_rules import CLOAKING_RULE, JUDOL_RULE, is_entrypoint_name
+from webforensics.detect.file_rules import (
+    CLOAKING_RULE,
+    JUDOL_RULE,
+    has_executable_extension,
+    is_entrypoint_name,
+)
 from webforensics.models import (
     BackgroundGroup,
     BaselineStatus,
@@ -192,10 +198,33 @@ def unreadable_warning(logs: LogCollection) -> Reason | None:
     return _r(key, unread=unread, total=total, percent=round(100 * unread / total))
 
 
+# Above this share of files without content, the copy itself is the problem (a wrong
+# --webroot, an incomplete copy), not a few quarantined files.
+INCOMPLETE_SHARE = 0.5
+
+
+def unread_warnings(scope: EvidenceScope | None) -> tuple[Reason | None, Reason | None]:
+    """(said first, said in place) about files whose content could not be read (D101)."""
+    if scope is None or not scope.unread_files:
+        return None, None
+    if scope.files and scope.unread_files / scope.files > INCOMPLETE_SHARE:
+        return _r("summary.webroot_incomplete", count=scope.unread_files,
+                  total=scope.files), None
+    if scope.unread_attacked:
+        return _r("summary.content_unread_attacked", count=len(scope.unread_attacked),
+                  paths=", ".join(scope.unread_attacked)), None
+    if scope.unread_code:
+        return None, _r("summary.content_unread", count=scope.unread_files,
+                        paths=", ".join(scope.unread_code))
+    return None, None
+
+
 def build_summary(result: CorrelationResult, background_count: int, review: int,
                   background: tuple[BackgroundGroup, ...] = (),
-                  unreadable: Reason | None = None) -> list[Reason]:
-    lines: list[Reason] = [unreadable] if unreadable is not None else []
+                  unreadable: Reason | None = None,
+                  scope: EvidenceScope | None = None) -> list[Reason]:
+    unread_first, unread_later = unread_warnings(scope)
+    lines: list[Reason] = [r for r in (unreadable, unread_first) if r is not None]
     span = _actor_span(result)
     compromised = bool(result.affected_files or result.log_only_files)
     if compromised and span and result.iocs.ips:
@@ -239,6 +268,8 @@ def build_summary(result: CorrelationResult, background_count: int, review: int,
     if sites:
         lines.append(_r("summary.panel_new_address", count=sites, clients=clients,
                         paths=", ".join(panel_paths)))
+    if unread_later is not None:
+        lines.append(unread_later)
     weakening = [g for g in result.gaps if g.affects]
     if weakening:
         lines.append(_r("summary.gaps_affect", count=len(weakening)))
@@ -355,18 +386,55 @@ def without_noise(result: CorrelationResult, logs: LogCollection) -> Correlation
     })
 
 
+CONTENT_FAILURES = frozenset({"content_missing", "content_unreadable", "content_hash_mismatch"})
+UNREAD_LISTED = 10
+
+
+def unread_content(files: FileCollection, logs: LogCollection,
+                   result: CorrelationResult | None) -> tuple[int, list[str], list[str]]:
+    """(files without content, code files among them, those whose URL was attacked) (D101).
+
+    A manifest row and its failure share the manifest file and line number. A code file
+    whose URL got a request matching an attack rule is listed first: that is how a
+    quarantined webshell shows (`update.php?cmd=ls`, answered 200, no content to read)."""
+    failed = {(f.source, f.line_no) for f in files.failures if f.reason in CONTENT_FAILURES}
+    unread = []
+    for file in files.files:
+        source, _, line = file.source.rpartition(":")
+        if line.isdigit() and (source, int(line)) in failed:
+            unread.append(file)
+    code = [f for f in unread if has_executable_extension(f.path)
+            or f.path.rsplit("/", 1)[-1] == ".htaccess"]
+    attacked_urls: set[str] = set()
+    if result is not None:
+        events = {e.evidence_id: e for e in logs.events}
+        attacked_urls = {unquote(events[f.subject].path or "") for f in result.findings
+                         if f.subject in events and f.rule_id.startswith("LOG-")}
+    # Only a file the conclusions left out is said first; an accused file's content
+    # rules did not run, but the incident already includes it.
+    accused = {f.path for f in result.affected_files} if result is not None else set()
+    attacked = [f.path for f in code if f.path not in accused
+                and any(u in attacked_urls for u in f.url_paths)]
+    listed = attacked + sorted(f.path for f in code if f.path not in attacked)
+    return len(unread), listed[:UNREAD_LISTED], attacked
+
+
 def evidence_scope(logs: LogCollection, files: FileCollection,
                    baseline: FileCollection | None = None,
-                   file_adapter: str = "file") -> EvidenceScope:
+                   file_adapter: str = "file",
+                   result: CorrelationResult | None = None) -> EvidenceScope:
     times = [e.ts for e in logs.events]
+    unread, code, attacked = unread_content(files, logs, result)
     return EvidenceScope(
         log_first=min(times, default=None), log_last=max(times, default=None),
         log_events=len(logs.events), log_unparsed=len(logs.failures),
         error_events=len(logs.errors), error_unparsed=len(logs.error_failures),
-        files=len(files.files), files_rejected=len(files.failures),
+        files=len(files.files),
+        files_rejected=sum(f.reason not in CONTENT_FAILURES for f in files.failures),
         baseline_files=len(baseline.files) if baseline is not None else None,
         collected_at=files.header.collected_at if files.header else None,
         file_adapter=file_adapter,
+        unread_files=unread, unread_code=tuple(code), unread_attacked=tuple(attacked),
     )
 
 
@@ -403,7 +471,7 @@ def _build_report(result: CorrelationResult, logs: LogCollection, case: CaseInfo
         case=case, run=run, result=without_noise(result, logs),
         scope=scope or EvidenceScope(),
         summary=tuple(build_summary(result, background_requests(result, logs), review,
-                                    tuple(background), unreadable_warning(logs))),
+                                    tuple(background), unreadable_warning(logs), scope)),
         background=tuple(background),
         recommendations=tuple(build_recommendations(
             result, review, fim_in_use=scope is not None and scope.file_adapter == "wazuh",
