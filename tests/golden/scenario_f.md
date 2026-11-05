@@ -40,7 +40,7 @@ _WF-E887DEB66B · 2026-10-28 09:00:00 WIB_
 | #4 | 2026-10-29 12:19:53 WIB | log | - | 172.30.0.1 | Login gagal: GET /admin/login.php → 401. | tinggi | access.log:4 |
 | #5 | 2026-10-29 12:19:55 WIB | log | Initial Access (akses awal) · T1190 | 172.30.0.1 | **AKAR MASALAH: Bypass login dengan SQL injection: GET /admin/login.php → 200.** | sedang | access.log:5 |
 | #6 | 2026-10-29 12:19:57 WIB | log | Persistence (bertahan) · T1505.003 | 172.30.0.1 | Request yang menulis uploads/scenario-f-marker.php: POST /admin/auth\_upload.php → 200. | tinggi | access.log:6, uploads/scenario-f-marker.php @c2f45202f02a |
-| #7 | 2026-10-29 12:19:57 WIB | btime | Persistence (bertahan) · T1505.003 | - | File uploads/scenario-f-marker.php dibuat (SHA-256 c2f45202f02a…). | tinggi | uploads/scenario-f-marker.php @c2f45202f02a |
+| #7 | 2026-10-29 12:19:57 WIB | btime | Persistence (bertahan) · T1505.003 | - | File uploads/scenario-f-marker.php dibuat (SHA-256 c2f45202f02a…). | sedang | uploads/scenario-f-marker.php @c2f45202f02a |
 | #8 | 2026-10-29 12:19:59 WIB | log | Persistence (bertahan) · T1505.003 | 172.30.0.1 | File uploads/scenario-f-marker.php diakses: GET /uploads/scenario-f-marker.php → 200. | tinggi | access.log:7 |
 
 ### Catatan keyakinan
@@ -48,7 +48,7 @@ _WF-E887DEB66B · 2026-10-28 09:00:00 WIB_
 - \#4: Server membalas 401.
 - \#5: Login dengan payload SQL injection berhasil, lalu aktor yang sama menulis file di area yang sama. Respons berbeda dari login yang gagal dan tidak diikuti percobaan ulang. Kaitan login dan upload disimpulkan dari IP dan area yang sama, karena cookie sesi tidak tercatat.
 - \#6: Hanya satu request penulis yang cocok dengan waktu file dibuat. Aktor yang sama kemudian mengakses file ini. Isi POST tidak tercatat di access log, jadi nama file yang diupload tidak terbukti dari log.
-- \#7: Waktu dari btime (waktu file lahir), yang tidak bisa diubah dengan touch.
+- \#7: Waktu dari btime (waktu file lahir), yang tidak bisa diubah dengan touch. Ada request yang menulis atau memakai file ini secara mencurigakan, tetapi isinya sendiri tidak membuktikan file penyerang, jadi tuduhan dibatasi sedang.
 
 ## 4. Akar Masalah
 

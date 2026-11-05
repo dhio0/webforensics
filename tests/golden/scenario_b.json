@@ -213,10 +213,14 @@
             "excerpt": "file 26 bytes"
           }
         ],
-        "confidence": "high",
+        "confidence": "medium",
         "confidence_reasons": [
           {
             "key": "anchor.btime",
+            "params": {}
+          },
+          {
+            "key": "accusation.link_only",
             "params": {}
           }
         ],

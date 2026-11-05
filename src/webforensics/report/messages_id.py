@@ -121,7 +121,22 @@ MESSAGES: dict[str, str] = {
     "file.deleted_after_write": "Wazuh FIM mencatat file ini dihapus. Hash yang dipakai adalah "
                                 "hash terakhir sebelum dihapus. Penghapusan sering berarti "
                                 "penyerang membersihkan jejak.",
-    "seed.deploy_batch": "File ini ditulis bersama banyak file lain dalam beberapa detik, "
+    "root.capped_by_file": "Titik masuk ini hanya seyakin tuduhan terhadap file yang "
+                           "ditulisnya: request ini menulis file penyerang hanya jika file itu "
+                           "memang milik penyerang.",
+    "accusation.content_only":"Isi file ini mencurigakan, tetapi tidak ada request yang "
+                               "terbukti menulis atau memakainya secara mencurigakan, jadi "
+                               "tuduhan bahwa ini file penyerang dibatasi sedang.",
+    "accusation.no_strong_content": "Ada request dan isi file yang mendukung, tetapi isinya "
+                                    "tidak membuktikan kode penyerang (misalnya kode yang "
+                                    "menjalankan input request), jadi tuduhan dibatasi sedang.",
+    "accusation.link_only": "Ada request yang menulis atau memakai file ini secara "
+                            "mencurigakan, tetapi isinya sendiri tidak membuktikan file "
+                            "penyerang, jadi tuduhan dibatasi sedang.",
+    "accusation.weak": "Tidak ada isi yang mencurigakan dan tidak ada request yang terbukti "
+                       "menulis atau memakai file ini; tuduhan hanya dari path, waktu, atau "
+                       "perbandingan baseline, jadi keyakinannya rendah. Periksa manual.",
+    "seed.deploy_batch":"File ini ditulis bersama banyak file lain dalam beberapa detik, "
                          "seperti deploy. File seperti ini hanya dikaitkan ke serangan bila "
                          "ada request upload yang menulisnya; di sini request itu terlihat.",
     "seed.attacker_side_file": "File ini bukan kode, tetapi baru atau berubah dibanding "

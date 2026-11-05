@@ -193,7 +193,7 @@
             "excerpt": "file 24 bytes"
           }
         ],
-        "confidence": "high",
+        "confidence": "medium",
         "confidence_reasons": [
           {
             "key": "creation.single_candidate",
@@ -205,6 +205,10 @@
           },
           {
             "key": "creation.post_body_not_logged",
+            "params": {}
+          },
+          {
+            "key": "root.capped_by_file",
             "params": {}
           }
         ],
@@ -236,10 +240,14 @@
             "excerpt": "file 24 bytes"
           }
         ],
-        "confidence": "high",
+        "confidence": "medium",
         "confidence_reasons": [
           {
             "key": "anchor.btime",
+            "params": {}
+          },
+          {
+            "key": "accusation.link_only",
             "params": {}
           }
         ],
@@ -296,6 +304,10 @@
         },
         {
           "key": "creation.post_body_not_logged",
+          "params": {}
+        },
+        {
+          "key": "root.capped_by_file",
           "params": {}
         },
         {

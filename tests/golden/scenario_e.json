@@ -89,7 +89,7 @@
             "excerpt": "2026/10/29 05:18:59 [error] 24#24: *7 FastCGI sent in stderr: \"PHP message: lab upload stored\" while reading response header from upstream, client: 172.30.0.3, server: _, request: \"POST /admin/upload.php HTTP/1.0\", upstream: \"fastcgi://172.21.0.3:9000\", host: \"127.0.0.1\""
           }
         ],
-        "confidence": "high",
+        "confidence": "medium",
         "confidence_reasons": [
           {
             "key": "creation.single_candidate",
@@ -110,6 +110,10 @@
               "lines": "1",
               "offset": "+0000"
             }
+          },
+          {
+            "key": "root.capped_by_file",
+            "params": {}
           }
         ],
         "finding_ids": [],
@@ -140,10 +144,14 @@
             "excerpt": "file 26 bytes"
           }
         ],
-        "confidence": "high",
+        "confidence": "medium",
         "confidence_reasons": [
           {
             "key": "anchor.btime",
+            "params": {}
+          },
+          {
+            "key": "accusation.link_only",
             "params": {}
           }
         ],
@@ -241,6 +249,10 @@
             "lines": "1",
             "offset": "+0000"
           }
+        },
+        {
+          "key": "root.capped_by_file",
+          "params": {}
         },
         {
           "key": "root.write_without_prior_login",

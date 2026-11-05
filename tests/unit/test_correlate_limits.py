@@ -131,8 +131,11 @@ def test_lonely_php_outside_upload_dir_is_traced_when_a_request_wrote_it():
                                              mtime=500)))
     assert [f.path for f in result.affected_files] == ["lib/cache.php"]
     created = next(e for e in result.timeline if e.description.key == "timeline.file_created")
-    assert "seed.lonely_write" in [r.key for r in created.confidence_reasons]
-    assert created.confidence is Confidence.MEDIUM
+    keys = [r.key for r in created.confidence_reasons]
+    assert "seed.lonely_write" in keys
+    # The only link is a form POST nearby, not an upload: a lead, low (D100).
+    assert "accusation.weak" in keys
+    assert created.confidence is Confidence.LOW
     assert line_of(result, root_event(result)) == 1
 
 

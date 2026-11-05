@@ -35,15 +35,15 @@ _WF-54BD23F4D5 · 2026-10-28 09:00:00 WIB_
 
 | # | Waktu | Dasar waktu | Fase (ATT\&CK) | Aktor | Kejadian | Keyakinan | Bukti |
 |---|---|---|---|---|---|---|---|
-| #1 | 2026-10-29 12:18:59 WIB | log | Initial Access (akses awal) · T1190 | 192.0.2.31 | **AKAR MASALAH: Upload yang menulis uploads/scenario-e-marker.php tanpa login sebelumnya: POST /admin/upload.php → 200.** | tinggi (sebagai titik masuk: sedang) | access.log:4, uploads/scenario-e-marker.php @3a33ab856f7e, error.log:1 |
-| #2 | 2026-10-29 12:18:59 WIB | btime | Persistence (bertahan) · T1505.003 | - | File uploads/scenario-e-marker.php dibuat (SHA-256 3a33ab856f7e…). | tinggi | uploads/scenario-e-marker.php @3a33ab856f7e |
+| #1 | 2026-10-29 12:18:59 WIB | log | Initial Access (akses awal) · T1190 | 192.0.2.31 | **AKAR MASALAH: Upload yang menulis uploads/scenario-e-marker.php tanpa login sebelumnya: POST /admin/upload.php → 200.** | sedang | access.log:4, uploads/scenario-e-marker.php @3a33ab856f7e, error.log:1 |
+| #2 | 2026-10-29 12:18:59 WIB | btime | Persistence (bertahan) · T1505.003 | - | File uploads/scenario-e-marker.php dibuat (SHA-256 3a33ab856f7e…). | sedang | uploads/scenario-e-marker.php @3a33ab856f7e |
 | #3 | 2026-10-29 12:19:01 WIB | log | Persistence (bertahan) · T1505.003 | 192.0.2.31 | File uploads/scenario-e-marker.php diakses: GET /uploads/scenario-e-marker.php → 200. | tinggi | access.log:5 |
 | #4 | 2026-10-29 12:19:03 WIB | ctime | Defense Evasion (menghindari deteksi) · T1070.006 | - | Timestamp uploads/scenario-e-marker.php tidak konsisten: dipalsukan (timestomping) atau terbawa dari arsip/salinan, jadi mtime-nya tidak dipakai. | sedang | uploads/scenario-e-marker.php @3a33ab856f7e |
 
 ### Catatan keyakinan
 
-- \#1: Hanya satu request penulis yang cocok dengan waktu file dibuat. Aktor yang sama kemudian mengakses file ini. Isi POST tidak tercatat di access log, jadi nama file yang diupload tidak terbukti dari log. Didukung error log (error.log baris 1, diasumsikan UTC+0000).
-- \#2: Waktu dari btime (waktu file lahir), yang tidak bisa diubah dengan touch.
+- \#1: Hanya satu request penulis yang cocok dengan waktu file dibuat. Aktor yang sama kemudian mengakses file ini. Isi POST tidak tercatat di access log, jadi nama file yang diupload tidak terbukti dari log. Didukung error log (error.log baris 1, diasumsikan UTC+0000). Titik masuk ini hanya seyakin tuduhan terhadap file yang ditulisnya: request ini menulis file penyerang hanya jika file itu memang milik penyerang.
+- \#2: Waktu dari btime (waktu file lahir), yang tidak bisa diubah dengan touch. Ada request yang menulis atau memakai file ini secara mencurigakan, tetapi isinya sendiri tidak membuktikan file penyerang, jadi tuduhan dibatasi sedang.
 
 ## 4. Akar Masalah
 
@@ -64,6 +64,7 @@ _WF-54BD23F4D5 · 2026-10-28 09:00:00 WIB_
 - Aktor yang sama kemudian mengakses file ini.
 - Isi POST tidak tercatat di access log, jadi nama file yang diupload tidak terbukti dari log.
 - Didukung error log (error.log baris 1, diasumsikan UTC+0000).
+- Titik masuk ini hanya seyakin tuduhan terhadap file yang ditulisnya: request ini menulis file penyerang hanya jika file itu memang milik penyerang.
 - Tidak ada login yang terlihat sebelum request penulis, jadi request itu sendiri dianggap titik masuk.
 - Tidak terlihat login bukan berarti tidak ada login: sesi bisa dibuat sebelum periode log.
 

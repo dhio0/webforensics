@@ -39,7 +39,7 @@ _WF-6A5510F7FF · 2026-10-28 09:00:00 WIB_
 | #1 | 2026-10-29 12:17:05 WIB | log | - | 192.0.2.10 | Login gagal: POST /admin/login.php → 401. | tinggi | access.log:1 |
 | #2 | 2026-10-29 12:17:11 WIB | log | Initial Access (akses awal) · T1078 | 192.0.2.10 | **AKAR MASALAH: Login berhasil dengan cara yang tidak terlihat di log: POST /admin/login.php → 200.** | rendah | access.log:4 |
 | #3 | 2026-10-29 12:17:13 WIB | log | Persistence (bertahan) · T1505.003 | 192.0.2.10 | Request yang menulis uploads/scenario-b-marker.php: POST /admin/auth\_upload.php → 200. | tinggi | access.log:5, uploads/scenario-b-marker.php @105ddd6ab59b, error.log:1 |
-| #4 | 2026-10-29 12:17:13 WIB | btime | Persistence (bertahan) · T1505.003 | - | File uploads/scenario-b-marker.php dibuat (SHA-256 105ddd6ab59b…). | tinggi | uploads/scenario-b-marker.php @105ddd6ab59b |
+| #4 | 2026-10-29 12:17:13 WIB | btime | Persistence (bertahan) · T1505.003 | - | File uploads/scenario-b-marker.php dibuat (SHA-256 105ddd6ab59b…). | sedang | uploads/scenario-b-marker.php @105ddd6ab59b |
 | #5 | 2026-10-29 12:17:15 WIB | log | Persistence (bertahan) · T1505.003 | 192.0.2.10 | File uploads/scenario-b-marker.php diakses: GET /uploads/scenario-b-marker.php → 200. | tinggi | access.log:6 |
 
 ### Catatan keyakinan
@@ -47,7 +47,7 @@ _WF-6A5510F7FF · 2026-10-28 09:00:00 WIB_
 - \#1: Server membalas 401.
 - \#2: Login berhasil, lalu aktor yang sama menulis file di area yang sama. Respons berbeda dari login yang gagal dan tidak diikuti percobaan ulang. Cara login tidak terlihat (misalnya kredensial bocor, atau SQL injection lewat POST).
 - \#3: Hanya satu request penulis yang cocok dengan waktu file dibuat. Aktor yang sama kemudian mengakses file ini. Isi POST tidak tercatat di access log, jadi nama file yang diupload tidak terbukti dari log. Didukung error log (error.log baris 1, diasumsikan UTC+0000).
-- \#4: Waktu dari btime (waktu file lahir), yang tidak bisa diubah dengan touch.
+- \#4: Waktu dari btime (waktu file lahir), yang tidak bisa diubah dengan touch. Ada request yang menulis atau memakai file ini secara mencurigakan, tetapi isinya sendiri tidak membuktikan file penyerang, jadi tuduhan dibatasi sedang.
 
 ## 4. Akar Masalah
 

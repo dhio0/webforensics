@@ -133,3 +133,20 @@ It parses the code (tree-sitter) and tracks request input to the query within a 
 ## Robustness on damaged evidence
 
 Real evidence is messy: logs out of time order, error lines mixed into access logs, cut lines, broken UTF-8, rotated `.gz` files copied halfway, manifests with broken rows. A seeded fuzzer damaged the lab and case evidence in those ways and ran the whole analysis: after two fixes, 10,000 damaged copies ran without an error (D96). The test suite keeps 40 such copies and checks that each gives the same bytes twice, that every cited line is the line it names, and that every line is either read or counted as unreadable. Shuffling a log or adding plain visits from new addresses changes no accusation. When most of a log cannot be read, the summary says so first, instead of "nothing found".
+
+## Do the confidence labels mean anything?
+
+A label is useful only if "high" is right more often than "low". Each claim with a label was scored against the answer keys: the files accused (right if the file is the attacker's), the requests named as writers, and the root cause (right only if exact).
+
+**On the first runs of the outside cases** (Ali Hadi XAMPP and Linux, before any fix), the labels did not mean that. Of 12 files accused at **high**, 8 were application files: a file's label was the confidence of its *write time*, and those files had a clear birth time. 2 of 2 root causes, both at medium, were wrong. D100 made the label of an accusation the lower of the write-time confidence and the strength of the evidence that the file is the attacker's (see [how it works](how-it-works.md), step 8), and capped a root cause by the file it led to.
+
+| First runs of the outside cases, files | right at high | wrong at high | right at medium | wrong at medium | right at low | wrong at low |
+|---|---|---|---|---|---|---|
+| Labels as reported then | 4 | **8** | 2 | 3 | 0 | 1 |
+| The D100 rule applied to the same reports | 1 | **0** | 4 | **0** | 1 | 12 |
+
+The second row is a replay of the rule on the saved reports, not a run of the tool: those runs cannot be repeated with the old fixes undone. It was also designed after seeing them. It is evidence that the rule does what it says, not a held-out measurement. The one right file at low is `c99.php`, a well-known webshell that the tool recognizes only by its obfuscation: there is no rule for known webshell signatures yet.
+
+**On the development scenarios** (lab A, B, D, F and benchmark v2 development, which the tool was tuned on), every claim but one is right, so they cannot show calibration: 10 of 10 files at medium, 1 of 1 at low; 6 of 6 root causes at medium, 2 of 3 at low (the wrong one, s07, is the low one). No file is accused at high there: the lab markers are inert on purpose and the v2 agents are obfuscated, which is weak evidence alone.
+
+**What "high" now means:** content that proves attacker code and an HTTP link to the attacker. It is rare by design. The honest test of the labels is the next pre-registered run on the held-out scenarios, which were not used here.

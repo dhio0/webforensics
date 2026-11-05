@@ -120,7 +120,8 @@ def test_file_outside_log_coverage_gets_coverage_gap():
     gap = next(g for g in result.gaps if g.detail and g.detail.key == "gap.no_log_coverage")
     created = next(e for e in result.timeline if e.description.key == "timeline.file_created")
     assert created.event_id in gap.affects
-    assert created.confidence is Confidence.MEDIUM
+    # No request near it and inert content: the accusation itself is low (D100).
+    assert created.confidence is Confidence.LOW
 
 
 def test_put_to_file_url_is_the_write_not_an_invocation():

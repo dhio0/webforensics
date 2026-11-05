@@ -39,6 +39,8 @@ from webforensics.correlate.seeds import (
 )
 from webforensics.detect import RULESET_VERSION
 from webforensics.detect.file_rules import (
+    HANDLED_RULE,
+    HTACCESS_RULE,
     detect_file,
     handler_findings,
     handler_scopes,
@@ -1088,6 +1090,48 @@ _CONTENT_RULES = ("FILE-WEBSHELL-REQUEST-EXEC", "FILE-WEBSHELL-OBFUSCATION",
                   "FILE-DEFACEMENT-PAGE", "FILE-JUDOL-CONTENT", "FILE-SEO-CLOAKING")
 
 
+# Findings about what a file contains or how the server runs it. Path, timing and baseline
+# rules (a script in an upload folder, a lonely write, a changed index page) are not here:
+# they say where or when, not that the file is the attacker's.
+_EVIDENCE_RULES = frozenset({*_CONTENT_RULES, HTACCESS_RULE, HANDLED_RULE, EXECUTED_RULE})
+
+
+def _accusation_strength(chain: _Chain) -> tuple[Confidence, str]:
+    """How strongly the evidence says the file is the attacker's (D100), with the reason.
+
+    A file event's confidence used to be the confidence of its write time only, so an
+    application file with a clear birth time was accused at "high". Each piece of evidence
+    can now raise the accusation only as far as its own confidence: content or execution
+    evidence at its finding's level, an HTTP link (an upload-like writer, a rarely hit POST
+    target, a use by POST or with a flagged request, a code injection before the file) at
+    medium. Only both together, with high content evidence, give high."""
+    content = max((f.confidence for f in chain.findings if f.rule_id in _EVIDENCE_RULES),
+                  key=rank, default=None)
+    linked = ((chain.write is not None and chain.write.level is rq.WriteLevel.LIKELY)
+              or chain.rare_post is not None or bool(chain.suspect_invokers)
+              or (chain.root is not None and chain.root.kind == "rce_exploit")
+              or any(r.key == "seed.attacker_side_file" for r in chain.file_event.reasons))
+    strong = content is not None and rank(content) >= rank(Confidence.MEDIUM)
+    if content is Confidence.HIGH and linked:
+        return Confidence.HIGH, ""
+    if strong and linked:
+        return Confidence.MEDIUM, "accusation.no_strong_content"
+    if strong:
+        return Confidence.MEDIUM, "accusation.content_only"
+    if linked:
+        return Confidence.MEDIUM, "accusation.link_only"
+    return Confidence.LOW, "accusation.weak"
+
+
+def _cap_accusation(chain: _Chain) -> None:
+    """The file event's label is the lower of write-time and accusation confidence."""
+    strength, key = _accusation_strength(chain)
+    event = chain.file_event
+    if rank(strength) < rank(event.confidence):
+        event.confidence = strength
+        event.reasons.append(Reason(key=key))
+
+
 def _looks_generated(chain: _Chain, file_findings: list[Finding], stomped: bool,
                      index: _Index) -> bool:
     """A code file the app itself probably wrote (cache, compiled template): flagged only by
@@ -1132,6 +1176,15 @@ def _root_cause(roots: list[_Draft], chains: list[_Chain],
           and primary.kind == "login_method_unknown"):
         # If the password was known beforehand, the write itself is the first attack step.
         alternatives.append(primary_chain.creation.event_id)
+    # The entry point is only as believable as the accusation of the files it led to
+    # (D100): "this request wrote the attacker's file" cannot be surer than "the file is the
+    # attacker's". With several files, the best supported one counts.
+    led_to = [c.file_event.confidence for c in chains if c.root is roots[0]]
+    if led_to:
+        best = max(led_to, key=rank)
+        if rank(best) < rank(primary.confidence):
+            primary.confidence = best
+            primary.reasons.append(Reason(key="root.capped_by_file"))
     return RootCause(
         event_id=primary.event_id, vuln_class=primary.params.get("vuln_class") or None,
         confidence=cap(primary.confidence, primary.root_cap),
@@ -1203,6 +1256,7 @@ def _correlate(logs: LogCollection, files: FileCollection, *,
             if chain is not None or weak:
                 unexplained.append(file.path)  # no HTTP link strong enough to accuse
             continue
+        _cap_accusation(chain)
         chains.append(chain)
         findings.extend(f for f in chain.findings if f not in file_findings)
         if signal is not None:
@@ -1231,6 +1285,7 @@ def _correlate(logs: LogCollection, files: FileCollection, *,
             continue
         chain = _attacker_side_file(file, index, actors)
         if chain is not None:
+            _cap_accusation(chain)
             chains.append(chain)
             findings.extend(chain.findings)
     roots = sorted([*(c.root for c in chains if c.root), *shell_roots],

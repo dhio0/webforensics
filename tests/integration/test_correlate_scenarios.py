@@ -106,7 +106,10 @@ def test_deleted_log_hour_hides_creation_and_says_so():
     keys = [r.key for r in created.confidence_reasons]
     assert "creation.no_http_request_found" in keys
     assert "confidence.gap_overlap" in keys
-    assert created.confidence is Confidence.MEDIUM
+    # An inert marker with its writer deleted from the log: nothing but its path and time
+    # says it is the attacker's, so the accusation is low (D100).
+    assert "accusation.weak" in keys
+    assert created.confidence is Confidence.LOW
     assert result.root_cause is None
     gap = next(g for g in result.gaps if g.kind is GapKind.NO_LOG_LINES)
     assert created.event_id in gap.affects
