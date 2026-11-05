@@ -10,7 +10,7 @@ from collections.abc import Iterable
 from dataclasses import dataclass
 from pathlib import Path
 
-from webforensics.detect import RULESET_VERSION, UPLOAD_WRITABLE_DIRS
+from webforensics.detect import RULESET_VERSION, UPLOAD_WRITABLE_DIRS, judol
 from webforensics.models import (
     BaselineStatus,
     Confidence,
@@ -87,6 +87,8 @@ def handler_extensions(content: str) -> tuple[frozenset[str], bool]:
 
 
 HTACCESS_RULE = "FILE-HTACCESS-PHP-HANDLER"
+JUDOL_RULE = "FILE-JUDOL-CONTENT"
+CLOAKING_RULE = "FILE-SEO-CLOAKING"
 HANDLED_RULE = "FILE-HANDLER-EXEC"
 
 
@@ -233,6 +235,22 @@ def detect_file(file: FileEvidence) -> list[Finding]:
                 file, "FILE-DEFACEMENT-PAGE", FindingCategory.DEFACEMENT,
                 Severity.HIGH, Confidence.MEDIUM, "finding.FILE-DEFACEMENT-PAGE",
                 {"matched": truncate_excerpt(defaced.group(0))}, ("T1491.002",),
+            ))
+
+        spam = judol.score(content) if judol.could_be_spam(content.casefold()) else None
+        if spam is not None and spam.spam:
+            findings.append(_finding(
+                file, JUDOL_RULE, FindingCategory.DEFACEMENT, Severity.HIGH,
+                Confidence.HIGH if spam.dense else Confidence.MEDIUM, f"finding.{JUDOL_RULE}",
+                {"matched": truncate_excerpt(spam.first), "terms": str(len(spam.labels)),
+                 "hits": str(spam.hits)}, ("T1491.002",),
+            ))
+        cloak = judol.cloaking(content) if has_executable_extension(path) else None
+        if cloak:
+            findings.append(_finding(
+                file, CLOAKING_RULE, FindingCategory.DEFACEMENT, Severity.MEDIUM,
+                Confidence.LOW, f"finding.{CLOAKING_RULE}",
+                {"matched": truncate_excerpt(cloak)}, ("T1491.002",),
             ))
 
     name = parts[-1]

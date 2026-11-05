@@ -146,6 +146,28 @@ def attack_story(timeline: tuple[TimelineEvent, ...],
     return story
 
 
+_FILE_KINDS = frozenset({"timeline.file_created", "timeline.file_changed",
+                         "timeline.file_modified_mtime"})
+
+
+def collapse_identical(story: list[TimelineEvent]) -> list[tuple[TimelineEvent, int]]:
+    """Consecutive file events with the same kind, time and content shown as one row and a
+    count (D98): a judol kit writes hundreds of identical pages in the same second. The
+    full timeline still lists each file."""
+    rows: list[tuple[TimelineEvent, int]] = []
+    for event in story:
+        if rows and event.description.key in _FILE_KINDS:
+            last, extra = rows[-1]
+            digest = event.description.params.get("sha256")
+            same = (digest is not None and last.description.key == event.description.key
+                    and last.ts == event.ts and last.description.params.get("sha256") == digest)
+            if same:
+                rows[-1] = (last, extra + 1)
+                continue
+        rows.append((event, 0))
+    return rows
+
+
 def _summary(ctx: _Ctx) -> Section:
     t = ctx.texts
     blocks: list[Block] = [Bullets(tuple(t.message(r) for r in ctx.report.summary))]
@@ -153,9 +175,11 @@ def _summary(ctx: _Ctx) -> Section:
     compromised = result.affected_files or result.log_only_files
     story = attack_story(result.timeline, result.iocs.ips) if compromised else []
     if story:
+        more = t.label("story.more_identical")
         blocks += [Heading(t.label("story")), Bullets(tuple(
             f"{ctx.number(e.event_id)} {t.time(e.ts)}: {t.message(e.description)}"
-            for e in story))]
+            + (" " + more.format(n=extra) if extra else "")
+            for e, extra in collapse_identical(story)))]
     return Section("ringkasan", m.LABELS["s.summary"], tuple(blocks))
 
 

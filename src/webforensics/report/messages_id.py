@@ -6,6 +6,10 @@ like a path or user agent) can never inject markup. `tests/unit/test_messages.py
 that every key the code can emit has an entry here.
 """
 
+# A large folder in a list of paths or URLs (report/build.py `compact_paths`, D98).
+PATH_GROUP = "{count} file di {folder} (daftar lengkap di bagian File Terdampak)"
+URL_GROUP = "{count} URL di {folder}"
+
 MESSAGES: dict[str, str] = {
     # --- Timeline events --------------------------------------------------------------
     "timeline.actor_first_seen": "Request pertama aktor ini di log: {method} {path} → {status}.",
@@ -226,6 +230,10 @@ MESSAGES: dict[str, str] = {
     "finding.LOG-TRAVERSAL-SENSITIVE": "Upaya membaca file sensitif: {matched}",
     "finding.LOG-XSS-PROBE": "Markup yang mencoba keluar dari atribut atau tag: {matched}",
     "finding.FILE-DEFACEMENT-PAGE": "Halaman berisi teks khas deface: \"{matched}\"",
+    "finding.FILE-JUDOL-CONTENT": "Konten promosi judi online: {terms} istilah berbeda, "
+                                  "{hits} kemunculan (contoh: \"{matched}\")",
+    "finding.FILE-SEO-CLOAKING": "Skrip memeriksa apakah pengunjung mesin pencari lalu "
+                                 "mengambil konten dari luar atau mengalihkan: {matched}",
     "finding.LOG-CMDI-SHELL": "Pemisah shell diikuti perintah OS ada di request: {matched}",
     "finding.LOG-RCE-CODE-INJECTION": "Kode atau callback yang menjalankan kode ada di "
                                       "request: {matched}",
@@ -252,6 +260,10 @@ MESSAGES: dict[str, str] = {
     "finding.CORR-RARE-POST-TARGET": "File jarang diakses tapi menerima POST: {posts} POST dari "
                                      "{clients} klien, {hits} akses total.",
     "finding.CORR-SQLI-LOGIN-BYPASS": "Login lewat SQL injection ke {path} tampaknya berhasil.",
+    "finding.CORR-PANEL-SITE-NEW-ADDRESS": "Panel hosting dipakai {count} kali untuk membuat "
+                                           "atau mengubah situs/domain ({paths}) dari alamat "
+                                           "yang pertama kali muncul pada {first_seen}, "
+                                           "setelah {days} hari log tanpa alamat itu.",
     # --- Summary (built by report/build.py) -----------------------------------------------
     "summary.compromise_found": "Ditemukan {files} file mencurigakan yang terkait dengan "
                                 "{actors} alamat IP. Aktivitas pertama aktor pada {first_at}, "
@@ -291,6 +303,17 @@ MESSAGES: dict[str, str] = {
                                          "{last_at}."),
     "summary.log_only": "{count} skrip dipakai penyerang tetapi sudah tidak ada di webroot "
                         "(hanya terlihat di log): {paths}.",
+    "summary.judol": "Insiden ini berupa penyusupan konten judi online: {count} file berisi "
+                     "promosi judi online.",
+    "summary.cloaking": "{count} skrip tampaknya menampilkan konten lain ke mesin pencari "
+                        "(cloaking), cara umum menyembunyikan spam judi online dari pengunjung "
+                        "biasa.",
+    "summary.panel_new_address": "Panel hosting dipakai {count} kali untuk membuat atau "
+                                 "mengubah situs/domain ({paths}) dari {clients} alamat yang "
+                                 "belum pernah muncul di log sebelumnya. Bisa jadi admin dari "
+                                 "jaringan baru, bisa juga akun panel yang dicuri (pola umum "
+                                 "penyusupan situs judi online). Tidak ada yang dituduh; "
+                                 "pastikan ke pemilik akun.",
     "summary.unlinked_bypass": "{count} login lewat SQL injection ke {paths} tampaknya "
                                "berhasil (respons seperti login yang sukses), dari {clients} "
                                "klien yang tidak terkait insiden. Tidak ada yang dituduh, tetapi "
@@ -344,6 +367,20 @@ MESSAGES: dict[str, str] = {
     "rec.recovery.revoke_sessions": "Ganti password admin dan akhiri semua sesi login yang "
                                     "aktif, karena pihak lain kemungkinan sempat masuk lewat "
                                     "{paths}.",
+    "rec.recovery.verify_panel_sites": "Cocokkan situs/domain yang dibuat lewat {paths} "
+                                       "dengan pemilik akun panel. Situs yang tidak dikenal: "
+                                       "hapus, ganti password panel, aktifkan 2FA, dan periksa "
+                                       "log login panel serta auth.log server.",
+    "rec.recovery.judol_search_index": "Halaman judi online biasanya sudah diindeks Google. "
+                                       "Setelah dihapus, cari site:domain-anda di Google, "
+                                       "ajukan penghapusan URL lewat Google Search Console, dan "
+                                       "periksa sitemap.xml serta robots.txt yang mungkin diubah "
+                                       "penyerang.",
+    "rec.recovery.judol_cloaking": "{paths} tampaknya menampilkan konten lain ke mesin "
+                                   "pencari, jadi spamnya tidak terlihat dari browser biasa. "
+                                   "Setelah "
+                                   "dibersihkan, periksa dengan URL Inspection di Google Search "
+                                   "Console atau dengan user agent Googlebot.",
     "rec.recovery.review_unexplained": "Tinjau {count} perubahan yang belum terjelaskan sebelum "
                                        "menyatakan server bersih.",
     "rec.recovery.monitor": "Setelah pemulihan, pantau akses ke {urls} dan aktivitas dari IP "
@@ -395,6 +432,8 @@ RULE_NAMES: dict[str, str] = {
     "LOG-RCE-CODE-INJECTION": "Injeksi kode (RCE)",
     "LOG-XSS-PROBE": "Percobaan injeksi skrip (XSS)",
     "FILE-DEFACEMENT-PAGE": "Halaman deface",
+    "FILE-JUDOL-CONTENT": "Konten judi online (judol)",
+    "FILE-SEO-CLOAKING": "Cloaking untuk mesin pencari",
     "LOG-SCANNER-UA": "Tool pemindai",
     "LOG-WEBSHELL-UPLOAD-DIR": "Akses skrip di folder upload",
     "LOG-WEBSHELL-CMD-PARAM": "Parameter perintah webshell",
@@ -410,6 +449,7 @@ RULE_NAMES: dict[str, str] = {
     "CORR-RARE-POST-TARGET": "POST ke file yang jarang diakses",
     "CORR-STATIC-FILE-EXECUTED": "File non-skrip yang dijalankan server",
     "CORR-SQLI-LOGIN-BYPASS": "Login bypass SQL injection yang tampaknya berhasil",
+    "CORR-PANEL-SITE-NEW-ADDRESS": "Situs dibuat lewat panel hosting dari alamat baru",
 }
 
 VULN_CLASSES: dict[str, str] = {
@@ -510,6 +550,7 @@ LABELS: dict[str, str] = {
     "root.conf_note": "{event} (sebagai titik masuk: {root})",
     "root.request": "Baris log asli",
     "story": "Alur serangan",
+    "story.more_identical": "(+{n} file lain dengan isi dan waktu tulis yang sama)",
     "confidence": "keyakinan",
     "scope": "Cakupan bukti",
     "scope.period": "Periode access log",

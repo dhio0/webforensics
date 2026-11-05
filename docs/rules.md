@@ -114,6 +114,19 @@ Content is read as bytes from the evidence copy, at most 2 MiB, never executed (
 - **Does not prove:** who wrote it. Added in D87.
 - **Seen FP:** none.
 
+### FILE-JUDOL-CONTENT
+- **Matches:** online gambling (judol) promotion in any file: at least 2 different promotion terms (selling: "maxwin", "rtp live", "scatter hitam", "deposit pulsa", "bonus new member", "link alternatif", "daftar slot", ...), at least 3 terms in all (with topic words such as "gacor", "situs slot", "togel") and at least 8 matches. No term contains "judi": "judi online" and "situs judi" are what news says.
+- **Severity / confidence:** high / medium; high when dense (3 promotion terms, 4 in all, 20 matches), and then it is accused even inside a deploy batch, because judol kits drop hundreds of pages at once. T1491.002. Added in D98.
+- **Does not prove:** who wrote it, or that visitors saw it (cloaking may show it to search engines only).
+- **Seen FP:** a first version that counted any terms flagged 3 of 12 real news articles about hacked go.id sites (lists of injected `slot-gacor-maxwin` URLs, "situs judi" throughout); the promotion requirement was added for that. With it: 0 of 12 of those (tuned on them), 0 of 11 unseen news and research pages, 0 of 63,067 files in real webroots. Remaining risk: a page that quotes spam text at length; a cache of a page full of spam comments.
+- **Misses:** 1 of 35 real injected go.id pages (one promotion term only). Also spam shown as images or symbols instead of words, and minimal spam (a list of backlinks with no selling text).
+
+### FILE-SEO-CLOAKING
+- **Matches:** a script that checks the user agent or referer for a search engine or bot and, in the same file, fetches content from an `http(s)://` URL or redirects to one.
+- **Severity / confidence:** medium / low. T1491.002. Added in D98.
+- **Does not prove:** spam. Some SEO and caching plugins check for bots and fetch remote content; read the file. Cloakers that build the URL at run time (base64, string pieces) are missed.
+- **Seen FP:** none yet.
+
 ### FILE-PERSISTENCE-ENTRYPOINT-CHANGE
 - **Matches:** `.htaccess` or an index page that is new or changed against the baseline.
 - **Severity / confidence:** low / low. T1505.003.
@@ -169,6 +182,12 @@ These fire only from two pieces of evidence together.
 - **Severity / confidence:** high / medium. T1505.003.
 - **Does not prove:** what ran. It catches an image run as PHP even when the `.htaccess` is not in the evidence (D94).
 - **Seen FP:** none known. Compression or range answers could differ in size; they would also need a POST.
+
+### CORR-PANEL-SITE-NEW-ADDRESS
+- **Matches:** a hosting-panel request answered 2xx that creates or changes a site, domain or DNS zone (CyberPanel, cPanel/WHM, DirectAdmin, aaPanel; list in `src/webforensics/correlate/panel.py`), from an address whose first request in the log comes after at least 7 days of log (`panel_history_s`). One finding per address.
+- **Severity / confidence:** medium / low. T1078. Added in D98. A lead in the summary and recommendations; the address is not an IOC and nobody is accused.
+- **Does not prove:** a stolen login. An administrator on a new network, a new employee or a reseller looks the same. POST bodies are not logged, so "created" may be "changed".
+- **Seen FP:** none measured. Designed after Organization Y's missed incident, so any result there is post-hoc.
 
 ## Correlation patterns without a finding id
 

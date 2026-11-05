@@ -28,6 +28,7 @@ from webforensics.correlate.confidence import cap, lower, rank
 from webforensics.correlate.config import CorrelationConfig
 from webforensics.correlate.gaps import coverage_gap, make_gap, parse_error_gaps, silence_gaps
 from webforensics.correlate.logonly import LogOnlyFile, find_log_only_files
+from webforensics.correlate.panel import panel_leads
 from webforensics.correlate.seeds import (
     decisive,
     deploy_writes,
@@ -318,6 +319,13 @@ def _file_draft(file: FileEvidence, anchor: Anchor, findings: list[Finding],
     )
 
 
+def _use_technique(chain: _Chain) -> str:
+    """ATT&CK technique for requests that write or fetch the file: the file's own when it
+    has one (a judol or defaced page is T1491.002, and a crawler reading it is not using a
+    web shell, D98), else web shell."""
+    return chain.file_event.technique or "T1505.003"
+
+
 def _invocations(chain: _Chain, anchor: Anchor, index: _Index) -> None:
     config = index.config
     earliest = anchor.ts - _seconds(config.clock_skew_s)
@@ -331,9 +339,10 @@ def _invocations(chain: _Chain, anchor: Anchor, index: _Index) -> None:
             key="file.invoked_before_anchor",
             params={"count": str(len(before)), "first_line": str(before[0].line_no)}))
     chain.file_event.params["invocations"] = str(len(after))
+    technique = _use_technique(chain)
     for event in after[: config.max_invocations]:
         chain.invocations.append(_log_draft(index, "file_invoked", event, Confidence.HIGH,
-                                            "T1505.003", file=chain.file.path))
+                                            technique, file=chain.file.path))
         chain.invoker_ips.add(index.actor(event))
         behaviour = [f for f in index.of(event) if f.rule_id not in _URL_ONLY_RULES]
         if rq.is_success(event) and (event.method in _WRITE_METHODS or behaviour):
@@ -410,7 +419,7 @@ def _creation(chain: _Chain, anchor: Anchor, index: _Index) -> None:
     if best.method == "POST":
         reasons.append(Reason(key="creation.post_body_not_logged"))
 
-    draft = _log_draft(index, "file_write_request", best, confidence, "T1505.003",
+    draft = _log_draft(index, "file_write_request", best, confidence, _use_technique(chain),
                        file=chain.file.path)
     draft.citations.append(chain.file.citation())
     draft.reasons, draft.window = reasons, chain.file_event.window
@@ -1076,7 +1085,7 @@ def _log_starts_after_changes(index: _Index) -> EvidenceGap | None:
 
 
 _CONTENT_RULES = ("FILE-WEBSHELL-REQUEST-EXEC", "FILE-WEBSHELL-OBFUSCATION",
-                  "FILE-DEFACEMENT-PAGE")
+                  "FILE-DEFACEMENT-PAGE", "FILE-JUDOL-CONTENT", "FILE-SEO-CLOAKING")
 
 
 def _looks_generated(chain: _Chain, file_findings: list[Finding], stomped: bool,
@@ -1256,6 +1265,8 @@ def _correlate(logs: LogCollection, files: FileCollection, *,
 
     timeline = tuple(d.build() for d in ordered)
     findings += _unlinked_bypasses(index, {d.subject for d in ordered}, actors)
+    findings += panel_leads(index.events, index.actor, index.span,
+                            _seconds(config.panel_history_s), actors)
     used = {fid for event in timeline for fid in event.finding_ids}
     return CorrelationResult(
         timeline=timeline, root_cause=root_cause, findings=tuple(findings),

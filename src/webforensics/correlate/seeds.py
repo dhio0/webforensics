@@ -19,7 +19,7 @@ from datetime import datetime, timedelta
 from webforensics.correlate.anchor import choose_anchor
 from webforensics.correlate.config import CorrelationConfig
 from webforensics.detect import RULESET_VERSION
-from webforensics.detect.file_rules import has_executable_extension
+from webforensics.detect.file_rules import JUDOL_RULE, has_executable_extension
 from webforensics.models import (
     BaselineStatus,
     Confidence,
@@ -93,7 +93,11 @@ def lonely_writes(files: list[FileEvidence], config: CorrelationConfig) -> set[s
 
 
 def decisive(findings: list[Finding]) -> bool:
-    return any(f.rule_id in DECISIVE_RULES for f in findings)
+    """Dense gambling spam counts too (D98): judol kits drop hundreds of pages at once, and
+    no deploy writes a page that dense with slot and lottery promotion."""
+    return any(f.rule_id in DECISIVE_RULES
+               or (f.rule_id == JUDOL_RULE and f.confidence is Confidence.HIGH)
+               for f in findings)
 
 
 def deploy_writes(files: list[FileEvidence], config: CorrelationConfig) -> set[str]:

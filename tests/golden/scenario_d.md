@@ -102,7 +102,7 @@ Request ini cocok dengan pola serangan, tetapi pengirimnya tidak terkait dengan 
 
 - **Versi alat:** 0.1.0
 - **Versi ruleset:** 0.1.0
-- **Hash konfigurasi:** d9703d7a523d27947f388ea79da3ac52d37b00b7203bd2332f9df7b2279143bf
+- **Hash konfigurasi:** 1da171f0c22a082930a831bc27304b37c50bdd0f6c9df84d05762e91f8d4762c
 
 ### File input
 

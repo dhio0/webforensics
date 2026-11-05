@@ -206,7 +206,7 @@ Tidak ada.
 
 - **Versi alat:** 0.1.0
 - **Versi ruleset:** 0.1.0
-- **Hash konfigurasi:** 7cabfdcdf016d39c2da7bcee773e1d9849ef20e55c633338b4fe17124069ca0d
+- **Hash konfigurasi:** ae676ce5eb79311c5d6353c4a0f3d8a174ee4ac6f7a2554a95b83c4a7d347bb6
 
 ### File input
 

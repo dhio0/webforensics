@@ -40,6 +40,9 @@ class CorrelationConfig:
     # (D87): the log starts after them, so their requests are not in evidence.
     coverage_lookback_s: int = 30 * 24 * 3600
     birth_time_settable: bool = False
+    # A hosting-panel site created by an address first seen after at least this much log
+    # is a lead to verify (D98); with less history every address looks new.
+    panel_history_s: int = 7 * 24 * 3600
 
 
 def for_filesystem(config: CorrelationConfig, filesystem: str | None) -> CorrelationConfig:

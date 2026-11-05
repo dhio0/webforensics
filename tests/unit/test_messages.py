@@ -154,6 +154,16 @@ def _crafted(tmp_path):
     old_index = file_ev("index.php", btime=0, ctime=0, mtime=0, content="old")
     yield (numbered((1, "/admin/upload.php", {"method": "POST"})), files(shell, dense, index),
            files(old_index))
+    # judol spam page and a search-engine cloaker (D98)
+    from tests.unit.test_judol import CLOAKER, SPAM
+    (tmp_path / "j").mkdir()
+    (tmp_path / "k").mkdir()
+    spam = _with_content(tmp_path / "j", "slot/index.html", SPAM).model_copy(update=born)
+    cloak = _with_content(tmp_path / "k", "index.php", CLOAKER).model_copy(update=born)
+    yield numbered((1, "/")), files(spam, cloak), None
+    # a hosting-panel site created by an address first seen after 8 days of log (D98)
+    yield numbered((0, "/"), (8 * 86_400, "/websites/submitWebsiteCreation",
+                              {"method": "POST", "ip": "203.0.113.99"})), files(), None
     # login of unknown method (a retried failure first), corroborated by the error log
     login = numbered(
         (0, "/admin/login.php", {"method": "POST"}),

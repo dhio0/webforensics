@@ -8,6 +8,8 @@ from collections import Counter, defaultdict
 
 from webforensics.correlate.actors import parse_networks, resolve_actor
 from webforensics.correlate.engine import BYPASS_RULE
+from webforensics.correlate.panel import PANEL_RULE
+from webforensics.detect.file_rules import CLOAKING_RULE, JUDOL_RULE
 from webforensics.models import (
     BackgroundGroup,
     CaseInfo,
@@ -26,6 +28,7 @@ from webforensics.models import (
     TimelineEvent,
     close_log_files,
 )
+from webforensics.report.messages_id import PATH_GROUP, URL_GROUP
 
 TOP_CLIENTS = 5
 _TIME_GAPS = (GapKind.NO_LOG_LINES, GapKind.PARSE_ERRORS, GapKind.ROTATION_BOUNDARY)
@@ -106,6 +109,45 @@ def unlinked_bypass_paths(result: CorrelationResult) -> list[str]:
                    if f.rule_id == BYPASS_RULE})
 
 
+def panel_leads(result: CorrelationResult) -> tuple[int, int, list[str]]:
+    """(site requests, addresses, panel paths) of sites managed through a hosting panel
+    by addresses never seen before (D98). A lead, not an accusation."""
+    leads = [f for f in result.findings if f.rule_id == PANEL_RULE]
+    count = sum(int(f.reasons[0].params["count"]) for f in leads)
+    paths = sorted({p for f in leads for p in f.reasons[0].params["paths"].split(", ")})
+    return count, len(leads), paths
+
+
+# A folder with at least this many paths is named once with a count: judol kits drop
+# hundreds of pages in one folder, and a list of all of them hides the advice (D98). The
+# full list stays in the affected-files section and report.json.
+GROUP_MIN = 5
+
+
+def compact_paths(paths: list[str], template: str) -> str:
+    """Paths joined by commas, with large folders as one `template` entry."""
+    folders: dict[str, list[str]] = {}
+    for path in paths:
+        folders.setdefault(path.rsplit("/", 1)[0] + "/" if "/" in path else "", []).append(path)
+    parts: list[str] = []
+    for folder, inside in folders.items():
+        if folder and len(inside) >= GROUP_MIN:
+            parts.append(template.format(count=len(inside), folder=folder))
+        else:
+            parts.extend(inside)
+    return ", ".join(parts)
+
+
+def judol_files(result: CorrelationResult) -> tuple[list[str], list[str]]:
+    """(affected files with gambling spam, affected files that cloak) (D98)."""
+    rules: dict[str, set[str]] = defaultdict(set)
+    for finding in result.findings:
+        rules[finding.subject].add(finding.rule_id)
+    spam = [f.path for f in result.affected_files if JUDOL_RULE in rules[f.evidence_id]]
+    cloak = [f.path for f in result.affected_files if CLOAKING_RULE in rules[f.evidence_id]]
+    return spam, cloak
+
+
 def _actor_span(result: CorrelationResult) -> tuple[str, str] | None:
     times = [e.ts for e in result.timeline if e.actor in result.iocs.ips]
     if not times:
@@ -177,6 +219,15 @@ def build_summary(result: CorrelationResult, background_count: int, review: int,
     if bypass is not None:
         lines.append(_r("summary.unlinked_bypass", count=bypass.count, clients=bypass.clients,
                         paths=", ".join(unlinked_bypass_paths(result))))
+    spam, cloak = judol_files(result)
+    if spam:
+        lines.append(_r("summary.judol", count=len(spam)))
+    if cloak:
+        lines.append(_r("summary.cloaking", count=len(cloak)))
+    sites, clients, panel_paths = panel_leads(result)
+    if sites:
+        lines.append(_r("summary.panel_new_address", count=sites, clients=clients,
+                        paths=", ".join(panel_paths)))
     weakening = [g for g in result.gaps if g.affects]
     if weakening:
         lines.append(_r("summary.gaps_affect", count=len(weakening)))
@@ -193,7 +244,8 @@ def _eradication(result: CorrelationResult) -> list[Reason]:
     recs: list[Reason] = []
     if result.affected_files:
         recs.append(_r("rec.eradication.remove_files",
-                       paths=", ".join(f.path for f in result.affected_files)))
+                       paths=compact_paths([f.path for f in result.affected_files],
+                                           PATH_GROUP)))
     root = root_event(result)
     vuln = result.root_cause.vuln_class if result.root_cause else None
     fixed: set[tuple[str, str]] = set()
@@ -247,11 +299,20 @@ def build_recommendations(result: CorrelationResult, review: int,
     bypassed = unlinked_bypass_paths(result)
     if bypassed:
         recs.append(_r("rec.recovery.revoke_sessions", paths=", ".join(bypassed)))
+    sites, _, panel_paths = panel_leads(result)
+    if sites:
+        recs.append(_r("rec.recovery.verify_panel_sites", paths=", ".join(panel_paths)))
     if review or result.deleted_paths:
         recs.append(_r("rec.recovery.review_unexplained",
                        count=review + len(result.deleted_paths)))
     if result.iocs.urls:
-        recs.append(_r("rec.recovery.monitor", urls=", ".join(result.iocs.urls)))
+        recs.append(_r("rec.recovery.monitor",
+                       urls=compact_paths(list(result.iocs.urls), URL_GROUP)))
+    spam, cloak = judol_files(result)
+    if spam or cloak:
+        recs.append(_r("rec.recovery.judol_search_index"))
+    if cloak:
+        recs.append(_r("rec.recovery.judol_cloaking", paths=", ".join(cloak)))
     kinds = {g.kind for g in result.gaps}
     if kinds & set(_TIME_GAPS):
         recs.append(_r("rec.lessons.log_retention"))
