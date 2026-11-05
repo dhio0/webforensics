@@ -1,6 +1,6 @@
 # Laporan Insiden Website
 
-_WF-72CCDBC9E8 · 2026-10-28 09:00:00 WIB_
+_Kasus WF-72CCDBC9E8, dibuat 2026-10-28 09:00:00 WIB_
 
 ## 1. Ringkasan
 

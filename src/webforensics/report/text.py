@@ -103,7 +103,7 @@ class Texts:
         if tactic is None:
             return m.LABELS["not_set"]
         name = m.TACTICS_ID.get(tactic, tactic)
-        return f"{name} · {technique}" if technique else name
+        return f"{name}, {technique}" if technique else name
 
     def _param(self, name: str, value: str) -> str:
         if name in _TIME_PARAMS or name == "at" or name.endswith("_at"):

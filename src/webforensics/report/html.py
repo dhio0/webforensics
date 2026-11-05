@@ -21,38 +21,52 @@ from webforensics.report.document import (
     Para,
     Table,
 )
+from webforensics.report.theme import base_css
 
-_CSP = "default-src 'none'; style-src 'unsafe-inline'; img-src 'none'; form-action 'none'"
+# The font is embedded as a data: URI (theme.py), so font-src allows data: only.
+_CSP = ("default-src 'none'; style-src 'unsafe-inline'; font-src data:; img-src 'none'; "
+        "form-action 'none'")
 _MARK_CLASS = {"high": "c-high", "medium": "c-medium", "low": "c-low", "root": "root"}
 _ANCHOR = re.compile(r"^[a-z0-9-]+$")
 
 _STYLE = """
-:root{--bg:#fff;--fg:#1d2330;--muted:#5b6475;--line:#d9dde5;--head:#f3f5f8;
---root:#fff4d6;--high:#1f7a3d;--medium:#9a6700;--low:#b42318;--code:#f6f8fa}
-@media (prefers-color-scheme:dark){:root{--bg:#14171c;--fg:#e4e7ec;--muted:#98a2b3;
---line:#2e3440;--head:#1d2129;--root:#3a3115;--high:#6cc58a;--medium:#e3b341;--low:#f97066;
---code:#1d2129}}
 *{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:var(--fg);
-font:15px/1.55 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
-main{max-width:1180px;margin:0 auto;padding:24px 16px 64px}
-h1{font-size:1.7rem;margin:0 0 4px}h2{font-size:1.25rem;margin:36px 0 12px;
-padding-bottom:6px;border-bottom:2px solid var(--line)}h3{font-size:1rem;margin:20px 0 8px}
-.sub{color:var(--muted);margin:0 0 20px}
-nav{border:1px solid var(--line);border-radius:8px;padding:10px 16px;background:var(--head)}
-nav ol{margin:0;padding-left:18px;columns:2}nav a{color:inherit}
-.tw{overflow-x:auto}table{border-collapse:collapse;width:100%;font-size:.88rem}
-th,td{border:1px solid var(--line);padding:6px 8px;text-align:left;vertical-align:top;
-overflow-wrap:anywhere}th{background:var(--head)}tr.root td{background:var(--root)}
-td.root{font-weight:600}
-.c-high,.c-medium,.c-low{font-weight:600;white-space:nowrap}
-.c-high{color:var(--high)}.c-medium{color:var(--medium)}.c-low{color:var(--low)}
-dl{display:grid;grid-template-columns:max-content 1fr;gap:4px 16px;margin:0}
-dt{font-weight:600;color:var(--muted)}dd{margin:0;overflow-wrap:anywhere}
-pre{background:var(--code);border:1px solid var(--line);border-radius:6px;padding:10px;
-overflow-x:auto;font-size:.85rem}
-@media (max-width:640px){nav ol{columns:1}dl{grid-template-columns:1fr}}
-@media print{nav{display:none}body{font-size:12px}h2{break-after:avoid}}
+body{margin:0;background:var(--paper);color:var(--ink);
+font:15px/1.6 var(--sans);font-variant-numeric:tabular-nums;-webkit-font-smoothing:antialiased}
+main{max-width:1120px;margin:0 auto;padding:40px 32px 72px}
+h1{font-size:30px;line-height:1.2;font-weight:700;letter-spacing:-.012em;margin:0 0 6px}
+.sub{color:var(--ink-2);margin:0 0 28px}
+h2{font-size:20px;line-height:1.3;font-weight:650;margin:48px 0 14px;padding-top:18px;
+border-top:1px solid var(--rule-2)}
+h3{font-size:15.5px;font-weight:650;margin:24px 0 8px}
+p,li{max-width:78ch}ul{padding-left:22px}li{margin:4px 0}
+a{color:var(--steel);text-underline-offset:3px}
+nav{border-top:1px solid var(--rule);border-bottom:1px solid var(--rule);padding:12px 0}
+nav ol{list-style:none;margin:0;padding:0;columns:2;column-gap:40px}
+nav li{margin:0;padding:3px 0;break-inside:avoid}nav a{color:var(--ink);text-decoration:none}
+nav a:hover{color:var(--steel);text-decoration:underline}
+.tw{overflow-x:auto;margin:10px 0 18px}
+table{border-collapse:collapse;width:100%;font-size:14px}
+th{text-align:left;font-weight:600;color:var(--ink-2);font-size:13px;white-space:nowrap;
+padding:8px 14px 8px 0;border-bottom:1px solid var(--rule-2);vertical-align:bottom}
+td{padding:8px 14px 8px 0;border-bottom:1px solid var(--rule);vertical-align:top;
+overflow-wrap:break-word}
+td:first-child,th:first-child{padding-left:8px}
+tr.root td{background:var(--seal-soft)}tr.root td:first-child{box-shadow:inset 3px 0 0 var(--seal)}
+td.root{color:var(--seal);font-weight:650}
+.c-high,.c-medium,.c-low{white-space:nowrap;color:var(--ink-2)}
+.c-high::before,.c-medium::before,.c-low::before{content:"";display:inline-block;width:16px;
+margin-right:7px;vertical-align:4px;border-top:1.5px solid var(--steel)}
+.c-high::before{border-top-width:3.5px}.c-low::before{border-top-style:dashed}
+dl{display:grid;grid-template-columns:max-content minmax(0,1fr);gap:6px 20px;margin:8px 0 16px}
+dt{color:var(--ink-3)}dd{margin:0;overflow-wrap:break-word}
+pre{font:12.5px/1.6 var(--mono);background:var(--sheet);border-left:2px solid var(--rule-2);
+padding:10px 14px;margin:8px 0 16px;white-space:pre-wrap;overflow-wrap:anywhere}
+:focus-visible{outline:2px solid var(--steel);outline-offset:2px}
+@media (max-width:700px){main{padding:24px 16px 48px}h1{font-size:24px}nav ol{columns:1}
+dl{grid-template-columns:1fr}dt{margin-top:6px}}
+@media print{:root{--paper:#fff;--sheet:#f4f6f8}nav{display:none}body{font-size:11.5pt}
+main{padding:0;max-width:none}h2{break-after:avoid}tr,pre{break-inside:avoid}}
 """
 
 
@@ -110,7 +124,7 @@ def render_html(doc: Document) -> str:
         f'<meta http-equiv="Content-Security-Policy" content="{_CSP}">',
         '<meta name="referrer" content="no-referrer">',
         f"<title>{_e(doc.title)}</title>",
-        f"<style>{_STYLE.strip()}</style>",
+        f"<style>{base_css()}\n{_STYLE.strip()}</style>",
         "</head>",
         "<body><main>",
         f"<h1>{_e(doc.title)}</h1>",

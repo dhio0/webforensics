@@ -4,9 +4,9 @@
 
 Reconstructs how a website was compromised. Given the web server's access logs and a snapshot of its webroot, it starts from the suspicious file the way an analyst does, finds the request that wrote it, and walks back to the way the attacker got in. Every conclusion cites a log line or a file hash. The output is an incident report in Indonesian, following a CSIRT incident-handling flow, and an offline viewer for exploring the case.
 
-![The webforensics viewer on a benchmark case: the backtrace from the attacker's file to the entry point, the raw log line of the entry point taken apart field by field, stepping through events with the keyboard, and search](docs/img/viewer-demo.gif)
+<a href="docs/media/viewer-demo.mp4"><img src="docs/img/viewer-demo.webp" width="100%" alt="A 38-second walkthrough of the webforensics viewer on lab scenario F: the verdict and the chain of evidence; the root-cause step opening its log line with the decoded SQL-injection payload marked; the root cause with the vulnerable PHP line beside its prepared-statement fix; an attacker IP filtering the timeline; actions ticked off as a checklist; and the full report opened for printing"></a>
 
-<sub>A WordPress compromise from the benchmark (plugin upload after a login with valid credentials, an image file run as PHP), mixed into 15,000 requests of real background traffic. Try it offline: [docs/examples/scenario_f.viewer.html](docs/examples/scenario_f.viewer.html).</sub>
+<sub>Lab scenario F: a SQL-injection login bypass, an upload, and one request to the uploaded file. [Watch as video (MP4)](docs/media/viewer-demo.mp4), or open the page itself offline: [docs/examples/scenario_f.viewer.html](docs/examples/scenario_f.viewer.html).</sub>
 
 ## What it does
 
@@ -49,12 +49,19 @@ webforensics view case01/report/report.json                            # viewer.
 
 One self-contained HTML page per case; it loads nothing from anywhere (its Content-Security-Policy allows only its own script, by hash, and no network).
 
-- **Backtrace.** The incident read backwards like a stack trace: the last event at the top, the entry point at the bottom, each frame with the evidence it rests on.
-- **The raw line, taken apart.** Each cited log line is split into client, time, method, path, query, status, size and user agent; pointing at a field marks it in the raw line.
+- **Chain of evidence.** The verdict in one sentence, then each step from the entry point to the use of the attacker's file, with the log line or hash it rests on. The line joining the steps shows how strong each step's evidence is: thick for high, thin for medium, dashed for low.
+- **The raw line, taken apart.** Each cited log line is split into client, time, method, path, query, status, size and user agent; pointing at a field marks it in the raw line. Query parameters are decoded, with attack syntax marked.
+- **Root cause, worked through.** The request the attacker used, why it is the entry point, and the vulnerable PHP line next to its prepared-statement fix, with the variables put straight into the query marked.
+- **Everything links to the timeline.** A file opens the events that wrote and used it, an IOC filters the timeline by that address or value (and copies for a SIEM or firewall), an evidence gap zooms the chart to its time range. Recommended actions are a checklist kept in the browser.
+- **The full report in one click.** "Laporan lengkap" opens the whole report in a new tab, ready to print or save as PDF.
 - **A timeline per actor.** One lane per actor and one shape per kind of event, evidence gaps hatched, the root cause marked; drag to zoom. Scanner bursts collapse into one row.
 - **Keyboard.** `j` / `k` step through events, `/` searches events and cited lines, `1` to `8` switch sections. `#timeline:12` links to one event.
 
 The text is the report's own Indonesian text, produced by the same code, and it works in light and dark mode and at phone width.
+
+![The root cause of scenario F: the attacker's request with its decoded payload marked, why it is the entry point, and the vulnerable line of admin/login.php shown as a diff against its prepared-statement fix](docs/img/viewer-root.png)
+
+![The timeline of scenario F in dark mode: one lane per actor, the entry point marked, the event register, and the inspector with the cited log line and its confidence notes](docs/img/viewer-timeline.png)
 
 ## How well it works
 

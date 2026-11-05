@@ -2,6 +2,11 @@
 
 The decisions behind each change are in [docs/decisions.md](docs/decisions.md) (D-numbers below).
 
+## Unreleased
+
+- **A new look for the viewer and the report** (D103): the verdict in one sentence, then the chain of evidence from the entry point to the attacker's file, each step with its log line or hash and a line whose weight shows how strong its evidence is. One visual system for both pages, with an embedded Indonesian typeface (Plus Jakarta Sans, SIL OFL); still offline and self-contained.
+- **The viewer is the one page to open** (D104): the root cause shows the decoded request with its attack syntax marked and the vulnerable line beside its fix; files, IOCs and evidence gaps link into the timeline; IOCs copy in one click; actions are a checklist; "Laporan lengkap" opens the full report in a new tab for printing. Monospace evidence is shown without font ligatures, so `--` and `->` read as logged.
+
 ## 0.1.0 — 2026-11-05
 
 The first release.

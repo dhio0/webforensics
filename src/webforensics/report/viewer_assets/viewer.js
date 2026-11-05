@@ -8,6 +8,17 @@
   var PAGE = 200;
   var DIGITS = Math.max(2, String(D.events.length).length);
 
+  // A query value is marked when it holds characters or keywords that attacks use. This is
+  // only a reading aid on the page; the analysis itself never uses it.
+  var ATTACK = /'|"|--|\/\*|\|\||;|`|\$\(|\.\.[\/\\]|<\s*\/?\s*script|\b(?:union|select|sleep|benchmark|exec|system|passthru|shell_exec)\b|\b(?:or|and)\b\s+\S+\s*=/gi;
+
+  // Combined log format, as the analysis parsed it. Used only to show the line's fields;
+  // a line that does not match is shown whole.
+  var COMBINED = /^(\S+) (\S+) (\S+) \[([^\]]+)\] "((?:[^"\\]|\\.)*)" (\d{3}) (\d+|-) "((?:[^"\\]|\\.)*)" "((?:[^"\\]|\\.)*)"(?: "((?:[^"\\]|\\.)*)")?$/;
+
+  // Ticks are kept in this browser only (localStorage), keyed by case; the page works without.
+  var STORE = "webforensics:" + D.caseId + ":actions";
+
   function fmt(template, values) {
     return template.replace(/\{(\w+)\}/g, function (_, k) {
       return Object.prototype.hasOwnProperty.call(values, k) ? String(values[k]) : "?";
@@ -88,42 +99,44 @@
   var bad = D.verdict.compromised;
   var app = document.getElementById("app");
   var stats = D.verdict.stats;
-  var counts = [[stats.events, U["stat.events"]], [stats.files, U["stat.files"]],
-    [stats.actors, U["stat.actors"]], [stats.gaps, U["stat.gaps"]]].map(function (c) {
-    return c[0] + " " + c[1];
-  }).join(" · ");
+  var X = D.detail;
+  var docBy = {};
+  D.doc.forEach(function (s) { docBy[s.anchor] = s; });
+
+  // "#laporan" is the full report, opened in its own tab from the header link.
+  if (location.hash === "#laporan") { buildReport(); return; }
 
   app.appendChild(el("header", { cls: "top" },
     el("div", { cls: "top-l" },
       el("span", { cls: "brand", text: "webforensics" }),
-      el("span", { cls: "case" }, el("span", { cls: "muted", text: U["meta.case"] + " " }),
-        el("span", { cls: "mono", text: D.caseId })),
-      el("span", { cls: "verdict" + (bad ? " bad" : ""), role: "status" },
-        el("i", { "aria-hidden": "true" }), bad ? U["stamp.compromised"] : U["stamp.clean"])),
+      el("span", { cls: "case", text: U["meta.case"] + " " + D.caseId })),
     el("div", { cls: "top-r" },
-      el("span", { cls: "muted", text: counts }),
-      el("span", { cls: "muted" }, U["meta.generated"] + " ", el("span", { cls: "mono", text: D.generated })))));
+      el("span", { text: U["meta.generated"] + " " + D.generated }),
+      el("a", { cls: "report-link", href: "#laporan", target: "_blank", rel: "noopener",
+        title: U["report.open_hint"], text: U["report.open"] }))));
 
   var nav = el("nav", { cls: "nav", role: "tablist" });
   app.appendChild(nav);
   var main = el("main", { cls: "page" });
   app.appendChild(main);
-  var panels = {};
+  var panels = {}, badges = {};
   D.tabs.forEach(function (tab, i) {
+    badges[tab.id] = tab.count ? el("span", { cls: "tab-n", text: String(tab.count) }) : null;
     nav.appendChild(el("button", {
       role: "tab", id: "tab-" + tab.id, "aria-controls": "panel-" + tab.id,
+      title: fmt(U["tab.key"], { key: i + 1 }),
       onclick: function () { showTab(tab.id, true); }
-    }, el("span", { cls: "key", text: String(i + 1) }), tab.label));
+    }, tab.label, badges[tab.id]));
     var panel = el("section", { role: "tabpanel", id: "panel-" + tab.id, "aria-labelledby": "tab-" + tab.id });
     panel.hidden = true;
     panels[tab.id] = panel;
     main.appendChild(panel);
     if (tab.id === "overview") buildOverview(panel, tab);
     else if (tab.id === "timeline") buildTimeline(panel);
-    else tab.sections.forEach(function (s) { panel.appendChild(docSection(s)); });
+    else tab.anchors.forEach(function (a) { panel.appendChild(section(a)); });
   });
   app.appendChild(el("footer", { cls: "foot" },
-    el("span", { text: U.generated_by }), el("span", { cls: "mono", text: U.keys })));
+    el("span", { text: U.generated_by }), el("span", { cls: "keys", text: U.keys })));
 
   nav.addEventListener("keydown", function (ev) {
     var back = ev.key === "ArrowLeft", fwd = ev.key === "ArrowRight";
@@ -137,7 +150,8 @@
 
   // "#timeline:12" opens event 12, so one finding can be shared as a link.
   function route(hash) {
-    var m = /^timeline:(\d+)$/.exec(hash);
+    if (hash === "laporan") { location.reload(); return; }
+    var m =/^timeline:(\d+)$/.exec(hash);
     if (m && byN[Number(m[1])]) { showTab("timeline", false); select(Number(m[1]), true); return; }
     showTab(hash || "overview", false);
   }
@@ -153,6 +167,8 @@
       b.tabIndex = on ? 0 : -1;
     });
     if (push && location.hash !== "#" + id) history.replaceState(null, "", "#" + id);
+    // A tab opens at its top, with the tab bar in view.
+    if (push && window.scrollY > 0) window.scrollTo(0, 0);
     if (id === "timeline") drawChart();
   }
 
@@ -185,43 +201,85 @@
     return events.filter(function (e) { return e.story || e.root; });
   }
 
-  function buildOverview(panel, tab) {
-    var frames = story().slice().reverse();
-    var trace = el("ol", { cls: "trace" });
-    frames.forEach(function (e) {
-      // A file is cited as "path @hash"; the path is already in the text, so show the hash.
-      var cite = e.cites.length ? D.cites[e.cites[0]].ref : "", at = cite.lastIndexOf(" @");
-      trace.appendChild(el("li", {
-        cls: e.root ? "root" : null, tabindex: "0",
-        onclick: function () { openEvent(e.n); },
-        onkeydown: function (ev) { if (ev.key === "Enter" || ev.key === " ") { ev.preventDefault(); openEvent(e.n); } }
-      },
-        el("span", { cls: "frame mono", text: no(e.n) }),
-        el("span", { cls: "role" }, glyph(e.cat), U["role." + e.cat] || U["role.other"]),
-        el("span", { cls: "what" }, e.text,
-          e.root ? el("span", { cls: "flag", text: U["trace.root"] }) : null),
-        el("span", { cls: "ref mono", title: cite, text: at > 0 ? cite.slice(at + 1) : cite }),
-        el("span", { cls: "at mono", text: e.clock })));
+  // A file is cited as "path @hash"; the path is already in the text, so show the hash.
+  function proof(e) {
+    var cite = e.cites.length ? D.cites[e.cites[0]].ref : "", at = cite.lastIndexOf(" @");
+    return { full: cite, short: at > 0 ? cite.slice(at + 1) : cite };
+  }
+
+  // Identical files written in the same second (a judol kit, an unpacked archive) are one
+  // step with a count, as in the report's attack story (D98). The register keeps each one.
+  function chainSteps() {
+    var steps = [];
+    story().forEach(function (e) {
+      var last = steps[steps.length - 1], p = proof(e);
+      if (last && e.cat === "file" && last.e.cat === "file" && last.e.clock === e.clock &&
+          last.hash && last.hash === p.short && p.short.charAt(0) === "@") {
+        last.more += 1;
+        return;
+      }
+      steps.push({ e: e, more: 0, hash: p.short });
     });
-    var traceBox = el("div", { cls: "trace-box" },
-      el("h2", { text: U["trace.title"] }),
-      el("p", { cls: "hint", text: U["trace.hint"] }),
-      frames.length ? trace : el("p", { cls: "none", text: U["trace.none"] }));
+    return steps;
+  }
+
+  function heroText() {
+    var root = D.verdict.root;
+    if (!bad) return U["hero.clean"];
+    if (!root) return U["hero.no_root"];
+    return root.vulnKnown ? fmt(U["hero.root"], { vuln: root.vuln }) : U["hero.root_unknown"];
+  }
+
+  function buildOverview(panel, tab) {
+    var steps = chainSteps();
+    var chain = el("ol", { cls: "chain", "aria-label": U["chain.title"] });
+    steps.forEach(function (s) {
+      var e = s.e, p = proof(e);
+      var open = function () { openEvent(e.n); };
+      chain.appendChild(el("li", {
+        cls: "step c-" + e.conf + (e.root ? " root" : ""), tabindex: "0",
+        onclick: open,
+        onkeydown: function (ev) { if (ev.key === "Enter" || ev.key === " ") { ev.preventDefault(); open(); } }
+      },
+        el("span", { cls: "node", "aria-hidden": "true" }, glyph(e.cat)),
+        el("div", { cls: "step-body" },
+          el("div", { cls: "step-head" },
+            el("span", null, el("span", { cls: "n", text: no(e.n) }),
+              el("span", { cls: "role", text: e.root ? U["chain.root"] : (U["role." + e.cat] || U["role.other"]) })),
+            el("span", { text: e.day + " " + e.clock })),
+          el("p", { cls: "step-text", text: e.text }),
+          el("div", { cls: "step-proof" },
+            el("span", { cls: "proof", title: p.full, text: p.short }),
+            conf(e.conf, fmt(U["chain.strength"], { level: e.confLabel }))),
+          s.more ? el("div", { cls: "step-more", text: fmt(U["chain.more"], { count: s.more }) }) : null)));
+    });
+
+    var legend = el("p", { cls: "legend" }, el("span", { text: U["chain.legend"] }),
+      conf("high", U["chain.legend_high"]), conf("medium", U["chain.legend_medium"]),
+      conf("low", U["chain.legend_low"]));
+
+    var hero = el("div", { cls: "hero" + (bad ? " bad" : "") },
+      el("h1", { text: heroText() }),
+      el("p", { text: steps.length ? U["chain.lead"] : U["chain.none"] }));
 
     var summary = el("div", { cls: "summary" }, el("h2", { text: U["summary.title"] }));
-    tab.sections.forEach(function (s) {
+    tab.anchors.forEach(function (a) {
+      var s = docBy[a];
       for (var i = 0; i < s.blocks.length && s.blocks[i].t !== "h"; i++) summary.appendChild(docBlock(s.blocks[i]));
     });
 
+    panel.appendChild(hero);
     panel.appendChild(el("div", { cls: "overview" },
-      el("div", { cls: "ov-main" }, traceBox, summary), facts()));
+      el("div", { cls: "ov-main" }, steps.length ? chain : null, steps.length ? legend : null, summary),
+      facts()));
   }
 
   function facts() {
     var v = D.verdict, dl = el("dl", { cls: "facts" });
-    pairs(dl, U["facts.verdict"], bad ? U["stamp.compromised"] : U["stamp.clean"]);
+    pairs(dl, U["facts.verdict"], el("span", { cls: bad ? "bad" : null,
+      text: bad ? U["stamp.compromised"] : U["stamp.clean"] }));
     if (v.root) {
-      var entry = el("a", { href: "#timeline", cls: "mono",
+      var entry = el("a", { href: "#timeline",
         onclick: function (ev) { ev.preventDefault(); openEvent(v.root.n); } }, no(v.root.n));
       pairs(dl, U["facts.entry"], el("span", null, entry, " " + v.root.day + " " + v.root.clock + " " + D.zoneShort));
       pairs(dl, U["facts.vuln"], v.root.vuln);
@@ -233,10 +291,12 @@
     var own = events.filter(function (e) { return attacker[e.actor]; });
     if (own.length) {
       var a = own[0], b = own[own.length - 1];
-      pairs(dl, U["facts.window"], el("span", { cls: "mono", text: a.day + " " + a.clock + "\n" + b.day + " " + b.clock }));
+      pairs(dl, U["facts.window"], a.day + " " + a.clock + "\n" + b.day + " " + b.clock);
     }
     pairs(dl, U["meta.zone"], D.zone);
-    return el("aside", { cls: "ov-side" }, el("h2", { text: U["facts.title"] }), dl);
+    var scope = el("p", { cls: "scope-line", text: fmt(U["facts.scope"], {
+      events: stats.events, files: stats.files, actors: stats.actors, gaps: stats.gaps }) });
+    return el("aside", { cls: "ov-side" }, el("h2", { text: U["facts.title"] }), dl, scope);
   }
 
   function openEvent(n) {
@@ -244,7 +304,481 @@
     select(n, true);
   }
 
-  // --- static sections (same content as the HTML report) ---------------------------------
+  // --- sections: the report's text, or a richer view of the same facts -------------------
+
+  // Root cause, files, IOCs, gaps and actions are drawn from `detail`, so every number and
+  // value links back into the timeline. Each falls back to the report's text when empty.
+  function section(anchor) {
+    var s = docBy[anchor];
+    if (anchor === "akar-masalah" && X.root) return buildRoot(s);
+    if (anchor === "akar-masalah" && X.gaps.rows.length) {
+      // No entry point: the gaps are where it may have been lost.
+      var none = docSection(s);
+      none.appendChild(el("p", { cls: "warn" },
+        el("span", { text: U["root.none_hint"] + " " }),
+        el("button", { cls: "link", text: U["root.none_gaps"], onclick: function () { showTab("gaps", true); } })));
+      return none;
+    }
+    if (anchor === "file-terdampak" && (X.files.files.length || X.files.logOnly)) return buildFiles(s);
+    if (anchor === "ioc" && X.iocs.length) return buildIocs(s);
+    if (anchor === "celah-bukti" && X.gaps.rows.length) return buildGaps(s);
+    if (anchor === "tindakan" && X.actions.length) return buildActions(s);
+    return docSection(s);
+  }
+
+  function copyText(text, button, label) {
+    function done() {
+      button.textContent = U.copied;
+      setTimeout(function () { button.textContent = label || U.copy; }, 1200);
+    }
+    if (navigator.clipboard && window.isSecureContext) {
+      navigator.clipboard.writeText(text).then(done, function () { fallbackCopy(text) && done(); });
+    } else if (fallbackCopy(text)) {
+      done();
+    }
+  }
+
+  function fallbackCopy(text) {
+    var area = el("textarea", { readonly: true, "aria-hidden": "true", cls: "offscreen" });
+    area.value = text;
+    document.body.appendChild(area);
+    area.select();
+    var ok = false;
+    try { ok = document.execCommand("copy"); } catch (_) { ok = false; }
+    document.body.removeChild(area);
+    return ok;
+  }
+
+  function copyButton(text, label) {
+    var b = el("button", { cls: "link copy", text: label || U.copy });
+    b.addEventListener("click", function (ev) { ev.stopPropagation(); copyText(text, b, label); });
+    return b;
+  }
+
+  // "#5" that opens the event in the timeline.
+  function eventLink(n) {
+    return el("button", { cls: "chip", title: byN[n] ? byN[n].text : "", text: no(n),
+      onclick: function () { openEvent(n); } });
+  }
+
+  function eventLinks(list) {
+    var box = el("span", { cls: "chips" });
+    list.forEach(function (n) { box.appendChild(eventLink(n)); });
+    return box;
+  }
+
+  // Show the timeline filtered by an address (as actor) or by any other text (as search).
+  function lookUp(value, asActor) {
+    showTab("timeline", true);
+    resetFilters();
+    if (asActor && actorList().indexOf(value) >= 0) {
+      state.actor = value;
+      panels.timeline.querySelector("select").value = value;
+    } else {
+      state.q = value.toLowerCase();
+      searchBox.value = value;
+    }
+    state.limit = PAGE;
+    refresh();
+    panels.timeline.scrollIntoView({ block: "start" });
+  }
+
+  function zoomTo(from, to) {
+    showTab("timeline", true);
+    resetFilters();
+    var pad = Math.max((to - from) * 0.5, 60000);
+    state.zoom = [from - pad, to + pad];
+    refresh();
+  }
+
+  function resetFilters() {
+    state.q = ""; state.actor = "*"; state.story = false; state.zoom = null;
+    D.categories.forEach(function (c) { state.cats[c.id] = true; });
+    syncFilterControls();
+  }
+
+  // --- root cause: the request, why it is the entry, and the vulnerable code --------------
+
+  function decode(s) {
+    try { return decodeURIComponent(s.replace(/\+/g, " ")); } catch (_) { return s; }
+  }
+
+  function queryParams(query) {
+    if (!query) return [];
+    return query.split("&").filter(Boolean).map(function (part) {
+      var i = part.indexOf("=");
+      return { k: decode(i >= 0 ? part.slice(0, i) : part), v: decode(i >= 0 ? part.slice(i + 1) : "") };
+    });
+  }
+
+  // The value as text nodes, with what looks like attack syntax inside <mark>.
+  function marked(value) {
+    var box = el("span", { cls: "pv" }), last = 0, hit = false, m;
+    ATTACK.lastIndex = 0;
+    while ((m = ATTACK.exec(value)) !== null) {
+      if (!m[0]) { ATTACK.lastIndex++; continue; }
+      if (m.index > last) box.appendChild(document.createTextNode(value.slice(last, m.index)));
+      box.appendChild(el("mark", { text: m[0] }));
+      last = m.index + m[0].length;
+      hit = true;
+    }
+    if (last < value.length) box.appendChild(document.createTextNode(value.slice(last)));
+    if (!value) box.appendChild(el("span", { cls: "muted", text: U["param.empty"] }));
+    return { node: box, hit: hit };
+  }
+
+  function paramTable(query) {
+    var list = queryParams(query);
+    if (!list.length) return null;
+    var table = el("table", { cls: "params" });
+    list.forEach(function (p) {
+      var v = marked(p.v);
+      table.appendChild(el("tr", { cls: v.hit ? "hit" : null },
+        el("th", { cls: "mono", text: p.k }), el("td", { cls: "mono" }, v.node)));
+    });
+    return table;
+  }
+
+  function requestCard(req) {
+    var parsed = dissect(req.raw), card = el("div", { cls: "req" });
+    if (parsed) {
+      var f = {};
+      parsed.fields.forEach(function (x) { f[x[0]] = x[1]; });
+      card.appendChild(el("div", { cls: "req-line mono" },
+        el("span", { cls: "req-m", text: f.method || "" }),
+        el("span", { cls: "req-p", text: f.path || "" }),
+        el("span", { cls: "req-s", text: fmt(U["req.status"], { status: f.status || "-", bytes: f.bytes || "-" }) })));
+      var params = paramTable(f.query);
+      if (params) {
+        card.appendChild(params);
+        if (params.querySelector("tr.hit")) card.appendChild(el("p", { cls: "req-note", text: U["param.marked"] }));
+      }
+    }
+    card.appendChild(el("details", { cls: "raw-line" },
+      el("summary", null, el("span", { text: U["root.raw"] + " " }), el("span", { cls: "proof", text: req.ref })),
+      el("pre", { cls: "raw", text: req.raw }),
+      copyButton(req.raw)));
+    return card;
+  }
+
+  // PHP on one line, with the spots that matter marked: in the vulnerable line, variables
+  // put straight into the query text; in the fix, the placeholders that replace them.
+  function phpLine(line, kind) {
+    var out = el("code"), buf = "", quote = null, i = 0;
+    function flush() { if (buf) { out.appendChild(document.createTextNode(buf)); buf = ""; } }
+    function put(text, cls) { flush(); out.appendChild(el("span", { cls: cls, text: text })); }
+    while (i < line.length) {
+      var ch = line.charAt(i), rest = line.slice(i), v;
+      if (quote) {
+        if (ch === "\\") { buf += line.substr(i, 2); i += 2; continue; }
+        if (ch === quote) { quote = null; buf += ch; i++; continue; }
+        if (kind === "bad" && quote === '"' && (v = /^\{?\$[A-Za-z_]\w*(?:\[[^\]]*\]|->\w+)?\}?/.exec(rest))) {
+          put(v[0], "taint"); i += v[0].length; continue;
+        }
+        if (kind === "fix" && ch === "?") { put("?", "hole"); i++; continue; }
+        buf += ch; i++; continue;
+      }
+      if (ch === '"' || ch === "'") { quote = ch; buf += ch; i++; continue; }
+      if (kind === "bad" && ch === "$" && (v = /^\$[A-Za-z_]\w*(?:\[[^\]]*\])?/.exec(rest))) {
+        var before = line.slice(0, i).replace(/\s+$/, "").slice(-1);
+        var after = line.slice(i + v[0].length).replace(/^\s+/, "").charAt(0);
+        if (/^\$_(?:GET|POST|REQUEST|COOKIE)\b/.test(v[0]) || before === "." || after === ".") {
+          put(v[0], "taint"); i += v[0].length; continue;
+        }
+      }
+      buf += ch; i++;
+    }
+    flush();
+    return out;
+  }
+
+  function flowStep(label, value) {
+    return el("li", null, el("span", { cls: "flow-l", text: label }),
+      value ? el("span", { cls: "mono flow-v", text: value }) : null);
+  }
+
+  function codeCard(c) {
+    var card = el("div", { cls: "code-card" });
+    card.appendChild(el("div", { cls: "code-head" },
+      el("span", { cls: "mono code-loc", text: c.file + ":" + c.line }),
+      conf(c.conf, fmt(U["chain.strength"], { level: c.confLabel }))));
+    card.appendChild(el("ol", { cls: "flow", "aria-label": U["flow.title"] },
+      flowStep(U["flow.input"], c.sources.join(", ")),
+      flowStep(fmt(U["flow.build"], { line: c.line }), null),
+      c.sinkLine ? flowStep(fmt(U["flow.run"], { line: c.sinkLine }), c.sink) : null));
+    var diff = el("div", { cls: "diff", role: "group", "aria-label": U["diff.title"] });
+    diff.appendChild(el("div", { cls: "dl-row del" },
+      el("span", { cls: "dl-n", text: String(c.line) }), el("span", { cls: "dl-s", text: "−", "aria-label": U["diff.now"] }),
+      phpLine(c.snippet, "bad")));
+    c.fix.forEach(function (line) {
+      diff.appendChild(el("div", { cls: "dl-row add" },
+        el("span", { cls: "dl-n" }), el("span", { cls: "dl-s", text: "+", "aria-label": U["diff.fix"] }),
+        phpLine(line, "fix")));
+    });
+    card.appendChild(diff);
+    card.appendChild(el("div", { cls: "code-foot" },
+      el("span", { cls: "muted", text: c.fix.length ? U["diff.legend"] : U["diff.legend_nofix"] }),
+      c.fix.length ? copyButton(c.fix.join("\n"), U["diff.copy"]) : null));
+    if (!c.verified) card.appendChild(el("p", { cls: "warn", text: U["code.unverified"] }));
+    var dl = el("dl", { cls: "kv" });
+    pairs(dl, U["code.why"], c.why);
+    pairs(dl, U["code.proof"], el("span", { cls: "proof", text: c.ref }));
+    card.appendChild(dl);
+    return card;
+  }
+
+  function buildRoot(s) {
+    var r = X.root, v = D.verdict.root, e = byN[r.n];
+    var box = el("div", { cls: "doc rc" }, el("h2", { text: s.title }));
+    box.appendChild(el("div", { cls: "rc-head" },
+      el("p", { cls: "rc-vuln", text: v.vuln }),
+      el("p", { cls: "rc-event", text: e.text }),
+      el("div", { cls: "rc-meta" },
+        el("button", { cls: "link", text: fmt(U["root.open"], { n: no(r.n) }), onclick: function () { openEvent(r.n); } }),
+        el("span", { text: v.day + " " + v.clock + " " + D.zoneShort }),
+        v.actor ? el("button", { cls: "link mono", title: U["ioc.find_actor"], text: v.actor,
+          onclick: function () { lookUp(v.actor, true); } }) : null,
+        conf(v.conf, fmt(U["chain.strength"], { level: v.confLabel })))));
+
+    var grid = el("div", { cls: "rc-grid" });
+    var left = el("div", { cls: "rc-col" }), right = el("div", { cls: "rc-col" });
+    if (r.request) {
+      left.appendChild(el("h3", { text: U["root.request"] }));
+      left.appendChild(requestCard(r.request));
+    }
+    left.appendChild(el("h3", { text: U["root.why"] }));
+    var why = el("ol", { cls: "why" });
+    r.reasons.forEach(function (t) { why.appendChild(el("li", { text: t })); });
+    left.appendChild(why);
+    if (r.alts.length) {
+      left.appendChild(el("h3", { text: U["root.alts"] }));
+      var alts = el("ul", { cls: "alts" });
+      r.alts.forEach(function (a) { alts.appendChild(el("li", null, eventLink(a.n), " " + a.text)); });
+      left.appendChild(alts);
+    }
+
+    right.appendChild(el("h3", { text: U["root.code"] }));
+    r.code.forEach(function (c) { right.appendChild(codeCard(c)); });
+    if (r.codeNone) right.appendChild(el("p", { cls: "muted", text: U["code.none"] }));
+    if (!r.code.length && !r.codeNone && !r.analyzed.length && !r.noContent.length) right.appendChild(el("p", { cls: "muted", text: U["code.not_run"] }));
+    if (r.analyzed.length || r.included.length) {
+      var scope = el("dl", { cls: "kv scope" });
+      if (r.analyzed.length) pairs(scope, U["code.analyzed"], el("span", { cls: "mono", text: r.analyzed.join("\n") }));
+      if (r.included.length) pairs(scope, U["code.included"], el("span", { cls: "mono", text: r.included.join("\n") }));
+      right.appendChild(scope);
+    }
+    if (r.noContent.length) {
+      right.appendChild(el("p", { cls: "warn", text: U["code.no_content"] }));
+      var nc = el("ul", { cls: "mono plain" });
+      r.noContent.forEach(function (p) { nc.appendChild(el("li", { text: p })); });
+      right.appendChild(nc);
+    }
+    grid.appendChild(left);
+    grid.appendChild(right);
+    box.appendChild(grid);
+    return box;
+  }
+
+  // --- files ------------------------------------------------------------------------------
+
+  function fileCard(f) {
+    var card = el("article", { cls: "fcard" });
+    card.appendChild(el("div", { cls: "f-head" },
+      el("h3", { cls: "mono f-path", text: f.path }),
+      el("span", { cls: "f-status", text: f.status })));
+    if (f.findings.length) {
+      var ul = el("ul", { cls: "f-find" });
+      f.findings.forEach(function (x) {
+        ul.appendChild(el("li", null, el("span", { text: x.text }),
+          el("span", { cls: "mono rule", text: x.rule }),
+          conf(x.conf, fmt(U["chain.strength"], { level: x.confLabel }))));
+      });
+      card.appendChild(ul);
+    }
+    var dl = el("dl", { cls: "kv" });
+    pairs(dl, "SHA-256", el("span", { cls: "hash" }, el("span", { cls: "mono", text: f.sha256 }), copyButton(f.sha256)));
+    pairs(dl, U["file.size"], f.size);
+    pairs(dl, U["file.status"], f.status);
+    var times = el("span", { cls: "times" });
+    f.times.forEach(function (t) {
+      times.appendChild(el("span", null, el("span", { cls: "t-name", text: t.name }), " " + t.time));
+    });
+    pairs(dl, U["file.times"], f.times.length ? times : U["file.no_times"]);
+    pairs(dl, U["file.ts_source"], f.tsSource);
+    if (f.urls.length) pairs(dl, U["file.urls"], el("span", { cls: "mono", text: f.urls.join("\n") }));
+    if (f.fim.length) pairs(dl, U["file.fim"], f.fim.join("\n"));
+    card.appendChild(dl);
+    card.appendChild(fileLinks(f.path, f.events));
+    return card;
+  }
+
+  function fileLinks(path, list) {
+    return el("div", { cls: "f-links" },
+      list.length ? el("span", { cls: "muted", text: U["file.events"] }) : null,
+      list.length ? eventLinks(list) : null,
+      el("button", { cls: "link", text: U["file.search"], onclick: function () { lookUp(path, false); } }));
+  }
+
+  function buildFiles(s) {
+    var box = el("div", { cls: "doc" }, el("h2", { text: s.title }));
+    X.files.files.forEach(function (f) { box.appendChild(fileCard(f)); });
+    var lo = X.files.logOnly;
+    if (lo) {
+      box.appendChild(el("h3", { text: lo.title }));
+      box.appendChild(el("p", { cls: "muted", text: lo.note }));
+      lo.items.forEach(function (it) {
+        box.appendChild(el("article", { cls: "fcard slim" },
+          el("div", { cls: "f-head" }, el("h3", { cls: "mono f-path", text: it.path })),
+          fileLinks(it.path, it.events)));
+      });
+    }
+    return box;
+  }
+
+  // --- IOCs -------------------------------------------------------------------------------
+
+  function buildIocs(s) {
+    var box = el("div", { cls: "doc" }, el("h2", { text: s.title }),
+      el("p", { cls: "muted lead", text: U["ioc.lead"] }));
+    var all = [];
+    X.iocs.forEach(function (g) {
+      all = all.concat(g.values);
+      var list = el("ul", { cls: "ioc-list" });
+      g.values.forEach(function (v) {
+        var asActor = g.key === "ips";
+        list.appendChild(el("li", null,
+          el("button", { cls: "ioc-v mono", title: asActor ? U["ioc.find_actor"] : U["ioc.find"], text: v,
+            onclick: function () { lookUp(v, asActor); } }),
+          copyButton(v)));
+      });
+      box.appendChild(el("section", { cls: "ioc-group" },
+        el("div", { cls: "ioc-head" },
+          el("h3", null, el("span", { text: g.label }), el("span", { cls: "tab-n", text: String(g.values.length) })),
+          copyButton(g.values.join("\n"), U["ioc.copy_group"])),
+        list));
+    });
+    box.insertBefore(el("div", { cls: "ioc-all" }, copyButton(all.join("\n"), U["ioc.copy_all"])), box.children[2]);
+    return box;
+  }
+
+  // --- evidence gaps ----------------------------------------------------------------------
+
+  function buildGaps(s) {
+    var box = el("div", { cls: "doc" }, el("h2", { text: s.title }),
+      el("p", { cls: "muted lead", text: U["gaps.lead"] }));
+    var body = el("tbody");
+    X.gaps.rows.forEach(function (g) {
+      var when = g.when ? el("span", null, el("span", { text: g.when }),
+        g.from !== null ? el("button", { cls: "link block", text: U["gaps.show"], onclick: function () { zoomTo(g.from, g.to); } }) : null)
+        : el("span", { cls: "muted", text: "-" });
+      body.appendChild(el("tr", null,
+        el("td", null, el("span", { cls: "gap-id", text: g.label })),
+        el("td", { text: g.kind }),
+        el("td", null, when),
+        el("td", null, el("span", { text: g.detail }), g.source ? el("span", { cls: "mono src", text: g.source }) : null),
+        el("td", null, g.affects.length ? eventLinks(g.affects) : el("span", { cls: "muted", text: "-" }))));
+    });
+    box.appendChild(el("div", { cls: "tw" }, el("table", { cls: "gaps" },
+      el("thead", null, el("tr", null,
+        el("th", { text: U["gaps.id"] }), el("th", { text: U["gaps.kind"] }), el("th", { text: U["gaps.when"] }),
+        el("th", { text: U["gaps.detail"] }), el("th", { text: U["gaps.affects"] }))),
+      body)));
+    if (X.gaps.more) box.appendChild(el("p", { cls: "muted", text: X.gaps.more }));
+    return box;
+  }
+
+  // --- actions: a checklist the analyst ticks off -------------------------------------------
+
+  function loadTicks() {
+    try { return JSON.parse(window.localStorage.getItem(STORE) || "{}") || {}; } catch (_) { return {}; }
+  }
+
+  function saveTicks(ticks) {
+    try { window.localStorage.setItem(STORE, JSON.stringify(ticks)); } catch (_) { /* private mode */ }
+  }
+
+  function buildActions(s) {
+    var ticks = loadTicks(), total = 0, boxes = [];
+    var box = el("div", { cls: "doc" }, el("h2", { text: s.title }));
+    var bar = el("span", { cls: "bar-fill" });
+    var progress = el("div", { cls: "progress" },
+      el("span", { cls: "bar" }, bar), el("span", { cls: "p-text", "aria-live": "polite" }));
+    box.appendChild(progress);
+    X.actions.forEach(function (phase) {
+      var count = el("span", { cls: "tab-n" });
+      var list = el("ul", { cls: "checks" });
+      phase.items.forEach(function (text, i) {
+        var id = phase.phase + ":" + i;
+        var input = el("input", { type: "checkbox", id: "act-" + id.replace(":", "-") });
+        input.checked = Boolean(ticks[id]);
+        input.addEventListener("change", function () {
+          if (input.checked) ticks[id] = true; else delete ticks[id];
+          saveTicks(ticks);
+          update();
+        });
+        boxes.push({ input: input, phase: phase.phase });
+        list.appendChild(el("li", null, el("label", { "for": "act-" + id.replace(":", "-") }, input, el("span", { text: text }))));
+        total++;
+      });
+      phase.count = count;
+      box.appendChild(el("section", { cls: "phase" }, el("h3", null, el("span", { text: phase.title }), count), list));
+    });
+    box.appendChild(el("p", { cls: "muted note", text: U["actions.saved"] }));
+
+    function update() {
+      var done = 0, per = {};
+      boxes.forEach(function (b) {
+        per[b.phase] = per[b.phase] || [0, 0];
+        per[b.phase][1]++;
+        if (b.input.checked) { done++; per[b.phase][0]++; }
+        b.input.parentNode.parentNode.classList.toggle("done", b.input.checked);
+      });
+      X.actions.forEach(function (p) { p.count.textContent = per[p.phase][0] + "/" + per[p.phase][1]; });
+      bar.style.width = (total ? Math.round(done / total * 100) : 0) + "%";
+      progress.lastChild.textContent = fmt(U["actions.progress"], { done: done, total: total });
+      if (badges.actions) badges.actions.textContent = String(total - done);
+    }
+    update();
+    return box;
+  }
+
+  // --- the full report, in its own tab ------------------------------------------------------
+
+  function buildReport() {
+    document.body.classList.add("report-mode");
+    app.appendChild(el("div", { cls: "rbar" },
+      el("span", { cls: "brand", text: "webforensics" }),
+      el("span", { cls: "case", text: U["meta.case"] + " " + D.caseId }),
+      el("span", { cls: "rbar-r" },
+        el("button", { cls: "btn", text: U["report.print"], onclick: function () { window.print(); } }),
+        el("button", { cls: "link", text: U["report.back"], onclick: function () {
+          history.replaceState(null, "", location.pathname + location.search);
+          location.reload();
+        } }))));
+    var page = el("main", { cls: "report" },
+      el("h1", { text: D.title }), el("p", { cls: "sub", text: D.subtitle }));
+    var toc = el("ol");
+    D.doc.forEach(function (s) {
+      var target = "r-" + s.anchor;
+      toc.appendChild(el("li", null, el("a", { href: "#laporan", text: s.title, onclick: function (ev) {
+        ev.preventDefault();
+        document.getElementById(target).scrollIntoView({ block: "start" });
+      } })));
+    });
+    page.appendChild(el("nav", { cls: "toc", "aria-label": U["report.toc"] }, toc));
+    D.doc.forEach(function (s) {
+      var node = el("section", { id: "r-" + s.anchor }, el("h2", { text: s.title }));
+      s.blocks.forEach(function (b) { node.appendChild(docBlock(b)); });
+      page.appendChild(node);
+    });
+    page.appendChild(el("p", { cls: "muted r-foot", text: U.generated_by }));
+    app.appendChild(page);
+    window.addEventListener("hashchange", function () {
+      if (location.hash !== "#laporan") location.reload();
+    });
+  }
+
+  // --- the report's own text --------------------------------------------------------------
 
   function docSection(section) {
     var node = el("div", { cls: "doc" }, el("h2", { text: section.title }));
@@ -302,7 +836,7 @@
     actorList().forEach(function (a) { actor.appendChild(el("option", { value: a, text: a || U["chart.files"] })); });
     var storyBox = el("input", { type: "checkbox", id: "story-only",
       onchange: function () { state.story = storyBox.checked; state.limit = PAGE; refresh(); } });
-    countEl = el("span", { cls: "count mono", "aria-live": "polite" });
+    countEl = el("span", { cls: "count", "aria-live": "polite" });
     var kinds = el("div", { cls: "kinds" });
     present().forEach(function (c) {
       var b = el("button", { cls: "kind", "aria-pressed": "true", title: c.label,
@@ -443,7 +977,9 @@
       var y = top + i * laneH + laneH / 2;
       svg.appendChild(sv("line", { "class": "base", x1: left, x2: width - right, y1: y, y2: y }));
       var name = i === othersLane ? U["chart.others"] : (lanes[i] || U["chart.files"]);
-      var label = sv("text", { "class": "lane" + (attacker[lanes[i]] ? " att" : ""), x: left - 8,
+      // An address is evidence (monospace); "file evidence" and "other actors" are labels.
+      var isAddress = i !== othersLane && Boolean(lanes[i]);
+      var label = sv("text", { "class": "lane" + (isAddress ? " addr" : "") + (attacker[lanes[i]] ? " att" : ""), x: left - 8,
         y: y + 4, "text-anchor": "end" });
       label.textContent = name.length > 17 ? name.slice(0, 16) + "…" : name;
       label.appendChild(titleNode(name));
@@ -577,8 +1113,8 @@
       onclick: toggle,
       onkeydown: function (ev) { if (ev.key === "Enter" || ev.key === " ") { ev.preventDefault(); toggle(); } }
     },
-      el("td", { cls: "c-n mono", text: no(run.first) }),
-      el("td", { cls: "c-t mono", text: run.clock }),
+      el("td", { cls: "c-n", text: no(run.first) }),
+      el("td", { cls: "c-t", text: run.clock }),
       el("td", { cls: "c-a mono", text: first.actor || D.labels.noActor }),
       el("td", null, glyph(first.cat), el("span", { text: run.text + " " }),
         el("span", { cls: "link", text: opened ? U["run.collapse"] : fmt(U["run.expand"], { count: run.count }) })),
@@ -594,8 +1130,8 @@
         if (ev.key === "Enter" || ev.key === " ") { ev.preventDefault(); select(e.n, false); }
       }
     },
-      el("td", { cls: "c-n mono", text: no(e.n) }),
-      el("td", { cls: "c-t mono", text: e.clock }),
+      el("td", { cls: "c-n", text: no(e.n) }),
+      el("td", { cls: "c-t", text: e.clock }),
       el("td", { cls: "c-a mono", text: e.actor || D.labels.noActor }),
       el("td", null, glyph(e.cat), e.root ? el("span", { cls: "flag", text: D.labels.rootMarker }) : null, e.text),
       el("td", { cls: "c-c" }, conf(e.conf, e.confLabel)));
@@ -653,10 +1189,6 @@
 
   // --- inspector: the event, and each cited log line taken apart -------------------------
 
-  // Combined log format, as the analysis parsed it. Used only to show the line's fields;
-  // a line that does not match is shown whole.
-  var COMBINED = /^(\S+) (\S+) (\S+) \[([^\]]+)\] "((?:[^"\\]|\\.)*)" (\d{3}) (\d+|-) "((?:[^"\\]|\\.)*)" "((?:[^"\\]|\\.)*)"(?: "((?:[^"\\]|\\.)*)")?$/;
-
   function dissect(line) {
     var m = COMBINED.exec(line);
     if (!m) return null;
@@ -690,13 +1222,7 @@
 
   function evidence(c) {
     var ex = c.ex || "", parsed = dissect(ex);
-    var copy = el("button", { cls: "link copy", text: U.copy, onclick: function () {
-      if (navigator.clipboard) navigator.clipboard.writeText(ex).then(function () {
-        copy.textContent = U.copied;
-        setTimeout(function () { copy.textContent = U.copy; }, 1200);
-      });
-    } });
-    var box = el("div", { cls: "ev-cite" }, el("div", { cls: "ev-ref" }, el("span", { cls: "mono", text: c.ref }), copy));
+    var box = el("div", { cls: "ev-cite" }, el("div", { cls: "ev-ref" }, el("span", { cls: "mono", text: c.ref }), copyButton(ex)));
     if (!parsed) { box.appendChild(el("pre", { cls: "raw", text: ex })); return box; }
     var raw = el("pre", { cls: "raw" }), spans = {};
     parsed.parts.forEach(function (p) {
@@ -713,6 +1239,12 @@
       table.appendChild(tr);
     });
     box.appendChild(raw);
+    var query = parsed.fields.filter(function (f) { return f[0] === "query"; })[0];
+    var params = query ? paramTable(query[1]) : null;
+    if (params) {
+      box.appendChild(el("div", { cls: "sub-h", text: U["raw.params"] }));
+      box.appendChild(params);
+    }
     box.appendChild(el("div", { cls: "sub-h", text: U["raw.fields"] }));
     box.appendChild(table);
     return box;
@@ -723,13 +1255,13 @@
     var e = state.sel !== null ? byN[state.sel] : null;
     if (!e) { inspector.appendChild(el("p", { cls: "hint", text: U["detail.empty"] })); return; }
     inspector.appendChild(el("div", { cls: "insp-head" },
-      el("span", { cls: "mono", text: no(e.n) }),
+      el("span", { text: no(e.n) }),
       e.root ? el("span", { cls: "flag", text: U["detail.root"] }) : null,
-      el("button", { cls: "link close", text: "Esc", "aria-label": "Esc",
+      el("button", { cls: "link close", text: U["detail.close"],
         onclick: function () { document.body.classList.remove("inspecting"); } })));
     inspector.appendChild(el("p", { cls: "insp-text" }, glyph(e.cat), e.text));
     var dl = el("dl", { cls: "kv" });
-    pairs(dl, U["detail.time"], el("span", { cls: "mono", text: e.day + " " + e.clock + " " + D.zoneShort }));
+    pairs(dl, U["detail.time"], e.day + " " + e.clock + " " + D.zoneShort);
     pairs(dl, U["detail.basis"], e.basis);
     pairs(dl, U["detail.phase"], e.phase);
     pairs(dl, U["detail.actor"], el("span", { cls: "mono", text: e.actor || D.labels.noActor }));

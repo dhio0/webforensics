@@ -126,6 +126,29 @@ def test_view_model_of_scenario_f():
     assert view["offsetMin"] == 7 * 60
 
 
+def test_detail_links_the_sections_to_the_timeline():
+    report = _golden("f")
+    view = build_view(report, _texts(report))
+    detail = view["detail"]
+    root = detail["root"]
+    assert root["n"] == view["verdict"]["root"]["n"]
+    assert "%27+OR+%271%27" in root["request"]["raw"]  # the payload line, as logged
+    code = root["code"][0]
+    assert (code["file"], code["line"], code["sinkLine"]) == ("admin/login.php", 13, 14)
+    assert code["fix"] and "prepare" in code["fix"][0]
+    # The file names its write, its creation and its use in the timeline.
+    marker = detail["files"]["files"][0]
+    assert marker["path"] == "uploads/scenario-f-marker.php" and marker["events"] == [6, 7, 8]
+    assert [g["key"] for g in detail["iocs"]] == ["ips", "user_agents", "sha256s", "paths", "urls"]
+    assert sum(len(a["items"]) for a in detail["actions"]) == len(report.recommendations)
+    # The full report (#laporan) has every section; the tabs point into it by anchor.
+    anchors = [s["anchor"] for s in view["doc"]]
+    assert "kronologi" in anchors and "bukti" in anchors
+    assert all(a in anchors for t in view["tabs"] for a in t["anchors"])
+    counts = {t["id"]: t["count"] for t in view["tabs"]}
+    assert counts["files"] == 1 and counts["iocs"] == 5 and counts["actions"] == 13
+
+
 def test_view_model_without_a_compromise():
     report = _golden("d")
     view = build_view(report, _texts(report))

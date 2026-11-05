@@ -1,6 +1,6 @@
 # Laporan Insiden Website
 
-_WF-54BD23F4D5 · 2026-10-28 09:00:00 WIB_
+_Kasus WF-54BD23F4D5, dibuat 2026-10-28 09:00:00 WIB_
 
 ## 1. Ringkasan
 
@@ -36,10 +36,10 @@ _WF-54BD23F4D5 · 2026-10-28 09:00:00 WIB_
 
 | # | Waktu | Dasar waktu | Fase (ATT\&CK) | Aktor | Kejadian | Keyakinan | Bukti |
 |---|---|---|---|---|---|---|---|
-| #1 | 2026-10-29 12:18:59 WIB | log | Initial Access (akses awal) · T1190 | 192.0.2.31 | **AKAR MASALAH: Upload yang menulis uploads/scenario-e-marker.php tanpa login sebelumnya: POST /admin/upload.php → 200.** | sedang | access.log:4, uploads/scenario-e-marker.php @3a33ab856f7e, error.log:1 |
-| #2 | 2026-10-29 12:18:59 WIB | btime | Persistence (bertahan) · T1505.003 | - | File uploads/scenario-e-marker.php dibuat (SHA-256 3a33ab856f7e…). | sedang | uploads/scenario-e-marker.php @3a33ab856f7e |
-| #3 | 2026-10-29 12:19:01 WIB | log | Persistence (bertahan) · T1505.003 | 192.0.2.31 | File uploads/scenario-e-marker.php diakses: GET /uploads/scenario-e-marker.php → 200. | tinggi | access.log:5 |
-| #4 | 2026-10-29 12:19:03 WIB | ctime | Defense Evasion (menghindari deteksi) · T1070.006 | - | Timestamp uploads/scenario-e-marker.php tidak konsisten: dipalsukan (timestomping) atau terbawa dari arsip/salinan, jadi mtime-nya tidak dipakai. | sedang | uploads/scenario-e-marker.php @3a33ab856f7e |
+| #1 | 2026-10-29 12:18:59 WIB | log | Initial Access (akses awal), T1190 | 192.0.2.31 | **Akar masalah: Upload yang menulis uploads/scenario-e-marker.php tanpa login sebelumnya: POST /admin/upload.php → 200.** | sedang | access.log:4, uploads/scenario-e-marker.php @3a33ab856f7e, error.log:1 |
+| #2 | 2026-10-29 12:18:59 WIB | btime | Persistence (bertahan), T1505.003 | - | File uploads/scenario-e-marker.php dibuat (SHA-256 3a33ab856f7e…). | sedang | uploads/scenario-e-marker.php @3a33ab856f7e |
+| #3 | 2026-10-29 12:19:01 WIB | log | Persistence (bertahan), T1505.003 | 192.0.2.31 | File uploads/scenario-e-marker.php diakses: GET /uploads/scenario-e-marker.php → 200. | tinggi | access.log:5 |
+| #4 | 2026-10-29 12:19:03 WIB | ctime | Defense Evasion (menghindari deteksi), T1070.006 | - | Timestamp uploads/scenario-e-marker.php tidak konsisten: dipalsukan (timestomping) atau terbawa dari arsip/salinan, jadi mtime-nya tidak dipakai. | sedang | uploads/scenario-e-marker.php @3a33ab856f7e |
 
 ### Catatan keyakinan
 

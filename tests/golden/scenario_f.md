@@ -1,6 +1,6 @@
 # Laporan Insiden Website
 
-_WF-E887DEB66B · 2026-10-28 09:00:00 WIB_
+_Kasus WF-E887DEB66B, dibuat 2026-10-28 09:00:00 WIB_
 
 ## 1. Ringkasan
 
@@ -39,10 +39,10 @@ _WF-E887DEB66B · 2026-10-28 09:00:00 WIB_
 | #2 | 2026-10-29 12:19:49 WIB | log | - | 172.30.0.1 | Aktivitas aktor sebelum file ditulis: GET /product.php → 200. | tinggi | access.log:2 |
 | #3 | 2026-10-29 12:19:51 WIB | log | - | 172.30.0.1 | Aktivitas aktor sebelum file ditulis: GET /admin/login.php → 200. | tinggi | access.log:3 |
 | #4 | 2026-10-29 12:19:53 WIB | log | - | 172.30.0.1 | Login gagal: GET /admin/login.php → 401. | tinggi | access.log:4 |
-| #5 | 2026-10-29 12:19:55 WIB | log | Initial Access (akses awal) · T1190 | 172.30.0.1 | **AKAR MASALAH: Bypass login dengan SQL injection: GET /admin/login.php → 200.** | sedang | access.log:5 |
-| #6 | 2026-10-29 12:19:57 WIB | log | Persistence (bertahan) · T1505.003 | 172.30.0.1 | Request yang menulis uploads/scenario-f-marker.php: POST /admin/auth\_upload.php → 200. | tinggi | access.log:6, uploads/scenario-f-marker.php @c2f45202f02a |
-| #7 | 2026-10-29 12:19:57 WIB | btime | Persistence (bertahan) · T1505.003 | - | File uploads/scenario-f-marker.php dibuat (SHA-256 c2f45202f02a…). | sedang | uploads/scenario-f-marker.php @c2f45202f02a |
-| #8 | 2026-10-29 12:19:59 WIB | log | Persistence (bertahan) · T1505.003 | 172.30.0.1 | File uploads/scenario-f-marker.php diakses: GET /uploads/scenario-f-marker.php → 200. | tinggi | access.log:7 |
+| #5 | 2026-10-29 12:19:55 WIB | log | Initial Access (akses awal), T1190 | 172.30.0.1 | **Akar masalah: Bypass login dengan SQL injection: GET /admin/login.php → 200.** | sedang | access.log:5 |
+| #6 | 2026-10-29 12:19:57 WIB | log | Persistence (bertahan), T1505.003 | 172.30.0.1 | Request yang menulis uploads/scenario-f-marker.php: POST /admin/auth\_upload.php → 200. | tinggi | access.log:6, uploads/scenario-f-marker.php @c2f45202f02a |
+| #7 | 2026-10-29 12:19:57 WIB | btime | Persistence (bertahan), T1505.003 | - | File uploads/scenario-f-marker.php dibuat (SHA-256 c2f45202f02a…). | sedang | uploads/scenario-f-marker.php @c2f45202f02a |
+| #8 | 2026-10-29 12:19:59 WIB | log | Persistence (bertahan), T1505.003 | 172.30.0.1 | File uploads/scenario-f-marker.php diakses: GET /uploads/scenario-f-marker.php → 200. | tinggi | access.log:7 |
 
 ### Catatan keyakinan
 

@@ -6,6 +6,7 @@ then review the diff of tests/golden/ like any other code change.
 
 import json
 import os
+import re
 from datetime import UTC, datetime
 from pathlib import Path
 
@@ -70,10 +71,12 @@ def test_analyze_gives_the_same_bytes_from_any_working_directory(name, tmp_path,
         assert one == (tmp_path / "2" / f"report.{ext}").read_bytes()
         assert one == (GOLDEN / f"scenario_{name}.{ext}").read_bytes()
         assert b"\r\n" not in one
-        # No analyst-machine paths leak into the report.
+        # No analyst-machine paths leak into the report. The embedded font (base64, D103)
+        # is left out: a short path such as "/w" can occur in it by chance.
+        text = re.sub(rb"url\(data:font/woff2;base64,[A-Za-z0-9+/=]+\)", b"", one)
         for local in (str(SCENARIOS.parent.parent), SCENARIOS.parent.parent.as_posix(),
                       str(tmp_path), tmp_path.as_posix()):
-            assert local.encode() not in one
+            assert local.encode() not in text
     assert "Root cause (medium)" in first.output
 
 

@@ -39,9 +39,11 @@ from webforensics.report.document import (
     timeline_runs,
 )
 from webforensics.report.text import Texts, clean, zone_short
+from webforensics.report.theme import base_css
 
-# Which tab shows which section of the static document. The overview adds the backtrace
-# and the timeline tab is built from the events themselves (D97).
+# Which tab shows which section of the static document. The overview adds the chain and
+# the timeline tab is built from the events themselves (D97). Root cause, files, IOCs,
+# gaps and actions are drawn from `detail` so they can link into the timeline (D104).
 TABS: tuple[tuple[str, tuple[str, ...]], ...] = (
     ("overview", ("ringkasan",)),
     ("timeline", ()),
@@ -118,15 +120,132 @@ def _block(block: Block) -> dict[str, Any]:
     raise TypeError(f"unknown block {type(block).__name__}")
 
 
-def _tabs(doc: Document) -> list[dict[str, Any]]:
-    by_anchor = {s.anchor: s for s in doc.sections}
-    tabs = []
-    for tab, anchors in TABS:
-        sections = [{"title": by_anchor[a].title,
-                     "blocks": [_block(b) for b in by_anchor[a].blocks]}
-                    for a in anchors if a in by_anchor]
-        tabs.append({"id": tab, "label": m.VIEWER[f"tab.{tab}"], "sections": sections})
-    return tabs
+def _doc(doc: Document) -> list[dict[str, Any]]:
+    """Every section of the static report, in order: the tabs show some of them and the
+    full report (`#laporan`) shows all of them."""
+    return [{"anchor": s.anchor, "title": s.title, "blocks": [_block(b) for b in s.blocks]}
+            for s in doc.sections]
+
+
+def _tabs(doc: Document, counts: dict[str, int]) -> list[dict[str, Any]]:
+    present = {s.anchor for s in doc.sections}
+    return [{"id": tab, "label": m.VIEWER[f"tab.{tab}"], "count": counts.get(tab, 0),
+             "anchors": [a for a in anchors if a in present]} for tab, anchors in TABS]
+
+
+def _root_detail(report: Report, texts: Texts, numbers: dict[str, int]) -> dict[str, Any] | None:
+    """The root cause taken apart: the request, the reasons, and the vulnerable code."""
+    result = report.result
+    cause = result.root_cause
+    if cause is None:
+        return None
+    by_id = {e.event_id: e for e in result.timeline}
+    event = by_id[cause.event_id]
+    line = next((c for c in event.citations if c.kind is CitationKind.LOG_LINE), None)
+    code = [{
+        "file": clean(f.file), "line": f.line, "sinkLine": f.sink_line, "sink": clean(f.sink),
+        "sources": [clean(s) for s in f.sources],
+        "why": texts.label(f"code.why.{f.implicated_by}"),
+        "conf": f.confidence.value, "confLabel": texts.confidence(f.confidence.value),
+        "snippet": clean(f.snippet),
+        "fix": [clean(x) for x in (f.suggested_fix or "").splitlines()],
+        "verified": f.verified, "ref": texts.cite(f.citation),
+    } for f in report.code_findings]
+    scope = report.code_scope
+    return {
+        "n": numbers[event.event_id],
+        "request": ({"ref": texts.cite(line), "raw": clean(line.excerpt)}
+                    if line is not None and line.excerpt else None),
+        "refs": [texts.cite(c) for c in event.citations],
+        "reasons": list(dict.fromkeys(texts.message(r) for r in cause.reasons)),
+        "alts": [{"n": numbers[i], "text": texts.message(by_id[i].description)}
+                 for i in cause.alternative_event_ids if i in by_id],
+        "code": code,
+        "codeNone": bool(scope and scope.analyzed and not report.code_findings),
+        "analyzed": [clean(p) for p in scope.analyzed] if scope else [],
+        "included": [clean(p) for p in scope.included] if scope else [],
+        "noContent": [clean(p) for p in scope.no_content] if scope else [],
+    }
+
+
+def _related(path: str, events: list[dict[str, Any]], cites: list[dict[str, str]]) -> list[int]:
+    """Timeline events about one file: they name it or cite it."""
+    own = f"{path} @"
+    return [e["n"] for e in events
+            if path in e["text"] or any(cites[i]["ref"].startswith(own) for i in e["cites"])]
+
+
+def _files_detail(report: Report, texts: Texts, events: list[dict[str, Any]],
+                  cites: list[dict[str, str]]) -> dict[str, Any]:
+    result = report.result
+    files = []
+    for f in result.affected_files:
+        own = [x for x in result.findings if x.subject == f.evidence_id]
+        files.append({
+            "path": clean(f.path), "sha256": f.sha256,
+            "size": f"{f.size} {texts.label('bytes')}",
+            "status": m.BASELINE_STATUS[f.baseline_status.value],
+            "times": [{"name": name, "time": texts.time(value)} for name, value in (
+                ("btime", f.btime), ("ctime", f.ctime), ("mtime", f.mtime)) if value],
+            "tsSource": m.TIMESTAMP_SOURCE[f.timestamp_source.value],
+            "urls": [clean(u) for u in f.url_paths],
+            "fim": [f"{m.FIM_EVENTS[c.event.value]} {texts.time(c.ts)} ({c.mode.value}, "
+                    f"{texts.cite(c.citation)})" for c in f.fim],
+            "findings": [{"text": texts.message(x.reasons[0]) if x.reasons else
+                          texts.rule(x.rule_id), "rule": x.rule_id,
+                          "conf": x.confidence.value,
+                          "confLabel": texts.confidence(x.confidence.value)} for x in own],
+            "events": _related(clean(f.path), events, cites),
+        })
+    log_only: dict[str, Any] | None = None
+    if result.log_only_files:
+        unverified = any(e.description.key == "timeline.log_only_file_unverified"
+                         for e in result.timeline)
+        note = "files.log_only_note_unverified" if unverified else "files.log_only_note"
+        log_only = {"title": texts.label("files.log_only"), "note": texts.label(note),
+                    "items": [{"path": clean(p), "events": _related(clean(p), events, cites)}
+                              for p in result.log_only_files]}
+    return {"files": files, "logOnly": log_only}
+
+
+def _iocs_detail(report: Report, texts: Texts) -> list[dict[str, Any]]:
+    iocs = report.result.iocs
+    groups = (("ips", iocs.ips), ("user_agents", iocs.user_agents), ("sha256s", iocs.sha256s),
+              ("paths", iocs.paths), ("urls", iocs.urls))
+    return [{"key": key, "label": texts.label(f"ioc.{key}"), "values": [clean(v) for v in values]}
+            for key, values in groups if values]
+
+
+def _gaps_detail(report: Report, texts: Texts, numbers: dict[str, int]) -> dict[str, Any]:
+    gaps, labels = report.result.gaps, texts.gap_labels
+    shown = set(shown_gaps(gaps))
+    rows = []
+    for g in sorted(gaps, key=lambda g: int(labels[g.gap_id][1:])):
+        if g.gap_id not in shown:
+            continue
+        detail = texts.message(g.detail) if g.detail else ""
+        rows.append({
+            "label": labels[g.gap_id], "kind": m.GAP_KINDS.get(g.kind.value, ""),
+            "when": (f"{texts.time(g.start)} s.d. {texts.time(g.end)}" if g.start or g.end
+                     else ""),
+            "from": _ms(g.start) if g.start and g.end else None,
+            "to": _ms(g.end) if g.start and g.end else None,
+            "detail": detail, "source": clean(g.source) if g.source else "",
+            "affects": [numbers[i] for i in g.affects if i in numbers],
+        })
+    more = len(gaps) - len(shown)
+    return {"rows": rows,
+            "more": texts.label("gap.more_silences").format(count=more) if more > 0 else ""}
+
+
+def _actions_detail(report: Report, texts: Texts) -> list[dict[str, Any]]:
+    out = []
+    for phase, title in m.PHASES.items():
+        items = [texts.message(r) for r in report.recommendations
+                 if r.key.startswith(f"rec.{phase}.")]
+        if items:
+            out.append({"phase": phase, "title": title, "items": items})
+    return out
 
 
 class _Citations:
@@ -226,9 +345,18 @@ def build_view(report: Report, texts: Texts) -> dict[str, Any]:
         root = {"n": event["n"], "text": event["text"], "time": event["time"],
                 "day": event["day"], "clock": event["clock"], "actor": event["actor"],
                 "vuln": texts.vuln(result.root_cause.vuln_class),
+                "vulnKnown": (result.root_cause.vuln_class or "") in m.VULN_CLASSES,
                 "conf": result.root_cause.confidence.value,
                 "confLabel": texts.confidence(result.root_cause.confidence.value)}
     offset = texts.tz.utcoffset(None)
+    numbers = {e.event_id: i for i, e in enumerate(result.timeline, start=1)}
+    files = _files_detail(report, texts, events, cites.rows)
+    iocs = _iocs_detail(report, texts)
+    gaps = _gaps_detail(report, texts, numbers)
+    actions = _actions_detail(report, texts)
+    counts = {"files": len(files["files"]) + len(result.log_only_files),
+              "iocs": sum(len(g["values"]) for g in iocs), "gaps": len(gaps["rows"]),
+              "actions": sum(len(a["items"]) for a in actions)}
     return {
         "title": doc.title,
         "subtitle": doc.subtitle,
@@ -249,7 +377,10 @@ def build_view(report: Report, texts: Texts) -> dict[str, Any]:
         "attackers": list(result.iocs.ips),
         "gaps": _gap_bands(report, texts),
         "categories": [{"id": c, "label": m.VIEWER[f"cat.{c}"]} for c in CATEGORIES],
-        "tabs": _tabs(doc),
+        "tabs": _tabs(doc, counts),
+        "doc": _doc(doc),
+        "detail": {"root": _root_detail(report, texts, numbers), "files": files,
+                   "iocs": iocs, "gaps": gaps, "actions": actions},
         "ui": m.VIEWER,
         "labels": {"rootMarker": m.LABELS["root_marker"], "noActor": m.LABELS["actor.none"]},
     }
@@ -270,8 +401,10 @@ def render_viewer(report: Report, texts: Texts) -> str:
     view = build_view(report, texts)
     script, style = _asset("viewer.js"), _asset("viewer.css")
     digest = base64.b64encode(hashlib.sha256(script.encode("utf-8")).digest()).decode("ascii")
+    # The font is embedded as a data: URI (theme.py), so font-src allows data: only.
     csp = (f"default-src 'none'; script-src 'sha256-{digest}'; style-src 'unsafe-inline'; "
-           "img-src 'none'; connect-src 'none'; form-action 'none'; base-uri 'none'")
+           "font-src data:; img-src 'none'; connect-src 'none'; form-action 'none'; "
+           "base-uri 'none'")
     title = view["title"].replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
     return (
         "<!DOCTYPE html>\n"
@@ -279,7 +412,7 @@ def render_viewer(report: Report, texts: Texts) -> str:
         f'<meta http-equiv="Content-Security-Policy" content="{csp}">\n'
         '<meta name="viewport" content="width=device-width, initial-scale=1">\n'
         '<meta name="referrer" content="no-referrer">\n'
-        f"<title>{title}</title>\n<style>{style}</style>\n</head>\n<body>\n"
+        f"<title>{title}</title>\n<style>{base_css()}\n{style}</style>\n</head>\n<body>\n"
         '<div id="app"></div>\n'
         f'<script type="application/json" id="data">{_json_for_html(view)}</script>\n'
         f"<script>{script}</script>\n</body>\n</html>\n"

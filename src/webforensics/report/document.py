@@ -593,6 +593,7 @@ def build_document(report: Report, texts: Texts) -> Document:
     # Sections that cite evidence run first so the appendix lists what they referenced.
     body = [_summary(ctx), _case(ctx), _timeline(ctx), _root(ctx), _files(ctx), _review(ctx),
             _iocs(ctx), _gaps(ctx), _background(ctx), _actions(ctx), _limits(ctx)]
-    subtitle = f"{clean(report.case.case_id)} · {texts.time(report.run.generated_at)}"
+    subtitle = m.LABELS["doc.subtitle"].format(case=clean(report.case.case_id),
+                                              time=texts.time(report.run.generated_at))
     return Document(clean(report.case.title), subtitle,
                     (*body, _evidence(ctx), _run(ctx)))

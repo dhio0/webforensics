@@ -1,6 +1,6 @@
 # Laporan Insiden Website
 
-_WF-6A5510F7FF · 2026-10-28 09:00:00 WIB_
+_Kasus WF-6A5510F7FF, dibuat 2026-10-28 09:00:00 WIB_
 
 ## 1. Ringkasan
 
@@ -38,10 +38,10 @@ _WF-6A5510F7FF · 2026-10-28 09:00:00 WIB_
 | # | Waktu | Dasar waktu | Fase (ATT\&CK) | Aktor | Kejadian | Keyakinan | Bukti |
 |---|---|---|---|---|---|---|---|
 | #1 | 2026-10-29 12:17:05 WIB | log | - | 192.0.2.10 | Login gagal: POST /admin/login.php → 401. | tinggi | access.log:1 |
-| #2 | 2026-10-29 12:17:11 WIB | log | Initial Access (akses awal) · T1078 | 192.0.2.10 | **AKAR MASALAH: Login berhasil dengan cara yang tidak terlihat di log: POST /admin/login.php → 200.** | rendah | access.log:4 |
-| #3 | 2026-10-29 12:17:13 WIB | log | Persistence (bertahan) · T1505.003 | 192.0.2.10 | Request yang menulis uploads/scenario-b-marker.php: POST /admin/auth\_upload.php → 200. | tinggi | access.log:5, uploads/scenario-b-marker.php @105ddd6ab59b, error.log:1 |
-| #4 | 2026-10-29 12:17:13 WIB | btime | Persistence (bertahan) · T1505.003 | - | File uploads/scenario-b-marker.php dibuat (SHA-256 105ddd6ab59b…). | sedang | uploads/scenario-b-marker.php @105ddd6ab59b |
-| #5 | 2026-10-29 12:17:15 WIB | log | Persistence (bertahan) · T1505.003 | 192.0.2.10 | File uploads/scenario-b-marker.php diakses: GET /uploads/scenario-b-marker.php → 200. | tinggi | access.log:6 |
+| #2 | 2026-10-29 12:17:11 WIB | log | Initial Access (akses awal), T1078 | 192.0.2.10 | **Akar masalah: Login berhasil dengan cara yang tidak terlihat di log: POST /admin/login.php → 200.** | rendah | access.log:4 |
+| #3 | 2026-10-29 12:17:13 WIB | log | Persistence (bertahan), T1505.003 | 192.0.2.10 | Request yang menulis uploads/scenario-b-marker.php: POST /admin/auth\_upload.php → 200. | tinggi | access.log:5, uploads/scenario-b-marker.php @105ddd6ab59b, error.log:1 |
+| #4 | 2026-10-29 12:17:13 WIB | btime | Persistence (bertahan), T1505.003 | - | File uploads/scenario-b-marker.php dibuat (SHA-256 105ddd6ab59b…). | sedang | uploads/scenario-b-marker.php @105ddd6ab59b |
+| #5 | 2026-10-29 12:17:15 WIB | log | Persistence (bertahan), T1505.003 | 192.0.2.10 | File uploads/scenario-b-marker.php diakses: GET /uploads/scenario-b-marker.php → 200. | tinggi | access.log:6 |
 
 ### Catatan keyakinan
 
