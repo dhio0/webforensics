@@ -10,7 +10,7 @@ from collections.abc import Iterable
 from dataclasses import dataclass
 from pathlib import Path
 
-from webforensics.detect import RULESET_VERSION, UPLOAD_WRITABLE_DIRS, judol
+from webforensics.detect import RULESET_VERSION, UPLOAD_WRITABLE_DIRS, judol, signatures
 from webforensics.models import (
     BaselineStatus,
     Confidence,
@@ -88,6 +88,7 @@ def handler_extensions(content: str) -> tuple[frozenset[str], bool]:
 
 HTACCESS_RULE = "FILE-HTACCESS-PHP-HANDLER"
 JUDOL_RULE = "FILE-JUDOL-CONTENT"
+SIGNATURE_RULE = "FILE-WEBSHELL-KNOWN-SIGNATURE"
 CLOAKING_RULE = "FILE-SEO-CLOAKING"
 HANDLED_RULE = "FILE-HANDLER-EXEC"
 
@@ -215,6 +216,14 @@ def detect_file(file: FileEvidence) -> list[Finding]:
                 Severity.HIGH, Confidence.HIGH, "finding.FILE-WEBSHELL-REQUEST-EXEC",
                 {"function": match.group("function").casefold(), "input": "request_variable"},
                 ("T1505.003", "T1059"),
+            ))
+
+        known = signatures.known_shell(content) if has_executable_extension(path) else None
+        if known:
+            findings.append(_finding(
+                file, SIGNATURE_RULE, FindingCategory.WEBSHELL, Severity.HIGH,
+                Confidence.HIGH, f"finding.{SIGNATURE_RULE}",
+                {"family": known[0], "matched": truncate_excerpt(known[1])}, ("T1505.003",),
             ))
 
         blobs = [match.group(0) for match in _LONG_TOKEN.finditer(content)]

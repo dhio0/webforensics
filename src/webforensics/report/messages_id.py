@@ -245,6 +245,8 @@ MESSAGES: dict[str, str] = {
     "finding.LOG-TRAVERSAL-SENSITIVE": "Upaya membaca file sensitif: {matched}",
     "finding.LOG-XSS-PROBE": "Markup yang mencoba keluar dari atribut atau tag: {matched}",
     "finding.FILE-DEFACEMENT-PAGE": "Halaman berisi teks khas deface: \"{matched}\"",
+    "finding.FILE-WEBSHELL-KNOWN-SIGNATURE": "Penanda webshell terkenal keluarga {family}: "
+                                             "\"{matched}\"",
     "finding.FILE-JUDOL-CONTENT": "Konten promosi judi online: {terms} istilah berbeda, "
                                   "{hits} kemunculan (contoh: \"{matched}\")",
     "finding.FILE-SEO-CLOAKING": "Skrip memeriksa apakah pengunjung mesin pencari lalu "
@@ -469,6 +471,7 @@ RULE_NAMES: dict[str, str] = {
     "LOG-XSS-PROBE": "Percobaan injeksi skrip (XSS)",
     "FILE-DEFACEMENT-PAGE": "Halaman deface",
     "FILE-JUDOL-CONTENT": "Konten judi online (judol)",
+    "FILE-WEBSHELL-KNOWN-SIGNATURE": "Webshell terkenal (tanda tangan)",
     "FILE-SEO-CLOAKING": "Cloaking untuk mesin pencari",
     "LOG-SCANNER-UA": "Tool pemindai",
     "LOG-WEBSHELL-UPLOAD-DIR": "Akses skrip di folder upload",

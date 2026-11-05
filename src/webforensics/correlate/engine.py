@@ -1086,7 +1086,8 @@ def _log_starts_after_changes(index: _Index) -> EvidenceGap | None:
                     {"count": str(len(before)), "log_start_at": first.isoformat()})
 
 
-_CONTENT_RULES = ("FILE-WEBSHELL-REQUEST-EXEC", "FILE-WEBSHELL-OBFUSCATION",
+_CONTENT_RULES = ("FILE-WEBSHELL-REQUEST-EXEC", "FILE-WEBSHELL-KNOWN-SIGNATURE",
+                  "FILE-WEBSHELL-OBFUSCATION",
                   "FILE-DEFACEMENT-PAGE", "FILE-JUDOL-CONTENT", "FILE-SEO-CLOAKING")
 
 

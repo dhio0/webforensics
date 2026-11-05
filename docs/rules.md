@@ -102,6 +102,12 @@ Content is read as bytes from the evidence copy, at most 2 MiB, never executed (
 - **Does not prove:** use. It is the one content rule that accuses a file even inside a deploy batch (D79).
 - **Seen FP:** none known. Method calls (`->exec(`, `::exec(`) do not match.
 
+### FILE-WEBSHELL-KNOWN-SIGNATURE
+- **Matches:** in a script, a marker only one well-known web-shell family carries: c99 (`c99shell`, `c99sh_*`), r57, b374k, WSO (`FilesMan`, `wso_version`), alfa (`ALFA_DATA`, AlfaTeam), IndoXploit, phpspy, MadSpot. The family is reported.
+- **Severity / confidence:** high / high. T1505.003. Added in D102.
+- **Does not prove:** who put it there or that it was used; renamed or repacked shells without their markers are missed (left to the other content rules).
+- **Seen FP:** none in real webroots (D102). Expected risk: a security scanner that ships its signatures as PHP files; such a file is a lead, and with no HTTP link it is at most medium (D100).
+
 ### FILE-WEBSHELL-OBFUSCATION
 - **Matches:** a long high-entropy token, or `base64_decode(`, `gzinflate(` or `str_rot13(`.
 - **Severity / confidence:** low / low. T1027.
@@ -126,6 +132,7 @@ Content is read as bytes from the evidence copy, at most 2 MiB, never executed (
 - **Severity / confidence:** medium / low. T1491.002. Added in D98.
 - **Does not prove:** spam. Some SEO and caching plugins check for bots and fetch remote content; read the file. Cloakers that build the URL at run time (base64, string pieces) are missed.
 - **Seen FP:** none yet.
+- **Seen misses:** the cloaker Sucuri published in January 2026 (crawler check, then cURL on a URL held in a variable, without a scheme) is missed: the rule wants a literal `http(s)://` in the fetch call. Measured once on the committed rule (D98 follow-up); not changed, since one sample would only fit that sample.
 
 ### FILE-PERSISTENCE-ENTRYPOINT-CHANGE
 - **Matches:** `.htaccess` or an index page that is new or changed against the baseline.

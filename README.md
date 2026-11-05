@@ -1,5 +1,7 @@
 # webforensics
 
+[![ci](https://github.com/dhio0/webforensics/actions/workflows/ci.yml/badge.svg)](https://github.com/dhio0/webforensics/actions/workflows/ci.yml) [![release](https://img.shields.io/badge/release-v0.1.0-blue)](CHANGELOG.md) [![license](https://img.shields.io/badge/license-MIT-green)](LICENSE)
+
 Reconstructs how a website was compromised. Given the web server's access logs and a snapshot of its webroot, it starts from the suspicious file the way an analyst does, finds the request that wrote it, and walks back to the way the attacker got in. Every conclusion cites a log line or a file hash. The output is an incident report in Indonesian, following a CSIRT incident-handling flow, and an offline viewer for exploring the case.
 
 ![The webforensics viewer on a benchmark case: the backtrace from the attacker's file to the entry point, the raw log line of the entry point taken apart field by field, stepping through events with the keyboard, and search](docs/img/viewer-demo.gif)
@@ -21,6 +23,7 @@ Install (Python 3.11 or newer):
 
 ```bash
 pipx install git+https://github.com/dhio0/webforensics.git
+# a fixed release:  pipx install git+https://github.com/dhio0/webforensics.git@v0.1.0
 # or, without pipx:  pip install git+https://github.com/dhio0/webforensics.git
 ```
 
@@ -92,6 +95,7 @@ Damaged evidence was tested too: 10,000 seeded copies of real logs and manifests
 | [Evidence formats](docs/evidence-format.md) | the manifest and the supported log formats |
 | [Benchmark](benchmark/README.md) | scenario format, and how to score another tool |
 | [Plan](docs/plan.md) | data models, correlation algorithm, milestones |
+| [Changelog](CHANGELOG.md) | what each release contains |
 
 ## Development
 

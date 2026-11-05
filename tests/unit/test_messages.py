@@ -160,7 +160,12 @@ def _crafted(tmp_path):
     (tmp_path / "k").mkdir()
     spam = _with_content(tmp_path / "j", "slot/index.html", SPAM).model_copy(update=born)
     cloak = _with_content(tmp_path / "k", "index.php", CLOAKER).model_copy(update=born)
+    # a known web-shell family by its marker (D102), assembled so this file is not one
+    (tmp_path / "s").mkdir()
+    known = _with_content(tmp_path / "s", "uploads/k.php",
+                          "<?php /* " + "b37" + "4k */ ?>").model_copy(update=born)
     yield numbered((1, "/")), files(spam, cloak), None
+    yield numbered((1, "/")), files(known), None
     # a hosting-panel site created by an address first seen after 8 days of log (D98)
     yield numbered((0, "/"), (8 * 86_400, "/websites/submitWebsiteCreation",
                               {"method": "POST", "ip": "203.0.113.99"})), files(), None
