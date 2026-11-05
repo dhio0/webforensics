@@ -327,6 +327,10 @@ MESSAGES: dict[str, str] = {
     "rec.containment.isolate": "Batasi akses ke situs (mode maintenance atau firewall) sampai "
                                "file berbahaya dihapus.",
     "rec.containment.block_ips": "Blokir sementara IP berikut: {ips}.",
+    "rec.eradication.restore_files": "Jangan sekadar menghapus {paths}: situs membutuhkan file "
+                                     "ini. Kembalikan isinya dari salinan bersih (git atau "
+                                     "backup sebelum insiden), lalu cocokkan hash-nya. Hapus "
+                                     "hanya jika file itu memang tidak ada di salinan bersih.",
     "rec.eradication.remove_files": "Karantina lalu hapus file berikut setelah disalin sebagai "
                                     "bukti: {paths}.",
     "rec.eradication.fix_upload": "Perbaiki endpoint {path}: batasi ekstensi dan tipe file, "
@@ -416,8 +420,10 @@ MESSAGES: dict[str, str] = {
                         "per file dan per fungsi. Alur lewat pemanggilan fungsi, input dari "
                         "framework, dan ORM tidak dilacak, jadi \"tidak ditemukan\" bukan "
                         "berarti aman. Celah upload belum dilokalisasi di kode.",
-    "limit.no_code_content": "Kode sumber file yang terlibat tidak dianalisis karena isinya "
-                             "tidak tersedia. Berikan salinan webroot dengan --webroot.",
+    "limit.no_code_content": "Kode {paths} tidak dianalisis karena isinya tidak ada di "
+                             "bukti: file itu tidak ada di salinan webroot (dihapus, di luar "
+                             "webroot, atau salinannya tidak lengkap), atau --webroot tidak "
+                             "diberikan.",
 }
 
 RULE_NAMES: dict[str, str] = {

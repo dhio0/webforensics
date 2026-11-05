@@ -9,9 +9,10 @@ from collections import Counter, defaultdict
 from webforensics.correlate.actors import parse_networks, resolve_actor
 from webforensics.correlate.engine import BYPASS_RULE
 from webforensics.correlate.panel import PANEL_RULE
-from webforensics.detect.file_rules import CLOAKING_RULE, JUDOL_RULE
+from webforensics.detect.file_rules import CLOAKING_RULE, JUDOL_RULE, is_entrypoint_name
 from webforensics.models import (
     BackgroundGroup,
+    BaselineStatus,
     CaseInfo,
     CitationKind,
     CodeLocation,
@@ -19,6 +20,7 @@ from webforensics.models import (
     CorrelationResult,
     EvidenceScope,
     FileCollection,
+    FileEvidence,
     Finding,
     GapKind,
     LogCollection,
@@ -138,6 +140,15 @@ def compact_paths(paths: list[str], template: str) -> str:
     return ", ".join(parts)
 
 
+def needs_restore(file: FileEvidence) -> bool:
+    """A changed file the site needs (a modified file, or an index page or .htaccess with no
+    baseline to tell): advise restoring a clean copy, since deleting `index.php` takes the
+    site down."""
+    if file.baseline_status is BaselineStatus.MODIFIED:
+        return True
+    return file.baseline_status is BaselineStatus.UNKNOWN and is_entrypoint_name(file.path)
+
+
 def judol_files(result: CorrelationResult) -> tuple[list[str], list[str]]:
     """(affected files with gambling spam, affected files that cloak) (D98)."""
     rules: dict[str, set[str]] = defaultdict(set)
@@ -242,10 +253,12 @@ def build_summary(result: CorrelationResult, background_count: int, review: int,
 
 def _eradication(result: CorrelationResult) -> list[Reason]:
     recs: list[Reason] = []
-    if result.affected_files:
-        recs.append(_r("rec.eradication.remove_files",
-                       paths=compact_paths([f.path for f in result.affected_files],
-                                           PATH_GROUP)))
+    restore = [f.path for f in result.affected_files if needs_restore(f)]
+    remove = [f.path for f in result.affected_files if not needs_restore(f)]
+    if remove:
+        recs.append(_r("rec.eradication.remove_files", paths=compact_paths(remove, PATH_GROUP)))
+    if restore:
+        recs.append(_r("rec.eradication.restore_files", paths=compact_paths(restore, PATH_GROUP)))
     root = root_event(result)
     vuln = result.root_cause.vuln_class if result.root_cause else None
     fixed: set[tuple[str, str]] = set()
@@ -357,12 +370,15 @@ def evidence_scope(logs: LogCollection, files: FileCollection,
     )
 
 
-def code_limitations(code_scope: CodeScope | None) -> tuple[str, ...]:
+def code_limitations(code_scope: CodeScope | None) -> tuple[Reason, ...]:
+    """Names the files whose code was not read: with a webroot given, they were simply not
+    in it (deleted, outside the webroot, or an incomplete copy), and "give --webroot" alone
+    would be wrong advice."""
     if code_scope is None:
         return ()
     if code_scope.analyzed:
-        return ("limit.code_scope",)
-    return ("limit.no_code_content",)
+        return (_r("limit.code_scope"),)
+    return (_r("limit.no_code_content", paths=", ".join(code_scope.no_content)),)
 
 
 def build_report(result: CorrelationResult, logs: LogCollection, case: CaseInfo,
@@ -393,7 +409,7 @@ def _build_report(result: CorrelationResult, logs: LogCollection, case: CaseInfo
             result, review, fim_in_use=scope is not None and scope.file_adapter == "wazuh",
             code_findings=code_findings)),
         code_findings=code_findings, code_scope=code_scope,
-        limitations=tuple(_r(key) for key in (
+        limitations=(*(_r(key) for key in (
             *LIMITATIONS, *(("limit.fim_blind_spots",) if scope and scope.file_adapter == "wazuh"
-                            else ()), *code_limitations(code_scope))),
+                            else ()))), *code_limitations(code_scope)),
     )
